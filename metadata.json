@@ -1,0 +1,8 @@
+{
+  "name": "Imagine AI Professional",
+  "description": "The ultimate generative art platform driven by Google Gemini.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

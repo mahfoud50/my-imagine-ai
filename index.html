@@ -1,0 +1,98 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imagine AI - مختبر الإبداع الذكي</title>
+    <meta name="description" content="The ultimate generative art platform.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: '#6366f1',
+              accent: '#00d2ff',
+            }
+          }
+        }
+      }
+    </script>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.475.0",
+    "@google/genai": "https://esm.sh/@google/genai@1.35.0",
+    "@emailjs/browser": "https://esm.sh/@emailjs/browser@4.4.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+    
+    <!-- 🎨 Dynamic CSS Injection -->
+    <style id="admin-dynamic-css"></style>
+    
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Vazirmatn:wght@400;700;900&display=swap');
+      
+      :root {
+        --primary: #6366f1;
+        --accent: #00d2ff;
+      }
+
+      body { 
+        margin: 0; 
+        padding: 0; 
+        background-color: #f8fafc; 
+        font-family: 'Inter', 'Vazirmatn', sans-serif; 
+        overflow: hidden; 
+        height: 100vh;
+        transition: background-color 0.3s ease;
+      }
+
+      .dark body {
+        background-color: #0f172a;
+      }
+
+      #root { 
+        height: 100%; 
+        display: flex; 
+        flex-direction: column; 
+      }
+
+      .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { 
+        background: rgba(100, 116, 139, 0.2); 
+        border-radius: 10px; 
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
+        background: rgba(100, 116, 139, 0.4); 
+      }
+
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+
+      .floating-item {
+        animation: float 6s ease-in-out infinite;
+      }
+    </style>
+</head>
+<body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+    
+    <!-- ⚡ Dynamic JS Injection -->
+    <script id="admin-dynamic-js"></script>
+</body>
+</html>
