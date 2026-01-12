@@ -16,7 +16,7 @@ export interface AppNotification {
   time: Date;
   isRead: boolean;
   type: 'system' | 'success' | 'update' | 'message';
-  ownerEmail?: string; // حقل الخصوصية الجديد
+  ownerEmail?: string; 
 }
 
 export interface Message {
@@ -63,7 +63,7 @@ export interface UserSettings {
   manualApiKey?: string;
 }
 
-export type AdminTab = 'SEO' | 'GLOBAL_HTML' | 'CSS' | 'JS' | 'PHP_LOGIC' | 'UX_CONFIG' | 'MESSAGES' | 'MANAGER_PROFILE' | 'USERS' | 'GLOBAL_STORY';
+export type AdminTab = 'SEO' | 'GLOBAL_HTML' | 'CSS' | 'JS' | 'PHP_LOGIC' | 'UX_CONFIG' | 'MESSAGES' | 'MANAGER_PROFILE' | 'USERS' | 'GLOBAL_STORY' | 'ADMIN_SECURITY' | 'API_SETTINGS';
 
 export interface SiteConfig {
   seo_title: string;
@@ -78,6 +78,7 @@ export interface SiteConfig {
   manager_dob: string;
   manager_location: string;
   manager_pic: string;
+  global_api_key?: string; // الحقل الجديد للمفتاح العالمي
   global_story?: {
     id: string;
     image: string;
