@@ -5,7 +5,8 @@ import {
   Code, Shield, Globe, Layout, Save, RefreshCw, Terminal, X, Search,
   Mail, Lock, Cpu, MousePointer2, LayoutTemplate, MessageSquare, Trash2, 
   CheckCircle, Clock, User, Send, Camera, Briefcase, Users, UserX, UserCheck, 
-  ShieldAlert, Activity, Image as ImageIcon, Sparkles, Megaphone, Palette, Eye, EyeOff, Key
+  ShieldAlert, Activity, Image as ImageIcon, Sparkles, Megaphone, Palette, Eye, EyeOff, Key,
+  Upload, ToggleLeft, ToggleRight, Fingerprint, MapPin, Calendar, ShieldCheck
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -14,32 +15,108 @@ interface AdminPanelProps {
   messages: Message[];
   setMessages: (msgs: Message[]) => void;
   onReplyMessage?: (id: string, reply: string) => void;
-  onClose: () => void;
+  onClose: void;
   language: Language;
   currentUser: any;
   setCurrentUser: (user: any) => void;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ config, setConfig, messages, setMessages, onReplyMessage, onClose, language }) => {
-  const [activeTab, setActiveTab] = useState<AdminTab>('MESSAGES');
+const AdminPanel: React.FC<AdminPanelProps> = ({ config, setConfig, messages, setMessages, onClose, language }) => {
+  const [activeTab, setActiveTab] = useState<AdminTab>('MANAGER_PROFILE');
   const [tempConfig, setTempConfig] = useState<SiteConfig>(config);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateStatus, setUpdateStatus] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
   
+  const [adminIdentity, setAdminIdentity] = useState({ email: '', password: '' });
+  const [showAdminPass, setShowAdminPass] = useState(false);
+
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [bannedEmails, setBannedEmails] = useState<string[]>([]);
+  const storyFileRef = useRef<HTMLInputElement>(null);
+  const managerFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const users = JSON.parse(localStorage.getItem('site_verified_users') || '[]');
-    const banned = JSON.parse(localStorage.getItem('banned_emails') || '[]');
-    setAllUsers(users);
-    setBannedEmails(banned);
+    const loadData = () => {
+      const users = JSON.parse(localStorage.getItem('site_verified_users') || '[]');
+      const banned = JSON.parse(localStorage.getItem('banned_emails') || '[]');
+      const identity = JSON.parse(localStorage.getItem('admin_identity') || '{"email":"Mohammedzarzor26@gmail.com", "password":"Mah7foud23"}');
+      setAllUsers(users);
+      setBannedEmails(banned);
+      setAdminIdentity(identity);
+    };
+    loadData();
   }, [activeTab]);
+
+  const handleUpdateAdminIdentity = () => {
+    localStorage.setItem('admin_identity', JSON.stringify(adminIdentity));
+    setUpdateStatus(language === 'ar' ? '✅ تم تحديث بيانات الدخول بنجاح' : '✅ Admin identity updated!');
+    setTimeout(() => setUpdateStatus(''), 3000);
+  };
+
+  const handleManagerPicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setTempConfig({
+          ...tempConfig,
+          manager_pic: event.target?.result as string
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const toggleBan = (email: string) => {
+    let newBanned = [...bannedEmails];
+    if (newBanned.includes(email)) {
+      newBanned = newBanned.filter(e => e !== email);
+    } else {
+      newBanned.push(email);
+    }
+    setBannedEmails(newBanned);
+    localStorage.setItem('banned_emails', JSON.stringify(newBanned));
+  };
+
+  const deleteUser = (email: string) => {
+    if (!confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذا المستخدم نهائياً؟' : 'Are you sure you want to delete this user?')) return;
+    const filtered = allUsers.filter(u => u.email !== email);
+    setAllUsers(filtered);
+    localStorage.setItem('site_verified_users', JSON.stringify(filtered));
+  };
+
+  const handleStoryImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setTempConfig({
+          ...tempConfig,
+          global_story: {
+            ...(tempConfig.global_story || { id: '', message: '', active: false, image: '' }),
+            image: event.target?.result as string
+          }
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const publishStory = () => {
+    const updatedStory = {
+      ...(tempConfig.global_story || { message: '', active: true, image: '' }),
+      id: Date.now().toString(),
+      active: true
+    };
+    setTempConfig({ ...tempConfig, global_story: updatedStory });
+    setUpdateStatus(language === 'ar' ? '🚀 تم نشر الستوري بنجاح' : '🚀 Story Published!');
+    setTimeout(() => setUpdateStatus(''), 3000);
+  };
 
   const generateRandomKey = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-    let result = 'AIzaSy'; // بداية مفاتيح جوجل المعتادة
+    let result = 'AIzaSy';
     for (let i = 0; i < 33; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -57,6 +134,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ config, setConfig, messages, se
   };
 
   const tabs: { id: AdminTab; icon: any; label: string; labelAr: string; color: string }[] = [
+    { id: 'MANAGER_PROFILE', icon: User, label: 'Manager Profile', labelAr: 'بروفايل المدير', color: 'text-indigo-400' },
     { id: 'MESSAGES', icon: MessageSquare, label: 'Inbox', labelAr: 'الرسائل', color: 'text-emerald-500' },
     { id: 'API_SETTINGS', icon: Key, label: 'API Management', labelAr: 'مفتاح API العالمي', color: 'text-amber-500' },
     { id: 'USERS', icon: Users, label: 'Users', labelAr: 'المستخدمين', color: 'text-blue-400' },
@@ -104,63 +182,274 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ config, setConfig, messages, se
 
           <div className="flex-1 p-12 overflow-y-auto custom-scrollbar">
             
-            {activeTab === 'API_SETTINGS' && (
-              <div className="max-w-3xl space-y-8 animate-in slide-in-from-bottom-5">
-                <div className="p-10 bg-slate-900 border border-white/5 rounded-[3rem] space-y-8">
+            {activeTab === 'MANAGER_PROFILE' && (
+              <div className="max-w-4xl space-y-8 animate-in slide-in-from-bottom-5">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    {/* معلومات الملف الشخصي */}
+                    <div className="space-y-8">
+                       <div className="p-10 bg-slate-900 border border-white/5 rounded-[3rem] space-y-8">
+                          <h3 className="text-lg font-black text-white flex items-center gap-3 uppercase tracking-tighter">
+                             <Briefcase className="w-5 h-5 text-indigo-400" />
+                             {isRtl ? 'بيانات القيادة' : 'Leadership Identity'}
+                          </h3>
+                          
+                          <div className="space-y-6">
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">{isRtl ? 'الاسم المعروض' : 'Display Name'}</label>
+                                <div className="relative">
+                                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                   <input 
+                                     type="text" 
+                                     value={tempConfig.manager_name}
+                                     onChange={(e) => setTempConfig({...tempConfig, manager_name: e.target.value})}
+                                     className="w-full py-4 pl-12 pr-6 bg-slate-950 border border-white/10 rounded-2xl text-white font-bold outline-none focus:border-indigo-500 transition-all"
+                                   />
+                                </div>
+                             </div>
+
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">{isRtl ? 'تاريخ الميلاد' : 'Date of Birth'}</label>
+                                <div className="relative">
+                                   <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                   <input 
+                                     type="text" 
+                                     value={tempConfig.manager_dob}
+                                     onChange={(e) => setTempConfig({...tempConfig, manager_dob: e.target.value})}
+                                     className="w-full py-4 pl-12 pr-6 bg-slate-950 border border-white/10 rounded-2xl text-white font-bold outline-none focus:border-indigo-500 transition-all"
+                                   />
+                                </div>
+                             </div>
+
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">{isRtl ? 'الموقع الحالي' : 'Current Location'}</label>
+                                <div className="relative">
+                                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                   <input 
+                                     type="text" 
+                                     value={tempConfig.manager_location}
+                                     onChange={(e) => setTempConfig({...tempConfig, manager_location: e.target.value})}
+                                     className="w-full py-4 pl-12 pr-6 bg-slate-950 border border-white/10 rounded-2xl text-white font-bold outline-none focus:border-indigo-500 transition-all"
+                                   />
+                                </div>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+
+                    {/* الصورة الشخصية والمعاينة */}
+                    <div className="flex flex-col items-center justify-center gap-8">
+                       <div className="relative group">
+                          <div className="w-64 h-64 rounded-[3rem] overflow-hidden border-8 border-slate-900 shadow-2xl relative">
+                             <img 
+                               src={tempConfig.manager_pic} 
+                               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                               alt="Manager Profile" 
+                             />
+                             <div 
+                               onClick={() => managerFileRef.current?.click()}
+                               className="absolute inset-0 bg-indigo-600/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer"
+                             >
+                                <Camera className="w-12 h-12 text-white mb-2" />
+                                <span className="text-white text-[10px] font-black uppercase tracking-widest">{isRtl ? 'تغيير الصورة' : 'Change Pic'}</span>
+                             </div>
+                          </div>
+                          <div className="absolute -bottom-4 -right-4 w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center border-4 border-slate-950 shadow-xl">
+                             <ShieldCheck className="w-6 h-6 text-white" />
+                          </div>
+                          <input type="file" ref={managerFileRef} className="hidden" accept="image/*" onChange={handleManagerPicUpload} />
+                       </div>
+
+                       <div className="text-center space-y-2">
+                          <h4 className="text-xl font-black text-white">{tempConfig.manager_name}</h4>
+                          <p className="text-xs text-slate-500 font-bold tracking-widest uppercase">CEO & Chief Architect</p>
+                       </div>
+
+                       <div className="p-6 bg-indigo-500/5 border border-indigo-500/10 rounded-3xl w-full">
+                          <p className="text-[10px] text-slate-400 leading-relaxed font-bold">
+                             {isRtl ? '💡 نصيحة: الصورة الشخصية للمدير تظهر في قسم الحساب للمستخدمين وفي الستوري العام. استخدم صورة احترافية تعكس هوية المنصة.' : '💡 Pro tip: The CEO profile picture appears in the user account section and global stories. Use a professional image that reflects the platform identity.'}
+                          </p>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+            )}
+
+            {activeTab === 'ADMIN_SECURITY' && (
+              <div className="max-w-2xl space-y-8 animate-in slide-in-from-bottom-5">
+                <div className="p-10 bg-slate-900 border border-white/5 rounded-[3rem] space-y-10">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-amber-500/10 rounded-2xl"><Key className="w-6 h-6 text-amber-500" /></div>
+                    <div className="p-3 bg-rose-600/10 rounded-2xl"><ShieldAlert className="w-6 h-6 text-rose-500" /></div>
                     <div>
-                      <h3 className="text-xl font-black text-white">{isRtl ? 'مفتاح API العالمي (Global)' : 'Global API Key'}</h3>
-                      <p className="text-xs text-slate-500 font-bold">{isRtl ? 'هذا المفتاح سيستخدم من قبل جميع مستخدمي الموقع بشكل افتراضي.' : 'This key will be used by all site users by default.'}</p>
+                      <h3 className="text-xl font-black text-white">{isRtl ? 'أمان الهوية السيادية' : 'Sovereign Identity Security'}</h3>
+                      <p className="text-xs text-slate-500 font-bold">{isRtl ? 'تعديل بيانات الدخول للوحة التحكم الأساسية.' : 'Modify access credentials for the main admin panel.'}</p>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <input 
-                        type={showApiKey ? "text" : "password"} 
-                        value={tempConfig.global_api_key} 
-                        onChange={(e) => setTempConfig({...tempConfig, global_api_key: e.target.value})}
-                        className="w-full py-5 px-6 bg-slate-950 border border-white/10 rounded-2xl outline-none text-white font-mono focus:border-amber-500 transition-all"
-                        placeholder="Paste Gemini API Key here..."
-                      />
-                      <button 
-                        onClick={() => setShowApiKey(!showApiKey)}
-                        className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
-                      >
-                        {showApiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">{isRtl ? 'مفتاح الهوية (الإيميل)' : 'Identity Key (Email)'}</label>
+                       <div className="relative">
+                          <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                          <input 
+                            type="email" 
+                            value={adminIdentity.email}
+                            onChange={(e) => setAdminIdentity({...adminIdentity, email: e.target.value})}
+                            className="w-full py-4 pl-14 pr-6 bg-slate-950 border border-white/10 rounded-2xl text-white font-mono text-sm outline-none focus:border-rose-500 transition-all"
+                          />
+                       </div>
                     </div>
 
-                    <div className="flex gap-4">
-                      <button 
-                        onClick={generateRandomKey}
-                        className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-black flex items-center gap-2 border border-white/5 transition-all"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        {isRtl ? 'توليد عشوائي (تجريبي)' : 'Generate Random (Test)'}
-                      </button>
-                      <button 
-                        onClick={() => setTempConfig({...tempConfig, global_api_key: ''})}
-                        className="px-6 py-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl text-xs font-black flex items-center gap-2 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        {isRtl ? 'مسح المفتاح' : 'Clear Key'}
-                      </button>
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">{isRtl ? 'كلمة سر النظام' : 'System Passphrase'}</label>
+                       <div className="relative">
+                          <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                          <input 
+                            type={showAdminPass ? "text" : "password"} 
+                            value={adminIdentity.password}
+                            onChange={(e) => setAdminIdentity({...adminIdentity, password: e.target.value})}
+                            className="w-full py-4 pl-14 pr-14 bg-slate-950 border border-white/10 rounded-2xl text-white font-mono text-sm outline-none focus:border-rose-500 transition-all"
+                          />
+                          <button onClick={() => setShowAdminPass(!showAdminPass)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+                            {showAdminPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                       </div>
                     </div>
+
+                    <button 
+                      onClick={handleUpdateAdminIdentity}
+                      className="w-full py-5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-3 shadow-xl shadow-rose-900/20 transition-all active:scale-95"
+                    >
+                      <Fingerprint className="w-5 h-5" />
+                      {isRtl ? 'تحديث بيانات السيادة' : 'Update Sovereign Identity'}
+                    </button>
                   </div>
 
-                  <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-start gap-4">
-                    <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-slate-400 leading-relaxed font-bold">
-                      {isRtl ? 'ملاحظة: تأكد من استخدام مفتاح صالح من Google AI Studio لضمان عمل ميزات التوليد لجميع الزوار.' : 'Note: Ensure you use a valid key from Google AI Studio to keep generation features active for all visitors.'}
-                    </p>
+                  <div className="p-5 bg-rose-500/5 border border-rose-500/10 rounded-2xl">
+                     <p className="text-[9px] text-slate-400 font-bold leading-relaxed">
+                       {isRtl ? '⚠️ تحذير: تغيير هذه البيانات سيؤدي إلى مطالبتك بتسجيل الدخول مرة أخرى باستخدام القيم الجديدة. تأكد من حفظها في مكان آمن.' : '⚠️ Warning: Changing these credentials will require you to log in again. Ensure you save them securely.'}
+                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* باقي التبويبات تظل كما هي ... */}
+            {activeTab === 'GLOBAL_STORY' && (
+              <div className="max-w-4xl space-y-8 animate-in slide-in-from-bottom-5">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                       <div className="p-8 bg-slate-900 border border-white/5 rounded-[2.5rem] space-y-6">
+                          <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-3">
+                                <Megaphone className="w-5 h-5 text-rose-500" />
+                                <h3 className="text-sm font-black text-white uppercase tracking-widest">{isRtl ? 'حالة الستوري' : 'Story Status'}</h3>
+                             </div>
+                             <button 
+                                onClick={() => setTempConfig({
+                                  ...tempConfig,
+                                  global_story: { ...(tempConfig.global_story || { id: '', message: '', image: '', active: false }), active: !tempConfig.global_story?.active }
+                                })}
+                                className={`w-12 h-6 rounded-full relative transition-all ${tempConfig.global_story?.active ? 'bg-emerald-500' : 'bg-slate-700'}`}
+                             >
+                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${tempConfig.global_story?.active ? (isRtl ? 'right-7' : 'left-7') : (isRtl ? 'right-1' : 'left-1')}`} />
+                             </button>
+                          </div>
+                          <textarea 
+                            value={tempConfig.global_story?.message || ''}
+                            onChange={(e) => setTempConfig({...tempConfig, global_story: { ...(tempConfig.global_story || { id: '', image: '', active: false, message: '' }), message: e.target.value }})}
+                            className="w-full h-32 p-4 bg-slate-950 border border-white/10 rounded-2xl text-white text-xs font-bold outline-none focus:border-rose-500 transition-all resize-none"
+                            placeholder={isRtl ? 'اكتب الرسالة...' : 'Type message...'}
+                          />
+                          <button onClick={publishStory} className="w-full py-4 bg-rose-600 text-white rounded-2xl font-black text-xs flex items-center justify-center gap-3 transition-all active:scale-95"><Sparkles className="w-5 h-5" />{isRtl ? 'نشر كجديد' : 'Publish New'}</button>
+                       </div>
+                    </div>
+                    <div className="p-8 bg-slate-900 border border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center gap-6">
+                        <div onClick={() => storyFileRef.current?.click()} className="w-full aspect-[9/16] bg-slate-950 border-2 border-dashed border-white/10 rounded-3xl overflow-hidden cursor-pointer relative group">
+                           {tempConfig.global_story?.image ? <img src={tempConfig.global_story.image} className="w-full h-full object-cover opacity-60" /> : <div className="h-full flex flex-col items-center justify-center text-slate-500"><Upload className="w-10 h-10 mb-2 opacity-20" /></div>}
+                           <input type="file" ref={storyFileRef} className="hidden" accept="image/*" onChange={handleStoryImageUpload} />
+                        </div>
+                    </div>
+                 </div>
+              </div>
+            )}
+
+            {activeTab === 'USERS' && (
+              <div className="bg-slate-900 border border-white/5 rounded-[2.5rem] overflow-hidden animate-in slide-in-from-bottom-10">
+                 <table className={`w-full ${isRtl ? 'text-right' : 'text-left'}`}>
+                    <thead className="bg-slate-950/50 border-b border-white/5">
+                      <tr>
+                        <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'المستخدم' : 'User'}</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'الحالة' : 'Status'}</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">{isRtl ? 'الإجراءات' : 'Actions'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {allUsers.length === 0 ? <tr><td colSpan={3} className="py-20 text-center text-slate-500 opacity-30">Empty</td></tr> : allUsers.map(u => (
+                        <tr key={u.email} className="hover:bg-white/5 transition-all">
+                          <td className="px-8 py-5"><div className="flex items-center gap-4"><img src={u.profilePic || `https://i.pravatar.cc/150?u=${u.email}`} className="w-10 h-10 rounded-xl object-cover" /><div className="text-sm font-black text-white">{u.name}</div></div></td>
+                          <td className="px-8 py-5">{bannedEmails.includes(u.email) ? <span className="text-rose-500 text-[10px] font-black">BANNED</span> : <span className="text-emerald-500 text-[10px] font-black">ACTIVE</span>}</td>
+                          <td className="px-8 py-5 flex justify-center gap-3"><button onClick={() => toggleBan(u.email)} className="p-2 bg-white/5 rounded-lg">{bannedEmails.includes(u.email) ? <UserCheck className="w-4 h-4 text-emerald-500" /> : <UserX className="w-4 h-4 text-rose-500" />}</button><button onClick={() => deleteUser(u.email)} className="p-2 bg-white/5 rounded-lg"><Trash2 className="w-4 h-4 text-slate-400" /></button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                 </table>
+              </div>
+            )}
+
+            {activeTab === 'UX_CONFIG' && (
+               <div className="max-w-3xl p-10 bg-slate-900 border border-white/5 rounded-[3rem] space-y-8 animate-in slide-in-from-bottom-5">
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">{isRtl ? 'لون التمييز (Accent Color)' : 'Accent Color'}</label>
+                     <div className="flex items-center gap-4">
+                        <input type="color" value={tempConfig.ux_accent_color} onChange={(e) => setTempConfig({...tempConfig, ux_accent_color: e.target.value})} className="w-20 h-20 rounded-2xl bg-transparent border-none cursor-pointer" />
+                        <input type="text" value={tempConfig.ux_accent_color} onChange={(e) => setTempConfig({...tempConfig, ux_accent_color: e.target.value})} className="flex-1 py-4 px-6 bg-slate-950 border border-white/10 rounded-2xl text-white font-mono" />
+                     </div>
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">{isRtl ? 'قوة التمويه (Blur Intensity)' : 'Blur Intensity'}</label>
+                     <input type="text" value={tempConfig.ux_blur_intensity} onChange={(e) => setTempConfig({...tempConfig, ux_blur_intensity: e.target.value})} className="w-full py-4 px-6 bg-slate-950 border border-white/10 rounded-2xl text-white" placeholder="20px" />
+                  </div>
+               </div>
+            )}
+
+            {['GLOBAL_HTML', 'CSS', 'JS', 'SEO'].includes(activeTab) && (
+              <div className="max-w-4xl space-y-6 animate-in slide-in-from-bottom-5">
+                 <div className="p-8 bg-slate-900 border border-white/5 rounded-[2.5rem]">
+                    {activeTab === 'SEO' ? (
+                      <div className="space-y-6">
+                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Meta Title</label><input value={tempConfig.seo_title} onChange={e => setTempConfig({...tempConfig, seo_title: e.target.value})} className="w-full p-4 bg-slate-950 border border-white/10 rounded-2xl text-white" /></div>
+                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Meta Description</label><textarea value={tempConfig.seo_desc} onChange={e => setTempConfig({...tempConfig, seo_desc: e.target.value})} className="w-full h-32 p-4 bg-slate-950 border border-white/10 rounded-2xl text-white" /></div>
+                      </div>
+                    ) : (
+                      <textarea 
+                        value={activeTab === 'GLOBAL_HTML' ? tempConfig.global_html : activeTab === 'CSS' ? tempConfig.custom_css : tempConfig.custom_js}
+                        onChange={(e) => setTempConfig({
+                          ...tempConfig, 
+                          [activeTab === 'GLOBAL_HTML' ? 'global_html' : activeTab === 'CSS' ? 'custom_css' : 'custom_js']: e.target.value
+                        })}
+                        className="w-full h-[500px] p-6 bg-slate-950 border border-white/10 rounded-2xl text-cyan-400 font-mono text-xs leading-relaxed outline-none focus:border-indigo-500 transition-all"
+                        placeholder={`Enter ${activeTab} code here...`}
+                      />
+                    )}
+                 </div>
+              </div>
+            )}
+
+            {activeTab === 'API_SETTINGS' && (
+              <div className="max-w-3xl space-y-8 animate-in slide-in-from-bottom-5">
+                <div className="p-10 bg-slate-900 border border-white/5 rounded-[3rem] space-y-8">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-amber-500/10 rounded-2xl"><Key className="w-6 h-6 text-amber-500" /></div>
+                    <h3 className="text-xl font-black text-white">{isRtl ? 'مفتاح API العالمي' : 'Global API Key'}</h3>
+                  </div>
+                  <div className="relative">
+                    <input type={showApiKey ? "text" : "password"} value={tempConfig.global_api_key} onChange={(e) => setTempConfig({...tempConfig, global_api_key: e.target.value})} className="w-full py-5 px-6 bg-slate-950 border border-white/10 rounded-2xl text-white font-mono" />
+                    <button onClick={() => setShowApiKey(!showApiKey)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500">{showApiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
+                  </div>
+                  <button onClick={generateRandomKey} className="px-6 py-3 bg-white/5 text-white rounded-xl text-xs font-black border border-white/5">Generate Random</button>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'MESSAGES' && (
                <div className="space-y-4 max-w-4xl">
                   {messages.length === 0 ? <p className="text-slate-500 font-bold opacity-30 text-center py-20">No Messages</p> : 
@@ -178,7 +467,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ config, setConfig, messages, se
             )}
 
             {updateStatus && (
-              <div className="fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black text-sm animate-bounce shadow-2xl">
+              <div className="fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black text-sm animate-bounce shadow-2xl z-50">
                 {updateStatus}
               </div>
             )}

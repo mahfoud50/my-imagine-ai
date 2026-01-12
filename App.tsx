@@ -51,7 +51,7 @@ const App: React.FC = () => {
       manager_dob: '1 / 1 / 1987',
       manager_location: 'SAHTEREANN',
       manager_pic: 'https://i.pravatar.cc/150?u=manager',
-      global_api_key: '' // القيمة الافتراضية للمفتاح العالمي
+      global_api_key: '' 
     };
   });
 
@@ -147,6 +147,19 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleOpenStory = () => {
+    if (siteConfig.global_story?.active) {
+      setActiveStory({
+        image: siteConfig.global_story.image,
+        message: siteConfig.global_story.message,
+        timestamp: Date.now()
+      });
+      setIsStoryViewerOpen(true);
+      // Mark as seen
+      localStorage.setItem('last_seen_global_story_id', siteConfig.global_story.id);
+    }
+  };
+
   useEffect(() => {
     localStorage.setItem('site_config_sovereign_v9', JSON.stringify(siteConfig));
   }, [siteConfig]);
@@ -164,17 +177,10 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentPreview, setCurrentPreview] = useState<string | null>(null);
-  const [originalPreview, setOriginalPreview] = useState<string | null>(null);
   const [credits, setCredits] = useState(10);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [activeAccountTab, setActiveAccountTab] = useState<AccountTab>('profile');
 
-  /**
-   * دالة الحصول على المفتاح النشط:
-   * 1. مفتاح المستخدم اليدوي (إذا وجد)
-   * 2. مفتاح المدير العالمي (إذا وجد)
-   * 3. مفتاح البيئة الافتراضي
-   */
   const getActiveApiKey = () => {
     return userSettings.manualApiKey || siteConfig.global_api_key || process.env.API_KEY;
   };
@@ -213,24 +219,51 @@ const App: React.FC = () => {
 
   const handleSmartTool = async (type: GenerationType, toolPrompt: string) => {
     const sourceImage = currentPreview || settings.uploadedImage;
-    if (!sourceImage) return;
+    if (!sourceImage) {
+      alert(language === 'ar' ? 'يرجى رفع صورة أولاً أو اختيار واحدة من المعرض' : 'Please upload an image first or select one from history');
+      return;
+    }
+    
     setIsGenerating(true);
+    addNotification(language === 'ar' ? `جاري تطبيق: ${type}` : `Applying: ${type}`, '', 'system');
+    
     try {
       const activeKey = getActiveApiKey();
       const ai = new GoogleGenAI({ apiKey: activeKey });
       const base64Data = sourceImage.split(',')[1];
       const mimeType = sourceImage.split(',')[0].split(':')[1].split(';')[0];
+      
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image', 
-        contents: { parts: [{ inlineData: { data: base64Data, mimeType: mimeType } }, { text: toolPrompt }] }
+        contents: { 
+          parts: [
+            { inlineData: { data: base64Data, mimeType: mimeType } }, 
+            { text: toolPrompt }
+          ] 
+        }
       });
+
       const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
       if (imagePart?.inlineData) {
         const url = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
-        setHistory(prev => [{ id: Date.now().toString(), imageUrl: url, prompt: toolPrompt, timestamp: new Date(), model: 'Plus', type: type }, ...prev]);
+        const newItem: HistoryItem = { 
+          id: Date.now().toString(), 
+          imageUrl: url, 
+          prompt: toolPrompt, 
+          timestamp: new Date(), 
+          model: 'Plus', 
+          type: type 
+        };
+        setHistory(prev => [newItem, ...prev]);
         setCurrentPreview(url);
+        addNotification(language === 'ar' ? 'تمت المعالجة بنجاح' : 'Processed successfully', '', 'success');
       }
-    } catch (err) {} finally { setIsGenerating(false); }
+    } catch (err) {
+      console.error("Smart Tool Error:", err);
+      alert(language === 'ar' ? 'حدث خطأ أثناء المعالجة' : 'An error occurred during processing');
+    } finally { 
+      setIsGenerating(false); 
+    }
   };
 
   const handleAuth = (userData: UserData) => {
@@ -238,7 +271,6 @@ const App: React.FC = () => {
     setIsLoggedIn(true);
     if (userData.isAdmin) setIsAdminLoggedIn(true);
     localStorage.setItem('user_auth', JSON.stringify(userData));
-    addNotification(language === 'ar' ? 'مرحباً بك' : 'Welcome', userData.name, 'success', userData.email);
   };
 
   const handleLogout = () => {
@@ -268,6 +300,7 @@ const App: React.FC = () => {
         onToggleLang={() => setLanguage(language === 'ar' ? 'en' : 'ar')} 
         onUpgrade={() => { setActiveAccountTab('credits'); setIsAccountModalOpen(true); }}
         onProfile={() => setIsAccountModalOpen(true)}
+        onOpenStory={handleOpenStory}
         onLogout={handleLogout}
       />
       
@@ -275,14 +308,22 @@ const App: React.FC = () => {
         <Sidebar 
           settings={settings} setSettings={setSettings} onGenerate={handleGenerate} 
           isGenerating={isGenerating} language={language} 
-          onQuickAction={(action) => handleSmartTool(action, action)}
           onLogout={handleLogout}
         />
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <MainPreview 
-            imageUrl={currentPreview} isGenerating={isGenerating} prompt={settings.prompt} 
-            language={language} onRemoveBackground={() => handleSmartTool('Cleaned', 'remove background')}
-            onUpscale={() => handleSmartTool('Upscaled', 'upscale')}
+            imageUrl={currentPreview || settings.uploadedImage} 
+            originalImageUrl={settings.uploadedImage}
+            isGenerating={isGenerating} prompt={settings.prompt} 
+            language={language} 
+            onRemoveBackground={() => handleSmartTool('Cleaned', 'remove background from this image')}
+            onUpscale={() => handleSmartTool('Upscaled', 'upscale this image to high definition 4k')}
+            onRemoveWatermark={() => handleSmartTool('WatermarkRemoved', 'remove watermarks and text from this image')}
+            onColorize={() => handleSmartTool('Colorized', 'colorize this black and white image realistically')}
+            onRestore={() => handleSmartTool('Restored', 'restore this old damaged photo and fix scratches')}
+            onMagicEraser={() => handleSmartTool('ObjectRemoved', 'remove unwanted objects from this scene')}
+            onCartoonize={() => handleSmartTool('Cartoonized', 'convert this image into a 3D Pixar style animation')}
+            onSmartEdit={() => handleSmartTool('Edited', 'professionally edit and enhance colors and lighting')}
           />
         </div>
         <RightPanel 
@@ -299,6 +340,15 @@ const App: React.FC = () => {
         onSendMessage={handleSendMessage} allMessages={messages}
         siteConfig={siteConfig} onUpdateSiteConfig={c => setSiteConfig(p => ({...p, ...c}))}
       />
+
+      {isStoryViewerOpen && activeStory && (
+        <StoryViewer 
+          story={activeStory} 
+          onClose={() => setIsStoryViewerOpen(false)} 
+          language={language} 
+          siteConfig={siteConfig} 
+        />
+      )}
 
       {isAdminLoggedIn && (
         <div className="fixed bottom-10 right-10 z-50">

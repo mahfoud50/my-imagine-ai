@@ -15,6 +15,7 @@ interface HeaderProps {
   onToggleLang: () => void;
   onUpgrade?: () => void;
   onProfile?: () => void;
+  onOpenStory?: () => void; // إضافة خاصية فتح الستوري
   onCredits?: () => void;
   onSettings?: () => void;
   onLogout?: () => void;
@@ -23,7 +24,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ 
   credits, user, isPaid, language, siteConfig, notifications, onMarkAllRead, 
-  onToggleLang, onUpgrade, onProfile, onCredits, onSettings, onLogout, onToggleSidebar 
+  onToggleLang, onUpgrade, onProfile, onOpenStory, onCredits, onSettings, onLogout, onToggleSidebar 
 }) => {
   const t = translations[language];
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -55,6 +56,14 @@ const Header: React.FC<HeaderProps> = ({
   const handleAction = (callback?: () => void) => {
     if (callback) callback();
     setIsProfileOpen(false);
+  };
+
+  const handleProfileClick = () => {
+    if (hasNewStory && onOpenStory) {
+      onOpenStory();
+    } else if (onProfile) {
+      onProfile();
+    }
   };
 
   const getNotifIcon = (type: string) => {
@@ -152,7 +161,7 @@ const Header: React.FC<HeaderProps> = ({
 
         {/* User Account Menu Container */}
         <div className="flex items-center gap-3 relative" ref={dropdownRef}>
-          <div className="flex items-center gap-2 md:gap-3 cursor-pointer group" onClick={onProfile}>
+          <div className="flex items-center gap-2 md:gap-3 cursor-pointer group" onClick={handleProfileClick}>
             <div className={`relative p-1 rounded-full transition-all duration-500 ${hasNewStory ? 'bg-rose-600 animate-spin-slow p-[3px]' : ''}`}>
               <div className={`rounded-full bg-[#0f172a] p-0.5`}>
                 <img 
