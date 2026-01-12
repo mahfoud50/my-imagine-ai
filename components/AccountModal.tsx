@@ -6,7 +6,7 @@ import {
   Smartphone, Database, LayoutGrid, Languages, MousePointer2, Shield, Terminal,
   Eye, ShieldCheck, Volume2, Key, Info, ExternalLink, Trash2, ShieldAlert,
   Send, Calendar, MapPin, Briefcase, MessageSquare, Reply, Edit2, ShieldAlert as ShieldIcon,
-  CloudLightning, Lock, Globe, RefreshCw, EyeOff
+  CloudLightning, Lock, Globe, RefreshCw, EyeOff, Type, AlignLeft, Activity, HelpCircle
 } from 'lucide-react';
 import { Language, UserSettings, ThemeMode, FontFamily, FontSize, ImageQuality, ModelStrategy, Message, SiteConfig } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -152,7 +152,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
 
   if (!isOpen) return null;
 
-  const userMessages = allMessages.filter(m => m.senderEmail === user?.email);
   const isRtl = language === 'ar';
 
   const SettingToggle = ({ label, subLabel, value, onToggle, icon: Icon, color }: any) => {
@@ -173,8 +172,8 @@ const AccountModal: React.FC<AccountModalProps> = ({
         >
           <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-lg transition-all ${
             value 
-              ? (isRtl ? 'left-0.5' : 'right-0.5') 
-              : (isRtl ? 'left-4.5' : 'right-4.5')
+              ? (isRtl ? 'right-0.5' : 'left-0.5') 
+              : (isRtl ? 'right-4.5' : 'left-4.5')
           }`} />
         </button>
       </div>
@@ -183,10 +182,8 @@ const AccountModal: React.FC<AccountModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose}>
-      {/* Significantly Smaller Container: max-w-2xl and limited height */}
-      <div className="bg-white dark:bg-slate-900 w-full max-w-3xl h-[600px] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300 border dark:border-white/5" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-slate-900 w-full max-w-3xl h-[650px] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300 border dark:border-white/5" onClick={(e) => e.stopPropagation()}>
         
-        {/* Compact Sidebar */}
         <aside className="w-full md:w-56 bg-slate-50 dark:bg-slate-800/50 border-r border-slate-200 dark:border-white/5 p-6 flex flex-row md:flex-col gap-1 overflow-x-auto shrink-0">
           <div className="hidden md:block mb-6">
             <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter">{t.myAccount}</h2>
@@ -210,7 +207,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
           </nav>
         </aside>
 
-        {/* Content Area with less padding */}
         <main className="flex-1 p-6 md:p-10 overflow-y-auto custom-scrollbar relative">
           <button onClick={onClose} className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 text-slate-400 hover:text-rose-500 transition-all`}><X className="w-6 h-6" /></button>
 
@@ -345,14 +341,79 @@ const AccountModal: React.FC<AccountModalProps> = ({
           )}
 
           {activeTab === 'settings' && (
-            <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="space-y-8 animate-in fade-in duration-500">
+              {/* المظهر العام */}
               <section className="space-y-4">
                 <h4 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
                   <Sun className="w-4 h-4 text-indigo-500" /> {t.appearance}
                 </h4>
                 <div className="grid grid-cols-1 gap-3">
                   <SettingToggle label={t.themeLabel} subLabel={userSettings.theme === 'dark' ? t.themeDark : t.themeLight} value={userSettings.theme === 'dark'} onToggle={() => setUserSettings({ theme: userSettings.theme === 'dark' ? 'light' : 'dark' })} icon={userSettings.theme === 'dark' ? Moon : Sun} color="text-amber-500" />
+                </div>
+              </section>
+
+              {/* تخصيص الخطوط */}
+              <section className="space-y-4 pt-4 border-t dark:border-white/5">
+                <h4 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                  <Type className="w-4 h-4 text-indigo-500" /> {t.fontFamilyLabel}
+                </h4>
+                <div className="grid grid-cols-3 gap-2">
+                   {[
+                     { id: 'classic', label: t.fontClassic },
+                     { id: 'modern', label: t.fontModern },
+                     { id: 'comfort', label: t.fontComfort }
+                   ].map(font => (
+                     <button 
+                      key={font.id}
+                      onClick={() => setUserSettings({ fontFamily: font.id as FontFamily })}
+                      className={`p-3 rounded-xl border text-[10px] font-black transition-all ${userSettings.fontFamily === font.id ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:border-indigo-500/30'}`}
+                     >
+                       {font.label}
+                     </button>
+                   ))}
+                </div>
+
+                <div className="mt-6">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">{t.fontSizeLabel}</label>
+                  <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800 p-2 rounded-2xl border dark:border-white/5">
+                    {[
+                      { id: 'small', label: t.sizeSmall, icon: <AlignLeft className="w-3 h-3" /> },
+                      { id: 'medium', label: t.sizeMedium, icon: <AlignLeft className="w-4 h-4" /> },
+                      { id: 'large', label: t.sizeLarge, icon: <AlignLeft className="w-5 h-5" /> }
+                    ].map(size => (
+                      <button 
+                        key={size.id}
+                        onClick={() => setUserSettings({ fontSize: size.id as FontSize })}
+                        className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all ${userSettings.fontSize === size.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                      >
+                        {size.icon}
+                        <span className="text-[8px] font-black uppercase mt-1">{size.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* سلوك النظام */}
+              <section className="space-y-4 pt-4 border-t dark:border-white/5">
+                <h4 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-500" /> {t.systemBehavior}
+                </h4>
+                <div className="grid grid-cols-1 gap-3">
+                  <SettingToggle label={t.tooltips} subLabel={isRtl ? 'توضيح مهام الأدوات عند التمرير' : 'Explain tool tasks on hover'} value={userSettings.showTooltips} onToggle={() => setUserSettings({ showTooltips: !userSettings.showTooltips })} icon={HelpCircle} color="text-indigo-400" />
+                  <SettingToggle label={t.autoSave} subLabel={isRtl ? 'حفظ الجلسة تلقائياً وحماية بياناتك' : 'Auto-save session and protect data'} value={userSettings.autoSaveSession} onToggle={() => setUserSettings({ autoSaveSession: !userSettings.autoSaveSession })} icon={Database} color="text-emerald-500" />
                   <SettingToggle label={t.notifSounds} subLabel={t.on} value={userSettings.notificationSounds} onToggle={() => setUserSettings({ notificationSounds: !userSettings.notificationSounds })} icon={Volume2} color="text-indigo-500" />
+                </div>
+              </section>
+
+              {/* الأمان والخصوصية */}
+              <section className="space-y-4 pt-4 border-t dark:border-white/5">
+                <h4 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-rose-500" /> {t.securityPrivacy}
+                </h4>
+                <div className="grid grid-cols-1 gap-3">
+                  <SettingToggle label={t.contentProtect} subLabel={isRtl ? 'تعطيل النسخ والقائمة اليمنى' : 'Disable copy and right-click menu'} value={userSettings.contentProtection} onToggle={() => setUserSettings({ contentProtection: !userSettings.contentProtection })} icon={Lock} color="text-amber-500" />
+                  <SettingToggle label={t.privacyMode} subLabel={isRtl ? 'حذف كافة بيانات الجلسة عند الخروج' : 'Delete all session data on logout'} value={userSettings.privacyMode} onToggle={() => setUserSettings({ privacyMode: !userSettings.privacyMode })} icon={EyeOff} color="text-rose-500" />
                 </div>
               </section>
 

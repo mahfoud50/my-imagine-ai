@@ -4,7 +4,7 @@ import {
   Maximize2, Download, Layers, Eraser, Sparkles, Search, ChevronRight,
   Image as ImageIcon, CheckCircle, Loader2, Scissors, Eye, X, History,
   Wand2, Columns, Palette, Wind, Smile, Zap as ZapIcon, Shirt, Frame, Map,
-  PenTool, ArrowDownCircle, MousePointer2, Type
+  PenTool, ArrowDownCircle, MousePointer2, Type, HelpCircle
 } from 'lucide-react';
 import { Language } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -28,13 +28,14 @@ interface MainPreviewProps {
   onOutpainting?: () => void;
   onBackgroundChange?: () => void;
   onToggleGallery?: () => void;
+  showTooltips?: boolean;
 }
 
 const MainPreview: React.FC<MainPreviewProps> = ({ 
   imageUrl, originalImageUrl, isGenerating, prompt, language,
   onRemoveBackground, onUpscale, onSmartEdit, onRemoveWatermark, onColorize,
   onMagicEraser, onCartoonize, onRestore, onSketchToImage, onVirtualTryOn,
-  onOutpainting, onBackgroundChange, onToggleGallery
+  onOutpainting, onBackgroundChange, onToggleGallery, showTooltips
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
@@ -50,15 +51,17 @@ const MainPreview: React.FC<MainPreviewProps> = ({
     document.body.removeChild(link);
   };
 
+  const isRtl = language === 'ar';
+
   const smartTools = [
-    { id: 8, name: t.smartEdit, tag: 'Professional', action: onSmartEdit, image: 'https://images.unsplash.com/photo-1675271591211-126ad94e495d?w=400', icon: <Layers className="w-4 h-4" />, color: 'bg-violet-600' },
-    { id: 1, name: t.colorize, tag: 'Classic', action: onColorize, image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400', icon: <Palette className="w-4 h-4" />, color: 'bg-indigo-500' },
-    { id: 2, name: t.magicEraser, tag: 'Clean', action: onMagicEraser, image: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=400', icon: <Wind className="w-4 h-4" />, color: 'bg-rose-500' },
-    { id: 3, name: t.cartoonize, tag: '3D Art', action: onCartoonize, image: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=400', icon: <Smile className="w-4 h-4" />, color: 'bg-emerald-500' },
-    { id: 4, name: t.restore, tag: 'Fix', action: onRestore, image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400', icon: <ZapIcon className="w-4 h-4" />, color: 'bg-amber-500' },
-    { id: 5, name: t.removeBg, tag: 'Transparent', action: onRemoveBackground, image: 'https://images.unsplash.com/photo-1633167606207-d840b5070fc2?w=400', icon: <Eraser className="w-4 h-4" />, color: 'bg-blue-600' },
-    { id: 6, name: t.removeWatermark, tag: 'Inpaint', action: onRemoveWatermark, image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400', icon: <Scissors className="w-4 h-4" />, color: 'bg-cyan-500' },
-    { id: 7, name: t.upscale, tag: 'Ultra HD', action: onUpscale, image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400', icon: <Maximize2 className="w-4 h-4" />, color: 'bg-teal-500' }
+    { id: 8, name: t.smartEdit, tag: 'Professional', action: onSmartEdit, image: 'https://images.unsplash.com/photo-1675271591211-126ad94e495d?w=400', icon: <Layers className="w-4 h-4" />, color: 'bg-violet-600', descAr: 'تحرير ذكي شامل للصورة', descEn: 'AI Smart holistic edit' },
+    { id: 1, name: t.colorize, tag: 'Classic', action: onColorize, image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400', icon: <Palette className="w-4 h-4" />, color: 'bg-indigo-500', descAr: 'إضافة ألوان واقعية للصور القديمة', descEn: 'Add realistic color to B&W' },
+    { id: 2, name: t.magicEraser, tag: 'Clean', action: onMagicEraser, image: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=400', icon: <Wind className="w-4 h-4" />, color: 'bg-rose-500', descAr: 'حذف العناصر غير المرغوبة بذكاء', descEn: 'Remove unwanted objects' },
+    { id: 3, name: t.cartoonize, tag: '3D Art', action: onCartoonize, image: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=400', icon: <Smile className="w-4 h-4" />, color: 'bg-emerald-500', descAr: 'تحويل الصورة لنمط كرتوني ثلاثي الأبعاد', descEn: 'Convert to 3D cartoon style' },
+    { id: 4, name: t.restore, tag: 'Fix', action: onRestore, image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400', icon: <ZapIcon className="w-4 h-4" />, color: 'bg-amber-500', descAr: 'إصلاح التلف وتحسين جودة الوجوه', descEn: 'Fix damage and enhance faces' },
+    { id: 5, name: t.removeBg, tag: 'Transparent', action: onRemoveBackground, image: 'https://images.unsplash.com/photo-1633167606207-d840b5070fc2?w=400', icon: <Eraser className="w-4 h-4" />, color: 'bg-blue-600', descAr: 'إزالة الخلفية بدقة واحترافية', descEn: 'Precision background removal' },
+    { id: 6, name: t.removeWatermark, tag: 'Inpaint', action: onRemoveWatermark, image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400', icon: <Scissors className="w-4 h-4" />, color: 'bg-cyan-500', descAr: 'إخفاء العلامات المائية والنصوص', descEn: 'Hide watermarks and text' },
+    { id: 7, name: t.upscale, tag: 'Ultra HD', action: onUpscale, image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400', icon: <Maximize2 className="w-4 h-4" />, color: 'bg-teal-500', descAr: 'تكبير الصورة مع زيادة التفاصيل', descEn: 'Enlarge image with details' }
   ];
 
   return (
@@ -119,57 +122,30 @@ const MainPreview: React.FC<MainPreviewProps> = ({
               </div>
             </div>
           )}
-          
-          {!imageUrl && !isGenerating && (
-            <div className="text-center p-10 max-w-lg space-y-8 animate-in fade-in duration-700">
-              <div className="flex justify-center gap-4 mb-2">
-                <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl shadow-xl flex items-center justify-center -rotate-6">
-                  <ImageIcon className="w-8 h-8 text-indigo-500" />
-                </div>
-                <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl shadow-xl flex items-center justify-center rotate-6">
-                  <Type className="w-8 h-8 text-emerald-500" />
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <h4 className="text-3xl font-black text-slate-900 dark:text-white leading-tight">
-                  {language === 'ar' ? 'اصنع تحفتك الفنية الآن' : 'Create Your Masterpiece Now'}
-                </h4>
-                <div className="flex flex-col gap-3 items-center text-slate-500 dark:text-slate-400 font-bold">
-                  <div className="flex items-center gap-3 px-4 py-2 bg-indigo-500/5 rounded-xl border border-indigo-500/10 w-full">
-                    <span className="w-6 h-6 bg-indigo-600 text-white rounded-full text-[10px] flex items-center justify-center shrink-0">1</span>
-                    <p className="text-sm">{language === 'ar' ? 'اكتب وصفاً أو ارفع صورة في القائمة الجانبية' : 'Write a prompt or upload an image in the sidebar'}</p>
-                  </div>
-                  <div className="flex items-center gap-3 px-4 py-2 bg-emerald-500/5 rounded-xl border border-emerald-500/10 w-full">
-                    <span className="w-6 h-6 bg-emerald-600 text-white rounded-full text-[10px] flex items-center justify-center shrink-0">2</span>
-                    <p className="text-sm">{language === 'ar' ? 'اضغط على زر التوليد لرؤية السحر' : 'Click the Generate button to see the magic'}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex flex-col items-center gap-2 opacity-50">
-                <ArrowDownCircle className="w-6 h-6 text-slate-400 animate-bounce" />
-                <p className="text-[10px] font-black uppercase tracking-widest">{language === 'ar' ? 'ابدأ من هنا' : 'START FROM HERE'}</p>
-              </div>
-            </div>
-          )}
         </div>
 
         {imageUrl && !isGenerating && (
           <div className="p-6 md:p-8 border-t dark:border-white/5 bg-white dark:bg-slate-900 space-y-8 animate-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { id: 'rem', name: t.removeBg, icon: <Eraser className="w-5 h-5" />, color: 'bg-rose-500', action: onRemoveBackground },
-                  { id: 'up', name: t.upscale, icon: <Maximize2 className="w-5 h-5" />, color: 'bg-emerald-500', action: onUpscale },
-                  { id: 'wat', name: t.removeWatermark, icon: <Scissors className="w-5 h-5" />, color: 'bg-amber-500', action: onRemoveWatermark },
-                  { id: 'res', name: t.restore, icon: <ZapIcon className="w-5 h-5" />, color: 'bg-indigo-600', action: onRestore }
+                  { id: 'rem', name: t.removeBg, icon: <Eraser className="w-5 h-5" />, color: 'bg-rose-500', action: onRemoveBackground, tip: isRtl ? 'إزالة الخلفية والحصول على PNG شفاف' : 'Remove BG for transparent PNG' },
+                  { id: 'up', name: t.upscale, icon: <Maximize2 className="w-5 h-5" />, color: 'bg-emerald-500', action: onUpscale, tip: isRtl ? 'رفع جودة الصورة إلى 4K' : 'Upscale image to 4K' },
+                  { id: 'wat', name: t.removeWatermark, icon: <Scissors className="w-5 h-5" />, color: 'bg-amber-500', action: onRemoveWatermark, tip: isRtl ? 'إخفاء العلامات المائية المزعجة' : 'Hide annoying watermarks' },
+                  { id: 'res', name: t.restore, icon: <ZapIcon className="w-5 h-5" />, color: 'bg-indigo-600', action: onRestore, tip: isRtl ? 'إعادة إحياء الصور القديمة والتالفة' : 'Revive old/damaged photos' }
                 ].map(tool => (
-                  <button key={tool.id} onClick={tool.action} className="group flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/40 border dark:border-white/5 rounded-2xl hover:bg-white dark:hover:bg-slate-800 hover:shadow-xl transition-all active:scale-95">
-                    <div className={`${tool.color} text-white p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform`}>
-                      {tool.icon}
-                    </div>
-                    <span className="text-sm font-black text-slate-800 dark:text-white">{tool.name}</span>
-                  </button>
+                  <div key={tool.id} className="group relative">
+                    <button onClick={tool.action} className="w-full flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/40 border dark:border-white/5 rounded-2xl hover:bg-white dark:hover:bg-slate-800 hover:shadow-xl transition-all active:scale-95">
+                      <div className={`${tool.color} text-white p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform`}>
+                        {tool.icon}
+                      </div>
+                      <span className="text-sm font-black text-slate-800 dark:text-white">{tool.name}</span>
+                    </button>
+                    {showTooltips && (
+                      <div className={`absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none text-center border border-white/10`}>
+                        {tool.tip}
+                      </div>
+                    )}
+                  </div>
                 ))}
             </div>
           </div>
@@ -212,25 +188,15 @@ const MainPreview: React.FC<MainPreviewProps> = ({
               <div className={`absolute top-4 right-4 p-2 ${tool.color} text-white rounded-lg opacity-80 group-hover:opacity-100 transition-opacity`}>
                  {tool.icon}
               </div>
+              {showTooltips && (
+                <div className={`absolute top-14 right-4 w-32 p-2 bg-slate-900/90 backdrop-blur-md text-white text-[9px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none border border-white/5`}>
+                  {isRtl ? tool.descAr : tool.descEn}
+                </div>
+              )}
             </div>
           ))}
         </div>
       </div>
-
-      {/* Fullscreen Overlay */}
-      {isFullscreen && imageUrl && (
-        <div className="fixed inset-0 z-[1000] bg-slate-950/98 backdrop-blur-3xl flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <button onClick={() => setIsFullscreen(false)} className="absolute top-8 right-8 p-4 bg-white/10 text-white rounded-full hover:bg-rose-500 transition-all">
-            <X className="w-8 h-8" />
-          </button>
-          <img src={imageUrl} className="max-w-full max-h-full object-contain rounded-3xl shadow-2xl animate-in zoom-in-95 duration-500" alt="Full" />
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4">
-            <button onClick={handleDownload} className="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black flex items-center gap-3 hover:scale-105 transition-all">
-              <Download className="w-5 h-5" /> {t.download}
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 };

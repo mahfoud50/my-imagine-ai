@@ -2,7 +2,7 @@
 import React from 'react';
 import { 
   Upload, X, Zap, MessageSquare, 
-  Loader2 as LoaderIcon
+  Loader2 as LoaderIcon, HelpCircle
 } from 'lucide-react';
 import { GenerationSettings, Language, GenerationType } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -16,13 +16,13 @@ interface SidebarProps {
   onClose?: () => void;
   onOpenApiKey?: () => void;
   onLogout?: () => void;
-  // Added onQuickAction prop to match App.tsx usage
   onQuickAction?: (type: GenerationType, customPrompt?: string) => void;
+  showTooltips?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
   settings, setSettings, onGenerate, isGenerating, language,
-  onClose, onOpenApiKey, onLogout, onQuickAction
+  onClose, onOpenApiKey, onLogout, onQuickAction, showTooltips
 }) => {
   const t = translations[language];
 
@@ -35,14 +35,26 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const isRtl = language === 'ar';
+
   return (
     <aside className="w-80 max-w-[90vw] m-6 h-[calc(100vh-3rem)] bg-white/80 dark:bg-slate-900/90 backdrop-blur-2xl border dark:border-white/5 rounded-[3rem] flex flex-col overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] shadow-indigo-500/5 relative z-50 transition-all duration-500">
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
         {/* Step 1: Prompt */}
         <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-rose-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-rose-500/20">1</div>
-            <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.promptLabel}</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-rose-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-rose-500/20">1</div>
+              <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.promptLabel}</h3>
+            </div>
+            {showTooltips && (
+              <div className="group relative">
+                <HelpCircle className="w-4 h-4 text-slate-300 cursor-help" />
+                <div className={`absolute bottom-full mb-2 ${isRtl ? 'right-0' : 'left-0'} w-48 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none`}>
+                  {isRtl ? 'اكتب وصفاً دقيقاً لما تريد رؤيته في الصورة' : 'Write a detailed description of what you want to see'}
+                </div>
+              </div>
+            )}
           </div>
           <div className="relative group">
             <textarea
@@ -57,9 +69,19 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Step 2: Upload Reference */}
         <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-emerald-500/20">2</div>
-            <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.uploadRef}</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-emerald-500/20">2</div>
+              <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.uploadRef}</h3>
+            </div>
+            {showTooltips && (
+              <div className="group relative">
+                <HelpCircle className="w-4 h-4 text-slate-300 cursor-help" />
+                <div className={`absolute bottom-full mb-2 ${isRtl ? 'right-0' : 'left-0'} w-48 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none`}>
+                  {isRtl ? 'ارفع صورة لتوجيه الذكاء الاصطناعي في الأسلوب أو التكوين' : 'Upload an image to guide AI in style or composition'}
+                </div>
+              </div>
+            )}
           </div>
           <div className="relative border-2 border-dashed border-slate-200 dark:border-white/10 rounded-2xl p-2 hover:border-indigo-500 transition-all cursor-pointer bg-slate-50/50 dark:bg-slate-800/30 group">
             {settings.uploadedImage ? (
@@ -78,16 +100,13 @@ const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
         </section>
-
-        {/* Space reserved for clarity */}
-        <div className="h-10"></div>
       </div>
 
-      {/* Primary Action Section - Background and border removed as requested */}
-      <div className="p-6 rounded-b-[3rem]">
+      <div className="p-6 mb-4">
         <button 
           onClick={onGenerate} 
           disabled={isGenerating} 
+          title={showTooltips ? (isRtl ? 'بدأ عملية التوليد السحابية' : 'Start cloud generation process') : ''}
           className={`w-full py-6 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 ${isGenerating ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-rose-500/20'}`}
         >
           {isGenerating ? <LoaderIcon className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-current" />}
