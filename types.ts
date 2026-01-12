@@ -78,7 +78,9 @@ export interface SiteConfig {
   manager_dob: string;
   manager_location: string;
   manager_pic: string;
-  global_api_key?: string; // الحقل الجديد للمفتاح العالمي
+  site_logo?: string;
+  site_logo_scale?: number; // الحقل الجديد لتكبير الشعار
+  global_api_key?: string; 
   global_story?: {
     id: string;
     image: string;

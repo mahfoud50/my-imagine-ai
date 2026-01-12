@@ -1,12 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Settings as SettingsIcon, Bell, Key, LogOut, ChevronDown, CheckCircle, Clock, Sparkles, X, Languages, Menu, Zap, MessageSquare } from 'lucide-react';
+import { User, Settings as SettingsIcon, Bell, Key, LogOut, ChevronDown, CheckCircle, Clock, Sparkles, X, Languages, Menu, Zap, MessageSquare, Shield } from 'lucide-react';
 import { Language, AppNotification, SiteConfig } from '../types.ts';
 import { translations } from '../translations.ts';
 
 interface HeaderProps {
   credits: number;
-  user: { name: string; username?: string; profilePic?: string; story?: { isNew: boolean } } | null;
+  user: { name: string; username?: string; profilePic?: string; isAdmin: boolean; story?: { isNew: boolean } } | null;
   isPaid?: boolean;
   language: Language;
   siteConfig?: SiteConfig;
@@ -15,30 +15,35 @@ interface HeaderProps {
   onToggleLang: () => void;
   onUpgrade?: () => void;
   onProfile?: () => void;
-  onOpenStory?: () => void; // إضافة خاصية فتح الستوري
+  onOpenStory?: () => void; 
   onCredits?: () => void;
   onSettings?: () => void;
   onLogout?: () => void;
   onToggleSidebar?: () => void;
+  onAdmin?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   credits, user, isPaid, language, siteConfig, notifications, onMarkAllRead, 
-  onToggleLang, onUpgrade, onProfile, onOpenStory, onCredits, onSettings, onLogout, onToggleSidebar 
+  onToggleLang, onUpgrade, onProfile, onOpenStory, onCredits, onSettings, onLogout, onToggleSidebar, onAdmin 
 }) => {
   const t = translations[language];
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const hasUnread = notifications.some(n => !n.isRead);
   
-  // Logic to show story ring: Either a new personal story OR a new global story from CEO
   const lastGlobalId = localStorage.getItem('last_seen_global_story_id');
   const hasNewGlobalStory = siteConfig?.global_story?.active && siteConfig.global_story.id !== lastGlobalId;
   const hasNewPersonalStory = user?.story?.isNew;
   const hasNewStory = hasNewGlobalStory || hasNewPersonalStory;
+
+  useEffect(() => {
+    setLogoError(false);
+  }, [siteConfig?.site_logo]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -95,10 +100,24 @@ const Header: React.FC<HeaderProps> = ({
           <Menu className="w-6 h-6" />
         </button>
 
-        <div className="flex flex-col">
-          <span className="text-[18px] md:text-[24px] font-bold text-white tracking-[1px] md:tracking-[2px] font-sans whitespace-nowrap">
-            IMAGINE <span className="text-[#00d2ff]" style={{ textShadow: '0 0 8px rgba(0, 210, 255, 0.6)' }}>AI</span>
-          </span>
+        <div className="flex items-center">
+          {siteConfig?.site_logo && !logoError ? (
+            <img 
+              src={siteConfig.site_logo} 
+              alt="Logo" 
+              className="w-auto object-contain transition-all hover:scale-105 active:scale-95"
+              style={{ 
+                height: `${(siteConfig.site_logo_scale || 1) * 44}px`, 
+                maxHeight: '75px',
+                minHeight: '20px'
+              }}
+              onError={() => setLogoError(true)}
+            />
+          ) : (
+            <span className="text-[18px] md:text-[24px] font-bold text-white tracking-[1px] md:tracking-[2px] font-sans whitespace-nowrap">
+              IMAGINE <span className="text-[#00d2ff]" style={{ textShadow: '0 0 8px rgba(0, 210, 255, 0.6)' }}>AI</span>
+            </span>
+          )}
         </div>
       </div>
 
@@ -159,7 +178,6 @@ const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* User Account Menu Container */}
         <div className="flex items-center gap-3 relative" ref={dropdownRef}>
           <div className="flex items-center gap-2 md:gap-3 cursor-pointer group" onClick={handleProfileClick}>
             <div className={`relative p-1 rounded-full transition-all duration-500 ${hasNewStory ? 'bg-rose-600 animate-spin-slow p-[3px]' : ''}`}>
@@ -192,7 +210,6 @@ const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Floating Dropdown Menu - Small & Compact Design */}
           {isProfileOpen && (
             <div className={`absolute top-[calc(100%+15px)] ${language === 'ar' ? 'left-0 md:left-2' : 'right-0 md:right-2'} w-56 md:w-64 bg-[#1e293b] rounded-[1.75rem] shadow-[0_30px_70px_-15px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-300 z-[100] ${language === 'ar' ? 'text-right' : 'text-left'}`}>
               <div className="p-3 bg-slate-800/30 border-b border-white/5">
@@ -203,6 +220,15 @@ const Header: React.FC<HeaderProps> = ({
                  </div>
               </div>
               <div className="p-2 space-y-0.5">
+                {user?.isAdmin && (
+                  <>
+                    <button onClick={() => handleAction(onAdmin)} className={`w-full flex items-center ${language === 'ar' ? 'justify-end' : 'justify-start'} gap-3 px-3 py-2.5 text-xs text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all group font-black`}>
+                       <span className="group-hover:text-amber-300 transition-colors">{t.adminPanel}</span>
+                       <Shield className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                    </button>
+                    <div className="h-px bg-white/5 mx-3 my-1"></div>
+                  </>
+                )}
                 <button onClick={() => handleAction(onProfile)} className={`w-full flex items-center ${language === 'ar' ? 'justify-end' : 'justify-start'} gap-3 px-3 py-2.5 text-xs text-slate-300 hover:bg-white/5 rounded-xl transition-all group`}>
                    <span className="font-bold group-hover:text-white transition-colors">{t.profile}</span>
                    <User className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />

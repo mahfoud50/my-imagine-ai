@@ -6,98 +6,99 @@ import MainPreview from './components/MainPreview.tsx';
 import RightPanel from './components/RightPanel.tsx';
 import Header from './components/Header.tsx';
 import AccountModal, { AccountTab } from './components/AccountModal.tsx';
-import AdminPanel from './components/AdminPanel.tsx';
 import AuthScreen from './components/AuthScreen.tsx';
-import ToastNotification from './components/ToastNotification.tsx';
+import AdminPanel from './components/AdminPanel.tsx';
 import StoryViewer from './components/StoryViewer.tsx';
+import ToastNotification from './components/ToastNotification.tsx';
+import ApiKeyModal from './components/ApiKeyModal.tsx';
 import { GoogleGenAI } from "@google/genai";
-import { 
-  Terminal, ShieldCheck, Activity, 
-  Layers, Power, RefreshCw, PanelTop, PanelBottom, AlignCenter, Code, Globe, Cpu
-} from 'lucide-react';
+import { Fingerprint } from 'lucide-react';
 
-interface UserData {
-  email: string;
-  name: string;
-  username: string;
-  profilePic?: string;
-  isAdmin: boolean;
-  story?: { image: string; message: string; timestamp: number; isNew: boolean };
-}
+const safeParse = (key: string, defaultValue: any) => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch (e) {
+    console.error(`Error parsing localStorage key "${key}":`, e);
+    return defaultValue;
+  }
+};
 
 const App: React.FC = () => {
-  const [userSettings, setUserSettings] = useState<UserSettings>(() => {
-    const saved = localStorage.getItem('user_settings_v1');
-    return saved ? JSON.parse(saved) : {
-      theme: 'dark', language: 'ar', fontFamily: 'modern', fontSize: 'medium',
-      notificationSounds: true, autoSaveSession: true, imageQuality: 'high',
-      modelStrategy: 'accurate', showTooltips: true, contentProtection: false,
-      privacyMode: false, advancedMode: false, manualApiKey: ''
-    };
+  const [user, setUser] = useState<{ email: string; name: string; username: string; isAdmin: boolean; profilePic?: string } | null>(() => safeParse('imagine_ai_user', null));
+  const [language, setLanguage] = useState<Language>(() => safeParse('imagine_ai_lang', 'ar'));
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>(() => safeParse('imagine_ai_history', []));
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => safeParse('imagine_ai_notifs', []));
+  const [messages, setMessages] = useState<Message[]>(() => safeParse('imagine_ai_messages', []));
+  const [toast, setToast] = useState<AppNotification | null>(null);
+
+  const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => safeParse('imagine_ai_config', {
+    seo_title: 'Imagine AI',
+    seo_desc: 'Professional AI Art',
+    global_html: '',
+    custom_css: '',
+    custom_js: '',
+    ux_blur_intensity: '20px',
+    ux_accent_color: '#6366f1',
+    manager_name: 'Ahmad kharbicha',
+    manager_dob: 'Jan 1, 1987',
+    manager_location: 'SAHTEREANN',
+    manager_pic: 'https://i.pravatar.cc/150?u=manager',
+    site_logo_scale: 1.0,
+    global_api_key: ''
+  }));
+
+  const [userSettings, setUserSettings] = useState<UserSettings>(() => safeParse('imagine_ai_settings', {
+    theme: 'dark',
+    language: 'ar',
+    fontFamily: 'modern',
+    fontSize: 'medium',
+    notificationSounds: true,
+    autoSaveSession: true,
+    imageQuality: 'high',
+    modelStrategy: 'artistic',
+    showTooltips: true,
+    contentProtection: false,
+    privacyMode: false,
+    advancedMode: false
+  }));
+
+  const [settings, setSettings] = useState<GenerationSettings>({
+    prompt: '',
+    model: 'Plus',
+    aspectRatio: '1:1',
+    steps: 30,
+    uploadedImage: null
   });
 
-  const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => {
-    const saved = localStorage.getItem('site_config_sovereign_v9');
-    return saved ? JSON.parse(saved) : {
-      seo_title: 'Imagine AI - Professional Studio',
-      seo_desc: 'Universal AI Control Platform.',
-      global_html: '<div class="bg-black/80 text-white text-[10px] py-1 text-center font-black uppercase tracking-[0.3em] backdrop-blur-md border-b border-white/10">Sovereign Engine v8.0 Connected</div>',
-      custom_css: '',
-      custom_js: 'console.log("System Ready.");',
-      php_logic: '',
-      ux_blur_intensity: '20px',
-      ux_accent_color: '#6366f1',
-      manager_name: 'Ahmad kharbicha',
-      manager_dob: '1 / 1 / 1987',
-      manager_location: 'SAHTEREANN',
-      manager_pic: 'https://i.pravatar.cc/150?u=manager',
-      global_api_key: '' 
-    };
-  });
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [accountTab, setAccountTab] = useState<AccountTab>('profile');
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isStoryOpen, setIsStoryOpen] = useState(false);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
 
-  const language = userSettings.language;
-  const setLanguage = (lang: Language) => {
-    setUserSettings(prev => ({ ...prev, language: lang }));
-  };
-
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
-  const [isStoryViewerOpen, setIsStoryViewerOpen] = useState(false);
-  const [activeStory, setActiveStory] = useState<{ image: string; message: string; timestamp: number } | null>(null);
-  
-  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
-    const saved = localStorage.getItem('app_notifications_v1');
-    if (saved) return JSON.parse(saved);
-    return [];
-  });
-
-  const [activeToast, setActiveToast] = useState<AppNotification | null>(null);
-
-  const userSpecificNotifications = useMemo(() => {
-    if (!currentUser) return [];
-    return notifications.filter(n => n.ownerEmail === currentUser.email || n.type === 'system');
-  }, [notifications, currentUser]);
-
+  // تحديث التخزين المحلي تلقائياً عند تغيير المستخدم
   useEffect(() => {
-    localStorage.setItem('app_notifications_v1', JSON.stringify(notifications));
-  }, [notifications]);
-
-  const addNotification = (title: string, description: string, type: AppNotification['type'], targetEmail?: string) => {
-    const emailToUse = targetEmail || currentUser?.email;
-    if (!emailToUse && type !== 'system') return;
-
-    if (userSettings.notificationSounds) {
-      try {
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        audio.volume = 0.4;
-        audio.play().catch(() => {});
-      } catch (e) {}
+    if (user) {
+      localStorage.setItem('imagine_ai_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('imagine_ai_user');
     }
+  }, [user]);
 
+  useEffect(() => localStorage.setItem('imagine_ai_lang', JSON.stringify(language)), [language]);
+  useEffect(() => localStorage.setItem('imagine_ai_history', JSON.stringify(history)), [history]);
+  useEffect(() => localStorage.setItem('imagine_ai_notifs', JSON.stringify(notifications)), [notifications]);
+  useEffect(() => localStorage.setItem('imagine_ai_messages', JSON.stringify(messages)), [messages]);
+  useEffect(() => localStorage.setItem('imagine_ai_config', JSON.stringify(siteConfig)), [siteConfig]);
+  useEffect(() => localStorage.setItem('imagine_ai_settings', JSON.stringify(userSettings)), [userSettings]);
+
+  const addNotification = (title: string, description: string, type: 'system' | 'success' | 'update' | 'message' = 'system') => {
     const newNotif: AppNotification = {
       id: Date.now().toString(),
       title,
@@ -105,266 +106,210 @@ const App: React.FC = () => {
       time: new Date(),
       isRead: false,
       type,
-      ownerEmail: emailToUse
+      ownerEmail: user?.email
     };
-
-    setNotifications(prev => [newNotif, ...prev]);
-    if (emailToUse === currentUser?.email || type === 'system') {
-      setActiveToast(newNotif);
-    }
+    setNotifications(prev => [newNotif, ...prev].slice(0, 50));
+    setToast(newNotif);
   };
 
-  const [messages, setMessages] = useState<Message[]>(() => {
-    const saved = localStorage.getItem('admin_messages_v1');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('admin_messages_v1', JSON.stringify(messages));
-  }, [messages]);
-
-  const handleSendMessage = (content: string) => {
-    if (!currentUser) return;
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      senderName: currentUser.name,
-      senderEmail: currentUser.email,
-      content: content,
-      timestamp: new Date(),
-      isRead: false
-    };
-    setMessages(prev => [newMessage, ...prev]);
-    addNotification(language === 'ar' ? `رسالة مرسلة` : `Message Sent`, content.substring(0, 40) + '...', 'message', currentUser.email);
-  };
-
-  const handleReplyMessage = (messageId: string, replyContent: string) => {
-    setMessages(prev => prev.map(msg => {
-      if (msg.id === messageId) {
-        addNotification(language === 'ar' ? 'رد من الإدارة' : 'Reply from CEO', replyContent.substring(0, 40) + '...', 'success', msg.senderEmail);
-        return { ...msg, reply: replyContent, replyTimestamp: new Date() };
-      }
-      return msg;
-    }));
-  };
-
-  const handleOpenStory = () => {
-    if (siteConfig.global_story?.active) {
-      setActiveStory({
-        image: siteConfig.global_story.image,
-        message: siteConfig.global_story.message,
-        timestamp: Date.now()
-      });
-      setIsStoryViewerOpen(true);
-      // Mark as seen
-      localStorage.setItem('last_seen_global_story_id', siteConfig.global_story.id);
-    }
-  };
-
-  useEffect(() => {
-    localStorage.setItem('site_config_sovereign_v9', JSON.stringify(siteConfig));
-  }, [siteConfig]);
-
-  useEffect(() => {
-    document.title = siteConfig.seo_title;
-    const root = document.documentElement;
-    root.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
-    if (userSettings.theme === 'dark') root.classList.add('dark');
-    else root.classList.remove('dark');
-    root.style.setProperty('--accent', siteConfig.ux_accent_color);
-  }, [siteConfig, userSettings, language]);
-
-  const [settings, setSettings] = useState<GenerationSettings>({ prompt: '', model: 'Base', aspectRatio: '1:1', steps: 25, uploadedImage: null });
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [currentPreview, setCurrentPreview] = useState<string | null>(null);
-  const [credits, setCredits] = useState(10);
-  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
-  const [activeAccountTab, setActiveAccountTab] = useState<AccountTab>('profile');
-
-  const getActiveApiKey = () => {
-    return userSettings.manualApiKey || siteConfig.global_api_key || process.env.API_KEY;
+  const handleLogout = () => {
+    // بضبط الحالة إلى null، سيقوم React تلقائياً بإظهار شاشة AuthScreen
+    // الـ useEffect سيمسح الـ localStorage في الدورة القادمة
+    setUser(null);
   };
 
   const handleGenerate = async () => {
     if (!settings.prompt.trim()) return;
     setIsGenerating(true);
     try {
-      const activeKey = getActiveApiKey();
-      const ai = new GoogleGenAI({ apiKey: activeKey });
-      const modelName = settings.model === 'Plus' ? 'gemini-3-pro-image-preview' : 'gemini-2.5-flash-image';
-      
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
-        model: modelName, 
-        contents: { parts: [{ text: settings.prompt }] },
-        config: { 
-          seed: Math.floor(Math.random() * 10000000),
-          imageConfig: { aspectRatio: settings.aspectRatio as any } 
-        }
+        model: 'gemini-2.5-flash-image',
+        contents: {
+          parts: [
+            { text: settings.prompt },
+            ...(settings.uploadedImage ? [{ inlineData: { data: settings.uploadedImage.split(',')[1], mimeType: 'image/png' } }] : [])
+          ]
+        },
+        config: { imageConfig: { aspectRatio: settings.aspectRatio as any } }
       });
 
-      const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
-      if (imagePart?.inlineData) {
-        const url = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
-        const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: url, prompt: settings.prompt, timestamp: new Date(), model: settings.model, type: 'Generated' };
-        setHistory(prev => [newItem, ...prev]);
-        setCurrentPreview(url);
-        if (!userSettings.manualApiKey) setCredits(c => Math.max(0, c - 1));
-        addNotification(language === 'ar' ? 'تم التوليد بنجاح' : 'Success', '', 'success');
+      let newUrl = '';
+      if (response.candidates?.[0]?.content?.parts) {
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+            newUrl = `data:image/png;base64,${part.inlineData.data}`;
+            break;
+          }
+        }
       }
-    } catch (err: any) { 
-      console.error("Error:", err);
-      alert(language === 'ar' ? 'فشل في التوليد. تأكد من إعدادات مفتاح API في لوحة التحكم.' : 'Failed to generate. Check API key settings.');
-    } finally { setIsGenerating(false); }
+
+      if (newUrl) {
+        setActiveImage(newUrl);
+        setOriginalImage(newUrl);
+        const newItem: HistoryItem = {
+          id: Date.now().toString(),
+          imageUrl: newUrl,
+          prompt: settings.prompt,
+          timestamp: new Date(),
+          model: settings.model,
+          type: 'Generated'
+        };
+        setHistory(prev => [newItem, ...prev].slice(0, 20));
+        addNotification(language === 'ar' ? 'تم التوليد' : 'Generated', language === 'ar' ? 'صورتك جاهزة الآن!' : 'Your image is ready!', 'success');
+      }
+    } catch (error) {
+      addNotification('Error', 'Failed to generate.', 'system');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const handleSmartTool = async (type: GenerationType, toolPrompt: string) => {
-    const sourceImage = currentPreview || settings.uploadedImage;
+  const handleImageAction = async (type: GenerationType, customPrompt?: string) => {
+    const sourceImage = activeImage || settings.uploadedImage;
     if (!sourceImage) {
-      alert(language === 'ar' ? 'يرجى رفع صورة أولاً أو اختيار واحدة من المعرض' : 'Please upload an image first or select one from history');
+      addNotification(language === 'ar' ? 'تنبيه' : 'Notice', language === 'ar' ? 'يرجى اختيار أو رفع صورة أولاً' : 'Please select or upload an image first', 'system');
       return;
     }
-    
+
     setIsGenerating(true);
-    addNotification(language === 'ar' ? `جاري تطبيق: ${type}` : `Applying: ${type}`, '', 'system');
-    
     try {
-      const activeKey = getActiveApiKey();
-      const ai = new GoogleGenAI({ apiKey: activeKey });
-      const base64Data = sourceImage.split(',')[1];
-      const mimeType = sourceImage.split(',')[0].split(':')[1].split(';')[0];
-      
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const actionPrompts: Record<string, string> = {
+        'Cleaned': 'remove background and return as high quality png',
+        'Upscaled': 'upscale this image to high resolution and improve details',
+        'WatermarkRemoved': 'remove any watermarks or logos from this image',
+        'Restored': 'restore and fix this image, remove scratches and noise',
+        'Colorized': 'colorize this black and white image naturally',
+        'Cartoonized': 'convert this image to a high-quality cartoon 3D style',
+        'ObjectRemoved': 'remove main background objects from this image'
+      };
+
+      const prompt = customPrompt || actionPrompts[type] || 'enhance this image';
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image', 
-        contents: { 
+        model: 'gemini-2.5-flash-image',
+        contents: {
           parts: [
-            { inlineData: { data: base64Data, mimeType: mimeType } }, 
-            { text: toolPrompt }
-          ] 
+            { inlineData: { data: sourceImage.split(',')[1], mimeType: 'image/png' } },
+            { text: prompt }
+          ]
         }
       });
 
-      const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
-      if (imagePart?.inlineData) {
-        const url = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
-        const newItem: HistoryItem = { 
-          id: Date.now().toString(), 
-          imageUrl: url, 
-          prompt: toolPrompt, 
-          timestamp: new Date(), 
-          model: 'Plus', 
-          type: type 
-        };
-        setHistory(prev => [newItem, ...prev]);
-        setCurrentPreview(url);
-        addNotification(language === 'ar' ? 'تمت المعالجة بنجاح' : 'Processed successfully', '', 'success');
+      let newUrl = '';
+      if (response.candidates?.[0]?.content?.parts) {
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+            newUrl = `data:image/png;base64,${part.inlineData.data}`;
+            break;
+          }
+        }
       }
-    } catch (err) {
-      console.error("Smart Tool Error:", err);
-      alert(language === 'ar' ? 'حدث خطأ أثناء المعالجة' : 'An error occurred during processing');
-    } finally { 
-      setIsGenerating(false); 
+
+      if (newUrl) {
+        setActiveImage(newUrl);
+        const newItem: HistoryItem = {
+          id: Date.now().toString(),
+          imageUrl: newUrl,
+          prompt: prompt,
+          timestamp: new Date(),
+          model: 'Plus',
+          type: type
+        };
+        setHistory(prev => [newItem, ...prev].slice(0, 20));
+        addNotification(type, language === 'ar' ? 'تمت المعالجة بنجاح' : 'Processed successfully', 'success');
+      }
+    } catch (error) {
+      addNotification('Error', 'Processing failed.', 'system');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const handleAuth = (userData: UserData) => {
-    setCurrentUser(userData);
-    setIsLoggedIn(true);
-    if (userData.isAdmin) setIsAdminLoggedIn(true);
-    localStorage.setItem('user_auth', JSON.stringify(userData));
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('user_auth');
-    setIsLoggedIn(false);
-    setCurrentUser(null);
-    setIsAdminLoggedIn(false);
-    window.location.reload();
-  };
-
-  useEffect(() => {
-    const saved = localStorage.getItem('user_auth');
-    if (saved) handleAuth(JSON.parse(saved));
-  }, []);
-
-  if (!isLoggedIn) return <AuthScreen onLogin={handleAuth} language={language} />;
+  if (!user) return <AuthScreen onLogin={setUser} language={language} />;
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#f8fafc] dark:bg-[#0f172a]">
-      <div className="z-[100]" dangerouslySetInnerHTML={{ __html: siteConfig.global_html }} />
-      <ToastNotification toast={activeToast} onClose={() => setActiveToast(null)} language={language} />
-
+    <div className={`flex flex-col h-screen overflow-hidden ${userSettings.theme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
       <Header 
-        credits={credits} user={currentUser} language={language} 
-        siteConfig={siteConfig} notifications={userSpecificNotifications}
-        onMarkAllRead={() => setNotifications(n => n.map(it => ({...it, isRead: true})))}
-        onToggleLang={() => setLanguage(language === 'ar' ? 'en' : 'ar')} 
-        onUpgrade={() => { setActiveAccountTab('credits'); setIsAccountModalOpen(true); }}
-        onProfile={() => setIsAccountModalOpen(true)}
-        onOpenStory={handleOpenStory}
+        credits={50} user={user} language={language} siteConfig={siteConfig} notifications={notifications}
+        onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))}
+        onToggleLang={() => setLanguage(prev => prev === 'ar' ? 'en' : 'ar')}
+        onUpgrade={() => setIsApiKeyModalOpen(true)}
+        onProfile={() => { setAccountTab('profile'); setIsAccountOpen(true); }}
+        onSettings={() => { setAccountTab('settings'); setIsAccountOpen(true); }}
         onLogout={handleLogout}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        onOpenStory={() => setIsStoryOpen(true)}
+        onAdmin={() => setIsAdminOpen(true)}
       />
-      
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar 
-          settings={settings} setSettings={setSettings} onGenerate={handleGenerate} 
-          isGenerating={isGenerating} language={language} 
-          onLogout={handleLogout}
-        />
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <MainPreview 
-            imageUrl={currentPreview || settings.uploadedImage} 
-            originalImageUrl={settings.uploadedImage}
-            isGenerating={isGenerating} prompt={settings.prompt} 
-            language={language} 
-            onRemoveBackground={() => handleSmartTool('Cleaned', 'remove background from this image')}
-            onUpscale={() => handleSmartTool('Upscaled', 'upscale this image to high definition 4k')}
-            onRemoveWatermark={() => handleSmartTool('WatermarkRemoved', 'remove watermarks and text from this image')}
-            onColorize={() => handleSmartTool('Colorized', 'colorize this black and white image realistically')}
-            onRestore={() => handleSmartTool('Restored', 'restore this old damaged photo and fix scratches')}
-            onMagicEraser={() => handleSmartTool('ObjectRemoved', 'remove unwanted objects from this scene')}
-            onCartoonize={() => handleSmartTool('Cartoonized', 'convert this image into a 3D Pixar style animation')}
-            onSmartEdit={() => handleSmartTool('Edited', 'professionally edit and enhance colors and lighting')}
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {isSidebarOpen && (
+          <Sidebar 
+            settings={settings} setSettings={setSettings} onGenerate={handleGenerate} isGenerating={isGenerating} language={language}
+            onOpenApiKey={() => setIsApiKeyModalOpen(true)}
+            onLogout={handleLogout}
+            onQuickAction={handleImageAction}
           />
-        </div>
-        <RightPanel 
-          history={history} onSelect={setCurrentPreview} 
-          onDelete={(id) => setHistory(h => h.filter(i => i.id !== id))} language={language} 
+        )}
+
+        <MainPreview 
+          imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} prompt={settings.prompt} language={language}
+          onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)}
+          onRemoveBackground={() => handleImageAction('Cleaned')}
+          onUpscale={() => handleImageAction('Upscaled')}
+          onRemoveWatermark={() => handleImageAction('WatermarkRemoved')}
+          onRestore={() => handleImageAction('Restored')}
+          onColorize={() => handleImageAction('Colorized')}
+          onCartoonize={() => handleImageAction('Cartoonized')}
+          onMagicEraser={() => handleImageAction('ObjectRemoved')}
         />
+
+        {isGalleryOpen && (
+          <RightPanel 
+            history={history} onSelect={setActiveImage} onDelete={(id) => setHistory(prev => prev.filter(h => h.id !== id))} 
+            language={language} onClose={() => setIsGalleryOpen(false)}
+          />
+        )}
       </div>
 
       <AccountModal 
-        isOpen={isAccountModalOpen} onClose={() => setIsAccountModalOpen(false)} 
-        activeTab={activeAccountTab} setActiveTab={setActiveAccountTab} 
-        credits={credits} user={currentUser} language={language} 
-        userSettings={userSettings} setUserSettings={s => setUserSettings(p => ({...p, ...s}))}
-        onSendMessage={handleSendMessage} allMessages={messages}
-        siteConfig={siteConfig} onUpdateSiteConfig={c => setSiteConfig(p => ({...p, ...c}))}
+        isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} activeTab={accountTab} setActiveTab={setAccountTab} 
+        credits={50} user={user} language={language} userSettings={userSettings} setUserSettings={s => setUserSettings(prev => ({ ...prev, ...s }))}
+        siteConfig={siteConfig} onSendMessage={c => addNotification('Sent', 'Message received', 'message')}
+        allMessages={messages}
       />
 
-      {isStoryViewerOpen && activeStory && (
-        <StoryViewer 
-          story={activeStory} 
-          onClose={() => setIsStoryViewerOpen(false)} 
-          language={language} 
-          siteConfig={siteConfig} 
+      {isAdminOpen && (
+        <AdminPanel 
+          config={siteConfig} setConfig={setSiteConfig} messages={messages} setMessages={setMessages} onClose={() => setIsAdminOpen(false)} 
+          language={language} currentUser={user} setCurrentUser={setUser}
         />
       )}
 
-      {isAdminLoggedIn && (
-        <div className="fixed bottom-10 right-10 z-50">
-          <button onClick={() => setIsAdminPanelOpen(true)} className="p-6 bg-slate-900 text-white rounded-[2rem] shadow-2xl border-4 border-indigo-500/30 active:scale-95 transition-all">
-            <Terminal className="w-8 h-8" />
+      {isStoryOpen && siteConfig.global_story?.active && (
+        <StoryViewer 
+          story={{ ...siteConfig.global_story, timestamp: Date.now() }} 
+          onClose={() => { setIsStoryOpen(false); localStorage.setItem('last_seen_global_story_id', siteConfig.global_story?.id || ''); }} 
+          language={language} siteConfig={siteConfig} 
+        />
+      )}
+
+      <ApiKeyModal 
+        isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} 
+        onConfirm={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
+        onSimulateUpgrade={() => { setIsApiKeyModalOpen(false); setAccountTab('credits'); setIsAccountOpen(true); }}
+        language={language} 
+      />
+
+      <ToastNotification toast={toast} onClose={() => setToast(null)} language={language} />
+
+      {user.isAdmin && (
+        <div className="fixed bottom-4 left-4 z-[9999] opacity-0 hover:opacity-100 transition-opacity">
+          <button onClick={() => setIsAdminOpen(true)} className="p-2 bg-slate-900 text-white rounded-full">
+            <Fingerprint className="w-4 h-4" />
           </button>
         </div>
-      )}
-
-      {isAdminPanelOpen && (
-        <AdminPanel 
-          config={siteConfig} setConfig={setSiteConfig} 
-          messages={messages} setMessages={setMessages}
-          onReplyMessage={handleReplyMessage} onClose={() => setIsAdminPanelOpen(false)} 
-          language={language} currentUser={currentUser} setCurrentUser={setCurrentUser} 
-        />
       )}
     </div>
   );
