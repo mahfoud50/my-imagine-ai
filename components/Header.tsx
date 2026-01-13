@@ -37,7 +37,6 @@ const Header: React.FC<HeaderProps> = ({
 
   const hasUnread = notifications.some(n => !n.isRead);
   
-  // منطق التحقق من وجود ستوري جديد
   const checkHasNewStory = () => {
     if (!siteConfig?.global_story?.active) return false;
     try {
@@ -101,12 +100,14 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="h-20 bg-[#0f172a] border-b border-white/5 flex items-center justify-between px-2 md:px-8 z-[60] shadow-2xl relative">
-      <div className="flex items-center gap-1 md:gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
+        {/* زر الخطوط الثلاثة - تم تعديله ليظهر دائماً */}
         <button 
           onClick={onToggleSidebar}
-          className="lg:hidden p-1.5 text-slate-300 hover:bg-white/5 rounded-xl transition-all"
+          className="p-2 text-slate-300 hover:bg-white/10 hover:text-indigo-400 rounded-xl transition-all border border-transparent hover:border-white/5"
+          aria-label="Toggle Sidebar"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-5 h-5 md:w-6 md:h-6" />
         </button>
 
         <div className="flex items-center">
@@ -117,7 +118,7 @@ const Header: React.FC<HeaderProps> = ({
               className="w-auto object-contain transition-all hover:scale-105 active:scale-95"
               style={{ 
                 height: `${(siteConfig.site_logo_scale || 1) * 32}px`, 
-                maxHeight: '200px', // زيادة الارتفاع الأقصى للسماح بالتكبير الجديد
+                maxHeight: '200px',
                 minHeight: '14px'
               }}
               onError={() => setLogoError(true)}

@@ -55,12 +55,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       w-80 max-w-[85vw] h-full lg:h-[calc(100vh-5rem)] 
       bg-white dark:bg-slate-900 backdrop-blur-2xl border-x lg:border dark:border-white/5 
       lg:m-4 lg:rounded-[2.5rem] flex flex-col overflow-hidden 
-      shadow-2xl z-[60] transition-transform duration-500 ease-in-out
-      ${isOpen ? 'translate-x-0' : (isRtl ? 'translate-x-full' : '-translate-x-full')}
-      lg:translate-x-0 ${!isOpen && 'lg:hidden'}
+      shadow-2xl z-[60] transition-all duration-500 ease-in-out
+      ${isOpen ? 'translate-x-0 opacity-100' : (isRtl ? 'translate-x-full opacity-0 pointer-events-none' : '-translate-x-full opacity-0 pointer-events-none')}
+      ${!isOpen ? 'w-0 m-0 border-0' : 'w-80'}
     `}>
-      {/* Header for Mobile */}
-      <div className="flex items-center justify-between p-6 border-b dark:border-white/5 lg:hidden">
+      {/* Header for Mobile/Sidebar control */}
+      <div className="flex items-center justify-between p-6 border-b dark:border-white/5">
         <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-widest text-xs">{t.promptLabel}</h3>
         <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all">
           <X className="w-5 h-5 text-slate-400" />
@@ -121,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </section>
       </div>
 
-      <div className="p-6 border-t dark:border-white/5 lg:border-0 bg-white dark:bg-slate-900 lg:bg-transparent">
+      <div className="p-6 border-t dark:border-white/5 bg-white dark:bg-slate-900 lg:bg-transparent">
         <button 
           onClick={onGenerate} 
           disabled={isGenerating || !settings.prompt.trim()} 

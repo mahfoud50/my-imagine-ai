@@ -10,10 +10,41 @@ import AuthScreen from './components/AuthScreen.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
 import StoryViewer from './components/StoryViewer.tsx';
 import ToastNotification from './components/ToastNotification.tsx';
-import { GoogleGenAI } from "@google/genai";
+import SpeechModal from './components/SpeechModal.tsx';
+import { GoogleGenAI, Modality } from "@google/genai";
 import { Fingerprint } from 'lucide-react';
 import { translations } from './translations.ts';
 import { removeBackground } from "@imgly/background-removal";
+
+// Helper functions for audio processing
+function decode(base64: string) {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function decodeAudioData(
+  data: Uint8Array,
+  ctx: AudioContext,
+  sampleRate: number,
+  numChannels: number,
+): Promise<AudioBuffer> {
+  const dataInt16 = new Int16Array(data.buffer);
+  const frameCount = dataInt16.length / numChannels;
+  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+
+  for (let channel = 0; channel < numChannels; channel++) {
+    const channelData = buffer.getChannelData(channel);
+    for (let i = 0; i < frameCount; i++) {
+      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    }
+  }
+  return buffer;
+}
 
 const safeParse = (key: string, defaultValue: any) => {
   try {
@@ -54,6 +85,8 @@ const App: React.FC = () => {
   }));
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSpeechGenerating, setIsSpeechGenerating] = useState(false);
+  const [isSpeechModalOpen, setIsSpeechModalOpen] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [toast, setToast] = useState<AppNotification | null>(null);
   const [activeImage, setActiveImage] = useState<string | null>(null);
@@ -86,6 +119,58 @@ const App: React.FC = () => {
     setToast(newNotif);
   }, []);
 
+  const ensureApiKey = async () => {
+    // @ts-ignore
+    const hasKey = await window.aistudio?.hasSelectedApiKey();
+    if (!hasKey) {
+      // @ts-ignore
+      await window.aistudio?.openSelectKey();
+      return true; // Proceed assuming selection or handling
+    }
+    return true;
+  };
+
+  const handleGenerateSpeech = async (text: string, voice: string) => {
+    if (!text.trim()) return;
+    await ensureApiKey();
+    setIsSpeechGenerating(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: `Say clearly: ${text}` }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: voice || 'Kore' },
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        const audioBuffer = await decodeAudioData(decode(base64Audio), audioCtx, 24000, 1);
+        const source = audioCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioCtx.destination);
+        source.start();
+        addNotification(language === 'ar' ? 'تم التوليد' : 'Generated', language === 'ar' ? 'جاري تشغيل الصوت الآن' : 'Playing audio now', 'success');
+      }
+    } catch (err: any) {
+      console.error(err);
+      if (err.message?.includes("Requested entity was not found")) {
+        // @ts-ignore
+        await window.aistudio?.openSelectKey();
+      }
+      addNotification('Error', language === 'ar' ? 'فشل توليد الصوت' : 'Failed to generate speech', 'system');
+    } finally {
+      setIsSpeechGenerating(false);
+    }
+  };
+
   const handleImageAction = useCallback(async (type: GenerationType, customPrompt?: string) => {
     const sourceImage = activeImage || settings.uploadedImage;
     if (!sourceImage) {
@@ -116,22 +201,24 @@ const App: React.FC = () => {
     }
 
     try {
+      await ensureApiKey();
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-      const prompt = customPrompt || (language === 'ar' ? 'تحسين جودة الصورة' : 'Enhance image quality');
-      const mimeType = sourceImage.split(';')[0].split(':')[1] || 'image/ se64Data = sourceImage.split(',')[1];
+      const promptText = customPrompt || (language === 'ar' ? 'تحسين جودة الصورة' : 'Enhance image quality');
+      const mimeType = sourceImage.split(';')[0].split(':')[1] || 'image/png';
+      const base64Data = sourceImage.split(',')[1];
       
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
+        model: 'gemini-3-pro-image-preview', // Upgrade for actions requested
         contents: { 
           parts: [
             { inlineData: { data: base64Data, mimeType } }, 
-            { text: prompt }
+            { text: promptText }
           ] 
         },
         config: {
-          systemInstruction: "You are a professional image editing model. Your output must be a single generated image based on the input and instructions. No text allowed.",
           imageConfig: {
             aspectRatio: (settings.aspectRatio as any) || "1:1",
+            imageSize: "1K"
           }
         }
       });
@@ -148,13 +235,15 @@ const App: React.FC = () => {
 
       if (resultUrl) {
         setActiveImage(resultUrl);
-        const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: resultUrl, prompt, timestamp: new Date(), model: 'Plus', type };
+        const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: resultUrl, prompt: promptText, timestamp: new Date(), model: 'Plus', type };
         setHistory(prev => [newItem, ...prev].slice(0, 30));
-      } else {
-        addNotification('AI Status', language === 'ar' ? 'فشل التعديل، جرب وصفاً آخر' : 'Editing failed, try another prompt', 'system');
       }
     } catch (error: any) { 
       console.error("Action error:", error);
+      if (error.message?.includes("Requested entity was not found")) {
+        // @ts-ignore
+        await window.aistudio?.openSelectKey();
+      }
       addNotification('Error', language === 'ar' ? 'فشلت معالجة الصورة' : 'Image processing failed', 'system'); 
     }
     finally { setIsGenerating(false); }
@@ -165,19 +254,20 @@ const App: React.FC = () => {
     if (!p.trim()) return;
     
     setIsGenerating(true);
-    setActiveImage(null); // مسح الصورة السابقة لبدء دورة جديدة
+    setActiveImage(null);
     
     try {
+      await ensureApiKey();
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
       const finalPrompt = isLogo ? `Generate a professional high-quality logo for: ${p}` : p;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
+        model: 'gemini-3-pro-image-preview', // High quality requested resolution 2K
         contents: { parts: [{ text: finalPrompt }] },
         config: {
-          systemInstruction: "You are an expert artist model. ALWAYS generate an image as output. Never respond with text only.",
           imageConfig: {
             aspectRatio: (settings.aspectRatio as any) || "1:1",
+            imageSize: "2K"
           }
         }
       });
@@ -201,11 +291,13 @@ const App: React.FC = () => {
            localStorage.setItem('imagine_ai_history', JSON.stringify(updated));
            return updated;
         });
-      } else {
-        addNotification('AI Status', language === 'ar' ? 'لم يتم توليد صورة، جرب وصفاً أدق' : 'No image generated, try a more detailed prompt', 'system');
       }
     } catch (e: any) { 
       console.error("Generation error:", e);
+      if (e.message?.includes("Requested entity was not found")) {
+        // @ts-ignore
+        await window.aistudio?.openSelectKey();
+      }
       addNotification('Error', language === 'ar' ? 'فشل توليد الصورة' : 'Failed to generate image', 'system'); 
     }
     finally { setIsGenerating(false); }
@@ -257,6 +349,7 @@ const App: React.FC = () => {
           onVirtualTryOn={() => handleImageAction('VirtualTryOn')} 
           onAddSunglasses={() => handleImageAction('AddSunglasses')} 
           onCreateLogo={() => { const n = prompt(translations[language].logoPrompt); if (n) handleGenerate(`Logo for ${n}`, true); }} 
+          onTextToSpeech={() => setIsSpeechModalOpen(true)}
         />
         <RightPanel isOpen={isGalleryOpen} history={history} onSelect={setActiveImage} onDelete={(id) => setHistory(h => h.filter(x => x.id !== id))} language={language} onClose={() => setIsGalleryOpen(false)} />
       </div>
@@ -276,6 +369,8 @@ const App: React.FC = () => {
         <StoryViewer story={{...siteConfig.global_story, timestamp: Date.now()}} onClose={() => { setIsStoryOpen(false); const seen = JSON.parse(localStorage.getItem('seen_stories') || '[]'); if (!seen.includes(siteConfig.global_story?.id)) seen.push(siteConfig.global_story?.id); localStorage.setItem('seen_stories', JSON.stringify(seen)); }} language={language} siteConfig={siteConfig} />
       )}
       <ToastNotification toast={toast} onClose={() => setToast(null)} language={language} />
+      {isSpeechModalOpen && <SpeechModal isOpen={isSpeechModalOpen} onClose={() => setIsSpeechModalOpen(false)} onGenerate={handleGenerateSpeech} language={language} isGenerating={isSpeechGenerating} />}
+      
       {user?.isAdmin && (
         <div className="fixed bottom-4 left-4 z-[9999] opacity-0 hover:opacity-100 transition-opacity">
           <button onClick={() => setIsAdminOpen(true)} className="p-2 bg-slate-900 text-white rounded-full shadow-lg border border-white/10"><Fingerprint className="w-5 h-5" /></button>
@@ -286,5 +381,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-png';
-      const ba

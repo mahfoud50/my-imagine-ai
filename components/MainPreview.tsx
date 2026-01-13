@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Maximize2, Download, Layers, Eraser, Sparkles, History,
   Loader2, Scissors, X, Palette, Wind, Smile, Zap as ZapIcon, 
-  Wand2, ChevronRight, Brush, Image as ImageIcon, Shirt, Eye, PenTool
+  Wand2, ChevronRight, Brush, Image as ImageIcon, Shirt, Eye, PenTool, Mic2
 } from 'lucide-react';
 import { Language } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -26,6 +26,7 @@ interface MainPreviewProps {
   onVirtualTryOn?: () => void;
   onAddSunglasses?: () => void;
   onCreateLogo?: () => void;
+  onTextToSpeech?: () => void;
   onToggleGallery?: () => void;
 }
 
@@ -33,7 +34,7 @@ const MainPreview: React.FC<MainPreviewProps> = ({
   imageUrl, originalImageUrl, isGenerating, loadingStep = 0, prompt, language,
   onRemoveBackground, onUpscale, onRemoveWatermark, onColorize,
   onMagicEraser, onCartoonize, onRestore, onSmartEdit, onVirtualTryOn, onAddSunglasses, onCreateLogo,
-  onToggleGallery
+  onTextToSpeech, onToggleGallery
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const t = translations[language];
@@ -52,20 +53,21 @@ const MainPreview: React.FC<MainPreviewProps> = ({
 
   const smartTools = useMemo(() => [
     { id: 1, name: t.logoCreation, tag: 'Branding', action: onCreateLogo, image: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=400', icon: <PenTool className="w-4 h-4" />, color: 'bg-blue-600' },
-    { id: 2, name: t.smartEdit, tag: 'AI Power', action: onSmartEdit, image: 'https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?w=400', icon: <Wand2 className="w-4 h-4" />, color: 'bg-indigo-600' },
-    { id: 3, name: t.removeBg, tag: 'One-Click', action: onRemoveBackground, image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400', icon: <Eraser className="w-4 h-4" />, color: 'bg-rose-500' },
-    { id: 4, name: t.upscale, tag: '4K HD', action: onUpscale, image: 'https://images.unsplash.com/photo-1542744094-24638eff58bb?w=400', icon: <Maximize2 className="w-4 h-4" />, color: 'bg-emerald-500' },
-    { id: 5, name: t.virtualTryOn, tag: 'Try clothes', action: onVirtualTryOn, image: 'https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?w=400', icon: <Shirt className="w-4 h-4" />, color: 'bg-indigo-500' },
-    { id: 6, name: t.addSunglasses, tag: 'Summer Vibes', action: onAddSunglasses, image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400', icon: <Eye className="w-4 h-4" />, color: 'bg-amber-500' },
-    { id: 7, name: t.removeWatermark, tag: 'Clean Content', action: onRemoveWatermark, image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400', icon: <Scissors className="w-4 h-4" />, color: 'bg-amber-500' },
-    { id: 8, name: t.colorize, tag: 'Classic', action: onColorize, image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400', icon: <Palette className="w-4 h-4" />, color: 'bg-indigo-500' },
-    { id: 9, name: t.magicEraser, tag: 'Retouch', action: onMagicEraser, image: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=400', icon: <Wind className="w-4 h-4" />, color: 'bg-rose-500' },
-    { id: 10, name: t.cartoonize, tag: '3D Art', action: onCartoonize, image: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=400', icon: <Smile className="w-4 h-4" />, color: 'bg-emerald-500' },
-    { id: 11, name: t.restore, tag: 'Memory Fix', action: onRestore, image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400', icon: <ZapIcon className="w-4 h-4" />, color: 'bg-amber-500' }
+    { id: 2, name: t.textToSpeech, tag: 'AI Voice', action: onTextToSpeech, image: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=400', icon: <Mic2 className="w-4 h-4" />, color: 'bg-indigo-600' },
+    { id: 3, name: t.smartEdit, tag: 'AI Power', action: onSmartEdit, image: 'https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?w=400', icon: <Wand2 className="w-4 h-4" />, color: 'bg-indigo-600' },
+    { id: 4, name: t.removeBg, tag: 'One-Click', action: onRemoveBackground, image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400', icon: <Eraser className="w-4 h-4" />, color: 'bg-rose-500' },
+    { id: 5, name: t.upscale, tag: '4K HD', action: onUpscale, image: 'https://images.unsplash.com/photo-1542744094-24638eff58bb?w=400', icon: <Maximize2 className="w-4 h-4" />, color: 'bg-emerald-500' },
+    { id: 6, name: t.virtualTryOn, tag: 'Try clothes', action: onVirtualTryOn, image: 'https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?w=400', icon: <Shirt className="w-4 h-4" />, color: 'bg-indigo-500' },
+    { id: 7, name: t.addSunglasses, tag: 'Summer Vibes', action: onAddSunglasses, image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400', icon: <Eye className="w-4 h-4" />, color: 'bg-amber-500' },
+    { id: 8, name: t.removeWatermark, tag: 'Clean Content', action: onRemoveWatermark, image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400', icon: <Scissors className="w-4 h-4" />, color: 'bg-amber-500' },
+    { id: 9, name: t.colorize, tag: 'Classic', action: onColorize, image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400', icon: <Palette className="w-4 h-4" />, color: 'bg-indigo-500' },
+    { id: 10, name: t.magicEraser, tag: 'Retouch', action: onMagicEraser, image: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=400', icon: <Wind className="w-4 h-4" />, color: 'bg-rose-500' },
+    { id: 11, name: t.cartoonize, tag: '3D Art', action: onCartoonize, image: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=400', icon: <Smile className="w-4 h-4" />, color: 'bg-emerald-500' },
+    { id: 12, name: t.restore, tag: 'Memory Fix', action: onRestore, image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400', icon: <ZapIcon className="w-4 h-4" />, color: 'bg-amber-500' }
   ], [
     t, onRemoveBackground, onUpscale, onRemoveWatermark, onColorize, 
     onMagicEraser, onCartoonize, onRestore, onSmartEdit, 
-    onVirtualTryOn, onAddSunglasses, onCreateLogo
+    onVirtualTryOn, onAddSunglasses, onCreateLogo, onTextToSpeech
   ]);
 
   // استخدام مفتاح فريد يعتمد على محتوى الصورة لضمان إعادة رندر React
