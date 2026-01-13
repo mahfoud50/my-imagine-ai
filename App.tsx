@@ -1,5 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { ModelType, HistoryItem, GenerationSettings, SiteConfig, GenerationType, Language, UserSettings, Message, AppNotification } from './types.ts';
+// استيراد جميع الأنواع المطلوبة
+import { 
+  ModelType, HistoryItem, GenerationSettings, SiteConfig, 
+  GenerationType, Language, UserSettings, Message, AppNotification 
+} from './types.ts';
+
+// استيراد المكونات (تأكد أن أسماء المجلدات والملفات صحيحة)
 import Sidebar from './components/Sidebar.tsx';
 import MainPreview from './components/MainPreview.tsx';
 import RightPanel from './components/RightPanel.tsx';
@@ -9,20 +15,19 @@ import AuthScreen from './components/AuthScreen.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
 import ToastNotification from './components/ToastNotification.tsx';
 import ApiKeyModal from './components/ApiKeyModal.tsx';
+
+// المكتبات الخارجية
 import { GoogleGenAI } from "@google/genai";
 import { Fingerprint } from 'lucide-react';
 import { translations } from './translations.ts';
 import { removeBackground } from "@imgly/background-removal";
 
+// دالة التحليل الآمن
 const safeParse = (key: string, defaultValue: any) => {
   try {
     const item = localStorage.getItem(key);
     if (!item) return defaultValue;
-    const parsed = JSON.parse(item);
-    if (typeof defaultValue === 'object' && defaultValue !== null && !Array.isArray(defaultValue)) {
-      return { ...defaultValue, ...parsed };
-    }
-    return parsed;
+    return JSON.parse(item);
   } catch (e) {
     return defaultValue;
   }
@@ -36,14 +41,13 @@ const App: React.FC = () => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [messages, setMessages] = useState<Message[]>(() => safeParse('imagine_ai_messages', []));
   
-  const [allUsers, setAllUsers] = useState<any[]>(() => safeParse('site_verified_users', []));
-  const [bannedEmails, setBannedEmails] = useState<string[]>(() => safeParse('banned_emails', []));
-  const [adminIdentity, setAdminIdentity] = useState(() => safeParse('admin_identity', { email: "Mohammedzarzor26@gmail.com", password: "Mah7foud23" }));
+  const [allUsers] = useState<any[]>(() => safeParse('site_verified_users', []));
+  const [bannedEmails] = useState<string[]>(() => safeParse('banned_emails', []));
   
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => safeParse('imagine_ai_config', {
-    seo_title: 'Imagine AI', seo_desc: 'Professional AI Art', global_html: '', custom_css: '', custom_js: '',
-    ux_blur_intensity: '20px', ux_accent_color: '#6366f1', manager_name: 'Ahmad kharbicha', 
-    manager_dob: 'Jan 1, 1987', manager_location: 'SAHTEREANN', manager_pic: 'https://i.pravatar.cc/150?u=manager',
+    seo_title: 'Imagine AI', seo_desc: 'Professional AI Art',
+    global_html: '', custom_css: '', custom_js: '', ux_blur_intensity: '20px', ux_accent_color: '#6366f1',
+    manager_name: 'Ahmad', manager_dob: '', manager_location: '', manager_pic: '',
     site_logo_scale: 1.0, global_api_key: ''
   }));
 
@@ -57,7 +61,7 @@ const App: React.FC = () => {
   const [toast, setToast] = useState<AppNotification | null>(null);
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [accountTab, setAccountTab] = useState<AccountTab>('profile');
@@ -68,10 +72,11 @@ const App: React.FC = () => {
     prompt: '', model: 'Plus', aspectRatio: '1:1', steps: 30, uploadedImage: null
   });
 
-  // --- Sync Effects ---
-  useEffect(() => { if (user) localStorage.setItem('imagine_ai_user', JSON.stringify(user)); else localStorage.removeItem('imagine_ai_user'); }, [user]);
-  useEffect(() => localStorage.setItem('imagine_ai_history', JSON.stringify(history)), [history]);
-  useEffect(() => localStorage.setItem('imagine_ai_config', JSON.stringify(siteConfig)), [siteConfig]);
+  // --- Persistence ---
+  useEffect(() => {
+    if (user) localStorage.setItem('imagine_ai_user', JSON.stringify(user));
+    else localStorage.removeItem('imagine_ai_user');
+  }, [user]);
 
   const addNotification = useCallback((title: string, description: string, type: 'system' | 'success' | 'update' | 'message' = 'system') => {
     const newNotif: AppNotification = { id: Date.now().toString(), title, description, time: new Date(), isRead: false, type };
@@ -79,81 +84,61 @@ const App: React.FC = () => {
     setToast(newNotif);
   }, []);
 
-  // --- 🔥 دالة التوليد (Flux Engine) ---
-  const handleGenerate = useCallback(async (customPrompt?: string, isLogo: boolean = false) => {
-    const p = customPrompt || settings.prompt;
-    if (!p.trim()) return;
-
+  // --- 🔥 دالة التوليد (Flux) ---
+  const handleGenerate = async () => {
+    if (!settings.prompt.trim()) return;
     setIsGenerating(true);
-    setActiveImage(null);
-
     try {
-        const randomSeed = Math.floor(Math.random() * 10000000);
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=1024&height=1024&seed=${randomSeed}&model=flux&nologo=true`;
-
+        const randomSeed = Math.floor(Math.random() * 1000000);
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(settings.prompt)}?width=1024&height=1024&seed=${randomSeed}&model=flux&nologo=true`;
+        
         const response = await fetch(imageUrl);
         const blob = await response.blob();
         const reader = new FileReader();
         reader.readAsDataURL(blob);
         reader.onloadend = () => {
-            const base64data = reader.result as string;
-            setActiveImage(base64data);
-            setOriginalImage(base64data);
-            const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: base64data, prompt: p, timestamp: new Date(), model: settings.model, type: isLogo ? 'LogoCreation' : 'Generated' };
-            setHistory(prev => [newItem, ...prev].slice(0, 30));
-            addNotification('Success', language === 'ar' ? 'تم التوليد بنجاح' : 'Generated Successfully', 'success');
+            const base64 = reader.result as string;
+            setActiveImage(base64);
+            setOriginalImage(base64);
+            const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: base64, prompt: settings.prompt, timestamp: new Date(), model: settings.model, type: 'Generated' };
+            setHistory(prev => [newItem, ...prev]);
             setIsGenerating(false);
         };
     } catch (e) {
-      addNotification('Error', 'فشل التوليد', 'system');
       setIsGenerating(false);
+      alert("Error generating image.");
     }
-  }, [settings.prompt, settings.model, language, addNotification]);
+  };
 
-  // --- 🔥 دالة الأدوات الذكية ---
-  const handleImageAction = useCallback(async (type: GenerationType, customPrompt?: string) => {
+  // --- 🔥 دالة الأدوات ---
+  const handleImageAction = async (type: GenerationType) => {
     const sourceImage = activeImage || settings.uploadedImage;
     if (!sourceImage) return;
 
-    setIsGenerating(true);
-
     if (type === 'Cleaned') {
+      setIsGenerating(true);
       try {
         const blob = await removeBackground(sourceImage);
         const url = URL.createObjectURL(blob);
         setActiveImage(url);
-        addNotification('Success', 'تم إزالة الخلفية', 'success');
-      } catch (err) { addNotification('Error', 'فشلت الإزالة', 'system'); }
+        addNotification('Success', 'Removed BG', 'success');
+      } catch (err) { alert("Failed to remove background"); }
       finally { setIsGenerating(false); }
       return;
     }
+    setIsApiKeyModalOpen(true);
+  };
 
-    const userKey = localStorage.getItem('user_api_key');
-    if (!userKey) {
-        setIsGenerating(false);
-        setIsApiKeyModalOpen(true);
-        return;
-    }
-
-    try {
-      const ai = new GoogleGenAI(userKey);
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-      addNotification('Info', 'جاري المعالجة عبر Gemini', 'system');
-    } catch (error) { addNotification('Error', 'فشلت المعالجة', 'system'); }
-    finally { setIsGenerating(false); }
-  }, [activeImage, settings.uploadedImage, addNotification]);
-
+  // --- Rendering ---
   if (!user) return <AuthScreen onLogin={setUser} language={language} />;
 
   return (
     <div className={`flex flex-col h-screen overflow-hidden ${userSettings.theme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
       
-      {/* 🚀 السيطرة السيادية */}
-      {siteConfig.global_html && <div dangerouslySetInnerHTML={{ __html: siteConfig.global_html }} />}
       {siteConfig.custom_css && <style>{siteConfig.custom_css}</style>}
 
       <Header 
-        credits={50} user={user} language={language} siteConfig={siteConfig} notifications={notifications}
+        credits={50} user={user} language={language}
         onToggleLang={() => setLanguage(l => l === 'ar' ? 'en' : 'ar')}
         onUpgrade={() => setIsApiKeyModalOpen(true)}
         onProfile={() => { setAccountTab('profile'); setIsAccountOpen(true); }}
@@ -163,7 +148,9 @@ const App: React.FC = () => {
       />
       
       <div className="flex flex-1 overflow-hidden relative">
-        <Sidebar settings={settings} setSettings={setSettings} onGenerate={handleGenerate} isGenerating={isGenerating} language={language} onClose={() => setIsSidebarOpen(false)} />
+        {isSidebarOpen && (
+          <Sidebar settings={settings} setSettings={setSettings} onGenerate={handleGenerate} isGenerating={isGenerating} language={language} onClose={() => setIsSidebarOpen(false)} />
+        )}
         
         <MainPreview 
           imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} prompt={settings.prompt} language={language}
@@ -192,9 +179,7 @@ const App: React.FC = () => {
       
       {user?.isAdmin && (
         <div className="fixed bottom-4 left-4 z-[9999]">
-          <button onClick={() => setIsAdminOpen(true)} className="p-2 bg-slate-900 text-white rounded-full border border-white/10 shadow-lg hover:scale-110 transition-transform">
-            <Fingerprint className="w-5 h-5" />
-          </button>
+          <button onClick={() => setIsAdminOpen(true)} className="p-2 bg-slate-900 text-white rounded-full"><Fingerprint className="w-5 h-5" /></button>
         </div>
       )}
     </div>
