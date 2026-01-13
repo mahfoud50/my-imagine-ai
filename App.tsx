@@ -13,6 +13,7 @@ import ToastNotification from './components/ToastNotification.tsx';
 import ApiKeyModal from './components/ApiKeyModal.tsx';
 import { GoogleGenAI } from "@google/genai";
 import { Fingerprint } from 'lucide-react';
+import { translations } from './translations.ts';
 
 const safeParse = (key: string, defaultValue: any) => {
   try {
@@ -30,7 +31,6 @@ const safeParse = (key: string, defaultValue: any) => {
 };
 
 const App: React.FC = () => {
-  // --- State Initialization ---
   const [user, setUser] = useState<any>(() => safeParse('imagine_ai_user', null));
   const [language, setLanguage] = useState<Language>(() => safeParse('imagine_ai_lang', 'ar'));
   const [history, setHistory] = useState<HistoryItem[]>(() => safeParse('imagine_ai_history', []));
@@ -59,7 +59,7 @@ const App: React.FC = () => {
   const [toast, setToast] = useState<AppNotification | null>(null);
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [accountTab, setAccountTab] = useState<AccountTab>('profile');
@@ -70,7 +70,15 @@ const App: React.FC = () => {
     prompt: '', model: 'Plus', aspectRatio: '1:1', steps: 30, uploadedImage: null
   });
 
-  // --- Effects ---
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) setIsSidebarOpen(false);
+      else setIsSidebarOpen(true);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => { 
     if (user && userSettings.autoSaveSession) localStorage.setItem('imagine_ai_user', JSON.stringify(user)); 
     else if (!user) localStorage.removeItem('imagine_ai_user'); 
@@ -86,49 +94,6 @@ const App: React.FC = () => {
   useEffect(() => localStorage.setItem('banned_emails', JSON.stringify(bannedEmails)), [bannedEmails]);
   useEffect(() => localStorage.setItem('admin_identity', JSON.stringify(adminIdentity)), [adminIdentity]);
 
-  // Handle Content Protection (Anti-Copy)
-  useEffect(() => {
-    const handleContextMenu = (e: MouseEvent) => {
-      if (userSettings.contentProtection) e.preventDefault();
-    };
-    const handleCopy = (e: ClipboardEvent) => {
-      if (userSettings.contentProtection) e.preventDefault();
-    };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (userSettings.contentProtection && (e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'u' || e.key === 's')) {
-        e.preventDefault();
-      }
-    };
-
-    window.addEventListener('contextmenu', handleContextMenu);
-    window.addEventListener('copy', handleCopy);
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('contextmenu', handleContextMenu);
-      window.removeEventListener('copy', handleCopy);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [userSettings.contentProtection]);
-
-  // Apply Font Styles Globally
-  useEffect(() => {
-    const root = document.documentElement;
-    const fontMap = {
-      classic: "'Inter', sans-serif",
-      modern: "'Vazirmatn', sans-serif",
-      comfort: "'Vazirmatn', sans-serif" // Assume a soft rounded font if available
-    };
-    root.style.fontFamily = fontMap[userSettings.fontFamily];
-    
-    const sizeMap = {
-      small: '14px',
-      medium: '16px',
-      large: '18px'
-    };
-    root.style.fontSize = sizeMap[userSettings.fontSize];
-  }, [userSettings.fontFamily, userSettings.fontSize]);
-
   const addNotification = (title: string, description: string, type: 'system' | 'success' | 'update' | 'message' = 'system') => {
     const newNotif: AppNotification = { id: Date.now().toString(), title, description, time: new Date(), isRead: false, type, ownerEmail: user?.email };
     setNotifications(prev => [newNotif, ...prev].slice(0, 50));
@@ -137,7 +102,6 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     if (userSettings.privacyMode) {
-      // Clear all session sensitive data
       localStorage.removeItem('imagine_ai_history');
       localStorage.removeItem('imagine_ai_messages');
       localStorage.removeItem('user_api_key');
@@ -147,27 +111,29 @@ const App: React.FC = () => {
     setUser(null);
   };
 
-  const handleGenerate = async () => {
-    if (!settings.prompt.trim()) return;
+  const handleGenerate = async (customPrompt?: string, isLogo: boolean = false) => {
+    const promptToUse = customPrompt || settings.prompt;
+    if (!promptToUse.trim()) return;
+
     const userKey = localStorage.getItem('user_api_key') || userSettings.manualApiKey;
     if (!userKey) {
         setIsApiKeyModalOpen(true);
-        addNotification('API Key Missing', language === 'ar' ? 'الرجاء إدخال مفتاح API أولاً' : 'Please enter API Key first', 'system');
         return;
     }
 
     setIsGenerating(true);
+    if (window.innerWidth < 1024) setIsSidebarOpen(false);
+
     try {
       const ai = new GoogleGenAI({ apiKey: userKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: {
           parts: [
-            { text: settings.prompt },
-            ...(settings.uploadedImage ? [{ inlineData: { data: settings.uploadedImage.split(',')[1], mimeType: 'image/png' } }] : [])
+            { text: promptToUse },
+            ...(settings.uploadedImage && !isLogo ? [{ inlineData: { data: settings.uploadedImage.split(',')[1], mimeType: 'image/png' } }] : [])
           ]
-        },
-        config: { imageConfig: { aspectRatio: settings.aspectRatio as any } }
+        }
       });
 
       let newUrl = '';
@@ -183,7 +149,7 @@ const App: React.FC = () => {
       if (newUrl) {
         setActiveImage(newUrl);
         setOriginalImage(newUrl);
-        const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: newUrl, prompt: settings.prompt, timestamp: new Date(), model: settings.model, type: 'Generated' };
+        const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: newUrl, prompt: promptToUse, timestamp: new Date(), model: settings.model, type: isLogo ? 'LogoCreation' : 'Generated' };
         setHistory(prev => [newItem, ...prev].slice(0, 20));
         addNotification(language === 'ar' ? 'تم التوليد' : 'Generated', language === 'ar' ? 'صورتك جاهزة الآن!' : 'Your image is ready!', 'success');
       }
@@ -204,10 +170,18 @@ const App: React.FC = () => {
     try {
       const ai = new GoogleGenAI({ apiKey: userKey });
       const actionPrompts: Record<string, string> = {
-        'Cleaned': 'remove background', 'Upscaled': 'upscale', 'WatermarkRemoved': 'remove watermark',
-        'Restored': 'restore', 'Colorized': 'colorize', 'Cartoonized': 'cartoonize', 'ObjectRemoved': 'remove objects'
+        'Cleaned': 'remove background', 
+        'Upscaled': 'upscale to high resolution', 
+        'WatermarkRemoved': 'remove watermark from image',
+        'Restored': 'restore and fix old photo', 
+        'Colorized': 'colorize this black and white image', 
+        'Cartoonized': 'turn this person into a 3d cartoon character', 
+        'ObjectRemoved': 'magic eraser remove unwanted objects',
+        'VirtualTryOn': customPrompt || 'change clothes of the person in the image',
+        'AddSunglasses': customPrompt || 'add stylish sunglasses to the person in the image',
+        'Edited': customPrompt || 'smart edit this image'
       };
-      const prompt = customPrompt || actionPrompts[type] || 'enhance';
+      const prompt = customPrompt || actionPrompts[type] || 'enhance image quality';
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: { parts: [{ inlineData: { data: sourceImage.split(',')[1], mimeType: 'image/png' } }, { text: prompt }] }
@@ -222,9 +196,37 @@ const App: React.FC = () => {
         setActiveImage(newUrl);
         const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: newUrl, prompt: prompt, timestamp: new Date(), model: 'Plus', type: type };
         setHistory(prev => [newItem, ...prev].slice(0, 20));
-        addNotification(type, language === 'ar' ? 'تمت المعالجة' : 'Processed', 'success');
+        addNotification(language === 'ar' ? 'تمت المعالجة' : type, language === 'ar' ? 'تمت العملية بنجاح' : 'Processed successfully', 'success');
       }
-    } catch (error) { addNotification('Error', 'Failed', 'system'); } finally { setIsGenerating(false); }
+    } catch (error) { addNotification('Error', 'Action failed', 'system'); } finally { setIsGenerating(false); }
+  };
+
+  const handleSendMessage = (content: string) => {
+    if (!user) return;
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      senderName: user.name,
+      senderEmail: user.email,
+      content: content,
+      timestamp: new Date(),
+      isRead: false
+    };
+    setMessages(prev => [newMessage, ...prev]);
+    addNotification(
+      language === 'ar' ? 'تم إرسال الرسالة' : 'Message Sent',
+      language === 'ar' ? 'رسالتك وصلت للمدير بنجاح' : 'Your message reached the CEO',
+      'message'
+    );
+  };
+
+  const handleCloseStory = () => {
+    if (siteConfig.global_story?.id) {
+      const seenStories = safeParse('seen_stories', []);
+      if (!seenStories.includes(siteConfig.global_story.id)) {
+        localStorage.setItem('seen_stories', JSON.stringify([...seenStories, siteConfig.global_story.id]));
+      }
+    }
+    setIsStoryOpen(false);
   };
 
   if (!user) return (
@@ -246,19 +248,29 @@ const App: React.FC = () => {
         onToggleLang={() => setLanguage(prev => prev === 'ar' ? 'en' : 'ar')}
         onUpgrade={() => setIsApiKeyModalOpen(true)}
         onProfile={() => { setAccountTab('profile'); setIsAccountOpen(true); }}
+        onOpenInbox={() => { setAccountTab('manager'); setIsAccountOpen(true); }}
         onSettings={() => { setAccountTab('settings'); setIsAccountOpen(true); }}
         onLogout={handleLogout}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         onAdmin={() => setIsAdminOpen(true)}
         onOpenStory={() => setIsStoryOpen(true)}
       />
+      
       <div className="flex flex-1 overflow-hidden relative">
-        {isSidebarOpen && (
-          <Sidebar 
-            settings={settings} setSettings={setSettings} onGenerate={handleGenerate} isGenerating={isGenerating} language={language}
-            showTooltips={userSettings.showTooltips}
+        {isSidebarOpen && window.innerWidth < 1024 && (
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] transition-opacity animate-in fade-in"
+            onClick={() => setIsSidebarOpen(false)}
           />
         )}
+
+        <Sidebar 
+          isOpen={isSidebarOpen}
+          settings={settings} setSettings={setSettings} onGenerate={() => handleGenerate()} isGenerating={isGenerating} language={language}
+          showTooltips={userSettings.showTooltips}
+          onClose={() => setIsSidebarOpen(false)}
+        />
+        
         <MainPreview 
           imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} prompt={settings.prompt} language={language}
           showTooltips={userSettings.showTooltips}
@@ -270,18 +282,48 @@ const App: React.FC = () => {
           onColorize={() => handleImageAction('Colorized')}
           onCartoonize={() => handleImageAction('Cartoonized')}
           onMagicEraser={() => handleImageAction('ObjectRemoved')}
+          onSmartEdit={() => {
+            const customPrompt = prompt(language === 'ar' ? 'ما التعديل الذي تريد القيام به؟' : 'What edit do you want to perform?');
+            if (customPrompt) handleImageAction('Edited', customPrompt);
+          }}
+          onVirtualTryOn={() => {
+            const clothesPrompt = prompt(language === 'ar' ? 'ما نوع الملابس التي تريد تجربتها؟' : 'What kind of clothes do you want to try?');
+            if (clothesPrompt) handleImageAction('VirtualTryOn', `change the person clothes to ${clothesPrompt}`);
+          }}
+          onAddSunglasses={() => {
+            const glassPrompt = prompt(language === 'ar' ? 'ما طراز النظارات؟' : 'What style of sunglasses?');
+            if (glassPrompt) handleImageAction('AddSunglasses', `add ${glassPrompt} sunglasses to the person in the image`);
+          }}
+          onCreateLogo={() => {
+            const companyName = prompt(translations[language].logoPrompt);
+            if (companyName) {
+              const logoPrompt = `Generate a professional minimalist flat vector logo for '${companyName}'. Modern typography, clean lines, white background.`;
+              handleGenerate(logoPrompt, true);
+            }
+          }}
         />
-        {isGalleryOpen && (
-          <RightPanel 
-            history={history} onSelect={setActiveImage} onDelete={(id) => setHistory(prev => prev.filter(h => h.id !== id))} 
-            language={language} onClose={() => setIsGalleryOpen(false)}
+
+        {isGalleryOpen && window.innerWidth < 1024 && (
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] transition-opacity animate-in fade-in"
+            onClick={() => setIsGalleryOpen(false)}
           />
         )}
+        
+        <RightPanel 
+          isOpen={isGalleryOpen}
+          history={history} onSelect={(url) => { setActiveImage(url); if(window.innerWidth < 1024) setIsGalleryOpen(false); }} 
+          onDelete={(id) => setHistory(prev => prev.filter(h => h.id !== id))} 
+          language={language} onClose={() => setIsGalleryOpen(false)}
+        />
       </div>
+
       <AccountModal 
         isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} activeTab={accountTab} setActiveTab={setAccountTab} 
         credits={50} user={user} language={language} userSettings={userSettings} setUserSettings={s => setUserSettings(prev => ({ ...prev, ...s }))}
         siteConfig={siteConfig}
+        onSendMessage={handleSendMessage}
+        allMessages={messages}
       />
       {isAdminOpen && (
         <AdminPanel 
@@ -301,18 +343,21 @@ const App: React.FC = () => {
         language={language} 
       />
       <ToastNotification toast={toast} onClose={() => setToast(null)} language={language} />
+      
       {user?.isAdmin && (
-        <div className="fixed bottom-4 left-4 z-[9999] opacity-0 hover:opacity-100 transition-opacity">
+        <div className="fixed bottom-4 left-4 z-[9999] opacity-0 hover:opacity-100 transition-opacity hidden md:block">
           <button onClick={() => setIsAdminOpen(true)} className="p-2 bg-slate-900 text-white rounded-full">
             <Fingerprint className="w-4 h-4" />
           </button>
         </div>
       )}
+      
       {isStoryOpen && siteConfig.global_story?.active && (
         <StoryViewer 
           story={{ ...siteConfig.global_story, timestamp: Date.now() }} 
-          onClose={() => setIsStoryOpen(false)} 
+          onClose={handleCloseStory} 
           language={language} siteConfig={siteConfig} 
+          onSendMessage={handleSendMessage}
         />
       )}
     </div>

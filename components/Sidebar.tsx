@@ -2,18 +2,19 @@
 import React from 'react';
 import { 
   Upload, X, Zap, MessageSquare, 
-  Loader2 as LoaderIcon, HelpCircle
+  Loader2 as LoaderIcon, HelpCircle, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { GenerationSettings, Language, GenerationType } from '../types.ts';
 import { translations } from '../translations.ts';
 
 interface SidebarProps {
+  isOpen: boolean;
   settings: GenerationSettings;
   setSettings: React.Dispatch<React.SetStateAction<GenerationSettings>>;
   onGenerate: () => void;
   isGenerating: boolean;
   language: Language;
-  onClose?: () => void;
+  onClose: () => void;
   onOpenApiKey?: () => void;
   onLogout?: () => void;
   onQuickAction?: (type: GenerationType, customPrompt?: string) => void;
@@ -21,7 +22,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
-  settings, setSettings, onGenerate, isGenerating, language,
+  isOpen, settings, setSettings, onGenerate, isGenerating, language,
   onClose, onOpenApiKey, onLogout, onQuickAction, showTooltips
 }) => {
   const t = translations[language];
@@ -38,7 +39,23 @@ const Sidebar: React.FC<SidebarProps> = ({
   const isRtl = language === 'ar';
 
   return (
-    <aside className="w-80 max-w-[90vw] m-6 h-[calc(100vh-3rem)] bg-white/80 dark:bg-slate-900/90 backdrop-blur-2xl border dark:border-white/5 rounded-[3rem] flex flex-col overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] shadow-indigo-500/5 relative z-50 transition-all duration-500">
+    <aside className={`
+      fixed lg:relative inset-y-0 ${isRtl ? 'right-0' : 'left-0'} 
+      w-80 max-w-[85vw] h-full lg:h-[calc(100vh-5rem)] 
+      bg-white dark:bg-slate-900 backdrop-blur-2xl border-x lg:border dark:border-white/5 
+      lg:m-4 lg:rounded-[2.5rem] flex flex-col overflow-hidden 
+      shadow-2xl z-[60] transition-transform duration-500 ease-in-out
+      ${isOpen ? 'translate-x-0' : (isRtl ? 'translate-x-full' : '-translate-x-full')}
+      lg:translate-x-0 ${!isOpen && 'lg:hidden'}
+    `}>
+      {/* Header for Mobile */}
+      <div className="flex items-center justify-between p-6 border-b dark:border-white/5 lg:hidden">
+        <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-widest text-xs">{t.promptLabel}</h3>
+        <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all">
+          <X className="w-5 h-5 text-slate-400" />
+        </button>
+      </div>
+
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
         {/* Step 1: Prompt */}
         <section className="space-y-4">
@@ -47,23 +64,14 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="w-8 h-8 bg-rose-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-rose-500/20">1</div>
               <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.promptLabel}</h3>
             </div>
-            {showTooltips && (
-              <div className="group relative">
-                <HelpCircle className="w-4 h-4 text-slate-300 cursor-help" />
-                <div className={`absolute bottom-full mb-2 ${isRtl ? 'right-0' : 'left-0'} w-48 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none`}>
-                  {isRtl ? 'اكتب وصفاً دقيقاً لما تريد رؤيته في الصورة' : 'Write a detailed description of what you want to see'}
-                </div>
-              </div>
-            )}
           </div>
           <div className="relative group">
             <textarea
-              className={`w-full h-48 p-5 text-sm bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none resize-none dark:text-white font-medium transition-all ${language === 'ar' ? 'text-right' : 'text-left'}`}
+              className={`w-full h-40 lg:h-48 p-5 text-sm bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none resize-none dark:text-white font-medium transition-all ${language === 'ar' ? 'text-right' : 'text-left'}`}
               placeholder={t.promptPlaceholder}
               value={settings.prompt}
               onChange={(e) => setSettings(prev => ({ ...prev, prompt: e.target.value }))}
             />
-            <MessageSquare className={`absolute bottom-4 ${language === 'ar' ? 'left-4' : 'right-4'} w-4 h-4 text-slate-300 group-focus-within:text-rose-500 transition-colors`} />
           </div>
         </section>
 
@@ -74,14 +82,6 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="w-8 h-8 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-emerald-500/20">2</div>
               <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.uploadRef}</h3>
             </div>
-            {showTooltips && (
-              <div className="group relative">
-                <HelpCircle className="w-4 h-4 text-slate-300 cursor-help" />
-                <div className={`absolute bottom-full mb-2 ${isRtl ? 'right-0' : 'left-0'} w-48 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none`}>
-                  {isRtl ? 'ارفع صورة لتوجيه الذكاء الاصطناعي في الأسلوب أو التكوين' : 'Upload an image to guide AI in style or composition'}
-                </div>
-              </div>
-            )}
           </div>
           <div className="relative border-2 border-dashed border-slate-200 dark:border-white/10 rounded-2xl p-2 hover:border-indigo-500 transition-all cursor-pointer bg-slate-50/50 dark:bg-slate-800/30 group">
             {settings.uploadedImage ? (
@@ -92,22 +92,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center py-10 cursor-pointer">
+              <label className="flex flex-col items-center justify-center py-8 lg:py-10 cursor-pointer">
                 <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
                 <Upload className="w-8 h-8 text-slate-300 group-hover:text-indigo-500 transition-colors mb-2" />
-                <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{language === 'ar' ? 'اختر صورة مرجعية' : 'CHOOSE REFERENCE'}</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{language === 'ar' ? 'اختر صورة مرجعية' : 'CHOOSE REFERENCE'}</span>
               </label>
             )}
           </div>
         </section>
       </div>
 
-      <div className="p-6 mb-4">
+      <div className="p-6 border-t dark:border-white/5 lg:border-0 bg-white dark:bg-slate-900 lg:bg-transparent">
         <button 
           onClick={onGenerate} 
           disabled={isGenerating} 
-          title={showTooltips ? (isRtl ? 'بدأ عملية التوليد السحابية' : 'Start cloud generation process') : ''}
-          className={`w-full py-6 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 ${isGenerating ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-rose-500/20'}`}
+          className={`w-full py-5 lg:py-6 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 ${isGenerating ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-rose-500/20'}`}
         >
           {isGenerating ? <LoaderIcon className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-current" />}
           {isGenerating ? t.generating : t.generate}

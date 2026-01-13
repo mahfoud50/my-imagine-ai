@@ -6,7 +6,8 @@ import {
   Smartphone, Database, LayoutGrid, Languages, MousePointer2, Shield, Terminal,
   Eye, ShieldCheck, Volume2, Key, Info, ExternalLink, Trash2, ShieldAlert,
   Send, Calendar, MapPin, Briefcase, MessageSquare, Reply, Edit2, ShieldAlert as ShieldIcon,
-  CloudLightning, Lock, Globe, RefreshCw, EyeOff, Type, AlignLeft, Activity, HelpCircle
+  CloudLightning, Lock, Globe, RefreshCw, EyeOff, Type, AlignLeft, Activity, HelpCircle,
+  Clock, CheckCircle, ShieldQuestion
 } from 'lucide-react';
 import { Language, UserSettings, ThemeMode, FontFamily, FontSize, ImageQuality, ModelStrategy, Message, SiteConfig } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -59,6 +60,9 @@ const AccountModal: React.FC<AccountModalProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const managerFileRef = useRef<HTMLInputElement>(null);
+
+  // Filter messages for current user
+  const userMessages = allMessages.filter(m => m.senderEmail === user?.email);
 
   useEffect(() => {
     if (isOpen) {
@@ -182,7 +186,7 @@ const AccountModal: React.FC<AccountModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-900 w-full max-w-3xl h-[650px] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300 border dark:border-white/5" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-slate-900 w-full max-w-3xl h-[700px] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300 border dark:border-white/5" onClick={(e) => e.stopPropagation()}>
         
         <aside className="w-full md:w-56 bg-slate-50 dark:bg-slate-800/50 border-r border-slate-200 dark:border-white/5 p-6 flex flex-row md:flex-col gap-1 overflow-x-auto shrink-0">
           <div className="hidden md:block mb-6">
@@ -192,7 +196,7 @@ const AccountModal: React.FC<AccountModalProps> = ({
             {[
               { id: 'profile', icon: User, label: t.profileTab },
               { id: 'credits', icon: Key, label: t.creditsTab },
-              { id: 'manager', icon: Briefcase, label: language === 'ar' ? 'المدير' : 'CEO' },
+              { id: 'manager', icon: MessageSquare, label: t.inbox },
               { id: 'settings', icon: Settings, label: t.settingsTab }
             ].map((tab) => (
               <button
@@ -211,7 +215,8 @@ const AccountModal: React.FC<AccountModalProps> = ({
           <button onClick={onClose} className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 text-slate-400 hover:text-rose-500 transition-all`}><X className="w-6 h-6" /></button>
 
           {activeTab === 'profile' && (
-            <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="space-y-8 animate-in fade-in duration-500">
+              {/* User Personal Info */}
               <div className="flex flex-col items-center md:items-start gap-6">
                 <div className="relative">
                   <img src={profilePic} className="w-16 h-16 rounded-2xl object-cover border-4 border-slate-100 dark:border-slate-800 shadow-md" alt="Profile" />
@@ -292,51 +297,124 @@ const AccountModal: React.FC<AccountModalProps> = ({
           )}
 
           {activeTab === 'manager' && (
-            <div className="space-y-6 animate-in fade-in duration-500">
-              <section className="space-y-4 bg-indigo-50 dark:bg-indigo-900/10 p-5 rounded-3xl border border-indigo-500/20">
-                <div className="flex items-center justify-between">
-                   <h4 className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-2">
-                     <ShieldCheck className="w-4 h-4 text-indigo-500" /> {t.managerInfo}
-                   </h4>
-                   {user?.isAdmin && (
-                     <button onClick={() => setIsEditingManager(!isEditingManager)} className="text-[9px] font-black text-indigo-600 uppercase hover:underline">
-                        {isEditingManager ? t.cancel : t.smartEdit}
-                     </button>
-                   )}
-                </div>
-                
-                <div className="flex gap-4 items-center">
-                   <img src={isEditingManager ? tempManagerData.pic : siteConfig.manager_pic} className="w-16 h-16 rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-md" alt="" />
-                   <div className="flex-1 text-[11px] font-bold text-slate-700 dark:text-slate-200 space-y-1">
-                      {isEditingManager ? (
-                        <div className="space-y-2">
-                           <input value={tempManagerData.name} onChange={e => setTempManagerData({...tempManagerData, name: e.target.value})} className="w-full p-1.5 bg-white dark:bg-slate-900 border rounded-lg text-[10px]" />
-                           <button onClick={handleSaveManagerProfile} className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-[9px] uppercase font-black">Save</button>
-                        </div>
-                      ) : (
-                        <>
-                          <p>{siteConfig.manager_name}</p>
-                          <p>{siteConfig.manager_dob}</p>
-                          <p className="opacity-60">{siteConfig.manager_location}</p>
-                        </>
-                      )}
-                   </div>
-                </div>
+            <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
+              {/* CEO / Manager Info - Merged here at the top of Inbox */}
+              <div className="shrink-0 mb-4">
+                <section className="space-y-4 bg-indigo-50 dark:bg-indigo-900/10 p-5 rounded-3xl border border-indigo-500/20 relative overflow-hidden group">
+                  <div className="absolute -top-6 -right-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all"></div>
+                  <div className="flex items-center justify-between relative z-10">
+                     <h4 className="text-[10px] font-black text-slate-500 dark:text-indigo-400 uppercase tracking-[0.15em] flex items-center gap-2">
+                       <ShieldCheck className="w-4 h-4" /> {t.managerInfo}
+                     </h4>
+                     {user?.isAdmin && (
+                       <button onClick={() => setIsEditingManager(!isEditingManager)} className="text-[9px] font-black text-indigo-600 uppercase hover:underline">
+                          {isEditingManager ? t.cancel : t.smartEdit}
+                       </button>
+                     )}
+                  </div>
+                  
+                  <div className="flex gap-4 items-center relative z-10">
+                     <div className="relative group shrink-0">
+                       <img src={isEditingManager ? tempManagerData.pic : siteConfig.manager_pic} className="w-12 h-12 rounded-xl object-cover border-2 border-white dark:border-slate-800 shadow-md" alt="" />
+                       {isEditingManager && (
+                         <button onClick={() => managerFileRef.current?.click()} className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"><Camera className="w-3 h-3" /></button>
+                       )}
+                       <input type="file" ref={managerFileRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'manager')} />
+                     </div>
+                     <div className="flex-1 text-[11px] font-bold text-slate-700 dark:text-slate-200 space-y-1">
+                        {isEditingManager ? (
+                          <div className="space-y-2">
+                             <input value={tempManagerData.name} onChange={e => setTempManagerData({...tempManagerData, name: e.target.value})} className="w-full p-1.5 bg-white dark:bg-slate-900 border border-indigo-500/20 rounded-lg text-[10px] outline-none" />
+                             <button onClick={handleSaveManagerProfile} className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-[9px] uppercase font-black">Save Manager Info</button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-slate-900 dark:text-white font-black">{siteConfig.manager_name}</p>
+                            <div className="flex items-center gap-3 text-[9px] opacity-60">
+                               <span className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" /> {siteConfig.manager_location}</span>
+                               <span className="flex items-center gap-1"><Calendar className="w-2.5 h-2.5" /> {siteConfig.manager_dob}</span>
+                            </div>
+                          </>
+                        )}
+                     </div>
+                  </div>
+                </section>
+              </div>
 
-                <div className="pt-4 border-t border-indigo-500/10">
-                   <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2 block">{t.messageManager}</label>
-                   <div className="relative">
-                      <textarea 
-                        value={message} onChange={e => setMessage(e.target.value)}
-                        placeholder={t.messagePlaceholder}
-                        className="w-full h-20 p-3 bg-white dark:bg-slate-900 border border-indigo-500/10 rounded-xl outline-none text-[11px] dark:text-white resize-none"
-                      />
-                      <button onClick={handleSend} className="absolute bottom-2 left-2 md:left-auto md:right-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg font-black text-[9px] flex items-center gap-1.5 shadow-md">
-                         <Send className="w-2.5 h-2.5" /> {t.sendMessage}
-                      </button>
-                   </div>
-                </div>
-              </section>
+              {/* Header Title for Inbox */}
+              <div className="flex items-center justify-between shrink-0 mb-2">
+                 <h4 className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-2">
+                   <MessageSquare className="w-4 h-4 text-indigo-500" /> {t.inbox}
+                 </h4>
+                 <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
+                    <ShieldCheck className="w-3 h-3 text-emerald-500" /> {isRtl ? 'تواصل مشفر ومباشر' : 'Encrypted Direct Messaging'}
+                 </div>
+              </div>
+
+              {/* سجل المحادثة */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 py-4 px-1 min-h-[150px]">
+                {userMessages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-40 space-y-3 py-10">
+                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-3xl flex items-center justify-center">
+                      <ShieldQuestion className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em]">{isRtl ? 'لا توجد مراسلات سابقة' : 'No previous messages'}</p>
+                      <p className="text-[9px] font-bold mt-1 text-slate-400">{isRtl ? 'رسالتك تذهب مباشرة لمدير المنصة' : 'Your messages go directly to the platform manager'}</p>
+                    </div>
+                  </div>
+                ) : (
+                  userMessages.map(msg => (
+                    <div key={msg.id} className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+                      {/* رسالة المستخدم */}
+                      <div className={`flex flex-col ${isRtl ? 'items-start' : 'items-end'}`}>
+                        <div className="max-w-[85%] p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl border dark:border-white/5">
+                          <p className={`text-[11px] font-bold text-slate-800 dark:text-slate-200 ${isRtl ? 'text-right' : 'text-left'}`}>{msg.content}</p>
+                          <div className={`flex items-center gap-1 mt-1 text-[8px] text-slate-400 font-mono ${isRtl ? 'justify-end' : 'justify-start'}`}>
+                            <Clock className="w-2.5 h-2.5" />
+                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* رد المدير */}
+                      {msg.reply && (
+                        <div className={`flex flex-col ${isRtl ? 'items-end' : 'items-start'}`}>
+                          <div className="max-w-[85%] p-4 bg-indigo-600 text-white rounded-2xl shadow-lg relative overflow-hidden group">
+                            <div className="absolute -top-1 -right-1 opacity-10 group-hover:rotate-12 transition-transform">
+                               <ShieldCheck className="w-12 h-12" />
+                            </div>
+                            <div className="flex items-center gap-2 mb-1">
+                               <CheckCircle className="w-3 h-3 text-emerald-300" />
+                               <span className="text-[9px] font-black uppercase tracking-wider">{isRtl ? 'رد الإدارة' : 'Official Reply'}</span>
+                            </div>
+                            <p className={`text-[11px] font-black leading-relaxed ${isRtl ? 'text-right' : 'text-left'}`}>{msg.reply}</p>
+                            {msg.replyTimestamp && (
+                              <p className={`text-[8px] opacity-60 mt-1 font-mono ${isRtl ? 'text-left' : 'text-right'}`}>
+                                {new Date(msg.replyTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* حقل الإرسال */}
+              <div className="pt-4 border-t border-indigo-500/10 shrink-0">
+                 <div className="relative">
+                    <textarea 
+                      value={message} onChange={e => setMessage(e.target.value)}
+                      placeholder={t.messagePlaceholder}
+                      className="w-full h-24 p-4 bg-slate-50 dark:bg-slate-800 border border-indigo-500/10 rounded-2xl outline-none text-[11px] dark:text-white resize-none focus:border-indigo-500 transition-all shadow-inner"
+                    />
+                    <button onClick={handleSend} disabled={!message.trim()} className="absolute bottom-3 left-3 md:left-auto md:right-3 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] flex items-center gap-2 shadow-xl hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95">
+                       <Send className="w-3.5 h-3.5" /> {t.sendMessage}
+                    </button>
+                 </div>
+              </div>
             </div>
           )}
 

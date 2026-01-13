@@ -36,7 +36,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [showApiKey, setShowApiKey] = useState(false);
   const [showAdminPass, setShowAdminPass] = useState(false);
 
-  // States for Messaging System
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
@@ -52,6 +51,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       setUpdateStatus(language === 'ar' ? '✅ تم حفظ الإعدادات بنجاح' : '✅ Settings saved!');
       setTimeout(() => setUpdateStatus(''), 3000);
     }, 800);
+  };
+
+  const handlePublishNewStory = () => {
+    // توليد معرف فريد لضمان أنها تظهر كـ "جديدة" لجميع المستخدمين في كل مرة
+    const newStoryId = `STORY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newStory = {
+      ...(tempConfig.global_story || { image: '', message: '' }),
+      id: newStoryId,
+      active: true
+    };
+    
+    const updatedConfig = { ...tempConfig, global_story: newStory };
+    setTempConfig(updatedConfig);
+    
+    // حفظ مباشر للقصة لضمان النشر الفوري
+    setIsUpdating(true);
+    setTimeout(() => {
+      setConfig(updatedConfig);
+      setIsUpdating(false);
+      setUpdateStatus(language === 'ar' ? '🚀 تم نشر الستوري الجديد بنجاح' : '🚀 New Story Published!');
+      setTimeout(() => setUpdateStatus(''), 3000);
+    }, 500);
   };
 
   const toggleBan = (email: string) => {
@@ -110,8 +131,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const tabs: { id: AdminTab; icon: any; label: string; labelAr: string; color: string }[] = [
     { id: 'MANAGER_PROFILE', icon: User, label: 'Manager Profile', labelAr: 'بروفايل المدير', color: 'text-indigo-400' },
+    { id: 'MESSAGES', icon: MessageSquare, label: 'Inbox', labelAr: 'صندوق الوارد (الرسائل)', color: 'text-emerald-500' },
     { id: 'UX_CONFIG', icon: MousePointer2, label: 'Identity & UI', labelAr: 'هوية الموقع', color: 'text-orange-500' },
-    { id: 'MESSAGES', icon: MessageSquare, label: 'Inbox', labelAr: 'الرسائل', color: 'text-emerald-500' },
     { id: 'USERS', icon: Users, label: 'Users', labelAr: 'المستخدمين', color: 'text-blue-400' },
     { id: 'GLOBAL_STORY', icon: Megaphone, label: 'Global Story', labelAr: 'الستوري العام', color: 'text-rose-500' },
     { id: 'API_SETTINGS', icon: Key, label: 'API Management', labelAr: 'مفاتيح التوليد', color: 'text-amber-500' },
@@ -318,13 +339,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500">
              <div className="p-8 bg-slate-800/50 rounded-[3rem] border border-white/5 space-y-6">
                 <div className="flex items-center justify-between">
-                   <h4 className="text-white font-black flex items-center gap-3"><Megaphone className="w-5 h-5 text-rose-500" /> Site-Wide Announcement</h4>
-                   <button 
-                    onClick={() => setTempConfig({...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', image: '', message: '', active: false }), active: !tempConfig.global_story?.active }})}
-                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${tempConfig.global_story?.active ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-400'}`}
-                   >
-                     {tempConfig.global_story?.active ? 'Live Now' : 'Draft'}
-                   </button>
+                   <h4 className="text-white font-black flex items-center gap-3"><Megaphone className="w-5 h-5 text-rose-500" /> Story Center</h4>
+                   <div className="flex items-center gap-3">
+                     <button 
+                      onClick={() => setTempConfig({...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', image: '', message: '', active: false }), active: !tempConfig.global_story?.active }})}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${tempConfig.global_story?.active ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-400'}`}
+                     >
+                       {tempConfig.global_story?.active ? 'Story Active' : 'Story Disabled'}
+                     </button>
+                </div>
                 </div>
                 
                 <div className="relative aspect-video bg-slate-900 rounded-2xl overflow-hidden group border-2 border-dashed border-white/10">
@@ -344,11 +367,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                    <label className="text-[10px] font-black text-slate-500 uppercase px-1">Message Content</label>
                    <textarea 
                     value={tempConfig.global_story?.message}
-                    onChange={e => setTempConfig({...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', image: '', message: '', active: false }), message: e.target.value }})}
+                    onChange={e => setTempConfig({...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', image: tempConfig.global_story?.image || '', message: '', active: tempConfig.global_story?.active || false }), message: e.target.value }})}
                     className="w-full h-32 p-4 bg-slate-900 border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-indigo-500 transition-all resize-none"
-                    placeholder="Write your announcement here..."
+                    placeholder="Write your story message here..."
                    />
                 </div>
+
+                <button 
+                  onClick={handlePublishNewStory}
+                  className="w-full py-5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-sm uppercase flex items-center justify-center gap-3 shadow-xl shadow-rose-900/20 active:scale-95 transition-all mt-4"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Publish As New Story
+                </button>
+                <p className="text-[9px] text-slate-500 text-center font-bold uppercase tracking-widest mt-2">Posting a "New Story" will generate a unique ID, ensuring it appears as a red ring for everyone again.</p>
              </div>
           </div>
         );
@@ -472,7 +504,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   return (
     <div className="fixed inset-0 z-[1000] flex bg-slate-950/98 backdrop-blur-2xl">
       <div className="flex w-full h-full overflow-hidden">
-        {/* Sidebar */}
         <aside className="w-80 bg-slate-900 border-r border-white/5 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
           <div className="p-8 border-b border-white/5 flex items-center gap-4">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20"><Terminal className="w-6 h-6" /></div>
@@ -494,7 +525,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
         </aside>
 
-        {/* Main Content Area */}
         <main className="flex-1 flex flex-col overflow-hidden bg-slate-950">
           <header className="p-8 flex items-center justify-between border-b border-white/5">
              <div>
