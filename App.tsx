@@ -7,15 +7,13 @@ import Header from './components/Header.tsx';
 import AccountModal, { AccountTab } from './components/AccountModal.tsx';
 import AuthScreen from './components/AuthScreen.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
-import StoryViewer from './components/StoryViewer.tsx';
 import ToastNotification from './components/ToastNotification.tsx';
-import ApiKeyModal from './components/ApiKeyModal.tsx'; // تأكد من وجود هذا الملف
+import ApiKeyModal from './components/ApiKeyModal.tsx';
 import { GoogleGenAI } from "@google/genai";
 import { Fingerprint } from 'lucide-react';
 import { translations } from './translations.ts';
 import { removeBackground } from "@imgly/background-removal";
 
-// دالة قراءة آمنة
 const safeParse = (key: string, defaultValue: any) => {
   try {
     const item = localStorage.getItem(key);
@@ -56,7 +54,6 @@ const App: React.FC = () => {
   }));
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
   const [toast, setToast] = useState<AppNotification | null>(null);
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -65,30 +62,16 @@ const App: React.FC = () => {
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [accountTab, setAccountTab] = useState<AccountTab>('profile');
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [isStoryOpen, setIsStoryOpen] = useState(false);
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false); // ✅ مهم: حالة نافذة المفتاح
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   
   const [settings, setSettings] = useState<GenerationSettings>({
     prompt: '', model: 'Plus', aspectRatio: '1:1', steps: 30, uploadedImage: null
   });
 
-  // --- Effects ---
-  useEffect(() => {
-    let interval: any;
-    if (isGenerating) {
-      interval = setInterval(() => {
-        setLoadingStep(prev => (prev + 1) % translations[language].loadingMessages.length);
-      }, 2500);
-    } else {
-      setLoadingStep(0);
-    }
-    return () => clearInterval(interval);
-  }, [isGenerating, language]);
-
-  // Sync with LocalStorage
-  useEffect(() => { if (user) localStorage.setItem('imagine_ai_user', JSON.stringify(user)); }, [user]);
+  // --- Sync Effects ---
+  useEffect(() => { if (user) localStorage.setItem('imagine_ai_user', JSON.stringify(user)); else localStorage.removeItem('imagine_ai_user'); }, [user]);
   useEffect(() => localStorage.setItem('imagine_ai_history', JSON.stringify(history)), [history]);
-  // ... (Other syncs remain same)
+  useEffect(() => localStorage.setItem('imagine_ai_config', JSON.stringify(siteConfig)), [siteConfig]);
 
   const addNotification = useCallback((title: string, description: string, type: 'system' | 'success' | 'update' | 'message' = 'system') => {
     const newNotif: AppNotification = { id: Date.now().toString(), title, description, time: new Date(), isRead: false, type };
@@ -96,165 +79,94 @@ const App: React.FC = () => {
     setToast(newNotif);
   }, []);
 
-  const handleLogout = () => setUser(null);
-
-  // --- 🔥 دالة التوليد الجديدة (تستخدم Flux المجاني) ---
+  // --- 🔥 دالة التوليد (Flux Engine) ---
   const handleGenerate = useCallback(async (customPrompt?: string, isLogo: boolean = false) => {
     const p = customPrompt || settings.prompt;
-    if (!p.trim()) {
-        addNotification('Alert', language === 'ar' ? 'اكتب وصفاً أولاً' : 'Enter prompt first', 'system');
-        return;
-    }
+    if (!p.trim()) return;
 
     setIsGenerating(true);
     setActiveImage(null);
 
     try {
-        // 🚀 استخدام Flux عبر Pollinations (مجاني، سريع، لا يحتاج مفتاح)
         const randomSeed = Math.floor(Math.random() * 10000000);
-        const model = isLogo ? 'flux-pro' : 'flux';
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=1024&height=1024&seed=${randomSeed}&model=${model}&nologo=true`;
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=1024&height=1024&seed=${randomSeed}&model=flux&nologo=true`;
 
-        // جلب الصورة للتأكد من نجاحها
         const response = await fetch(imageUrl);
-        if(!response.ok) throw new Error("Failed to fetch image");
-        
         const blob = await response.blob();
         const reader = new FileReader();
         reader.readAsDataURL(blob);
-        
         reader.onloadend = () => {
             const base64data = reader.result as string;
-            
             setActiveImage(base64data);
             setOriginalImage(base64data);
-            
-            const newItem: HistoryItem = { 
-                id: Date.now().toString(), 
-                imageUrl: base64data, 
-                prompt: p, 
-                timestamp: new Date(), 
-                model: settings.model, 
-                type: isLogo ? 'LogoCreation' : 'Generated' 
-            };
-            
+            const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: base64data, prompt: p, timestamp: new Date(), model: settings.model, type: isLogo ? 'LogoCreation' : 'Generated' };
             setHistory(prev => [newItem, ...prev].slice(0, 30));
-            addNotification('Success', language === 'ar' ? 'تم التوليد بنجاح!' : 'Generated Successfully!', 'success');
+            addNotification('Success', language === 'ar' ? 'تم التوليد بنجاح' : 'Generated Successfully', 'success');
             setIsGenerating(false);
         };
-
-    } catch (e: any) {
-      console.error("Generation error:", e);
-      addNotification('Error', language === 'ar' ? 'فشل التوليد، حاول مرة أخرى' : 'Generation failed', 'system');
+    } catch (e) {
+      addNotification('Error', 'فشل التوليد', 'system');
       setIsGenerating(false);
     }
   }, [settings.prompt, settings.model, language, addNotification]);
 
-
-  // --- 🔥 دالة تعديل الصور (مع إصلاح إزالة الخلفية) ---
+  // --- 🔥 دالة الأدوات الذكية ---
   const handleImageAction = useCallback(async (type: GenerationType, customPrompt?: string) => {
     const sourceImage = activeImage || settings.uploadedImage;
-    if (!sourceImage) {
-      addNotification('Alert', language === 'ar' ? 'يرجى رفع صورة أولاً' : 'Please upload an image first', 'system');
-      return;
-    }
+    if (!sourceImage) return;
 
     setIsGenerating(true);
 
-    // 1. إزالة الخلفية (مجاني ومحلي)
     if (type === 'Cleaned') {
       try {
-        // استخدام مكتبة imgly المحلية
         const blob = await removeBackground(sourceImage);
         const url = URL.createObjectURL(blob);
-        
         setActiveImage(url);
-        const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: url, prompt: 'Removed Background', timestamp: new Date(), model: 'Plus', type: 'Cleaned' };
-        setHistory(prev => [newItem, ...prev].slice(0, 30));
-        addNotification('Success', language === 'ar' ? 'تم إزالة الخلفية' : 'Background Removed', 'success');
-      } catch (err) {
-        console.error(err);
-        addNotification('Error', 'Background removal failed', 'system');
-      } finally {
-        setIsGenerating(false);
-      }
+        addNotification('Success', 'تم إزالة الخلفية', 'success');
+      } catch (err) { addNotification('Error', 'فشلت الإزالة', 'system'); }
+      finally { setIsGenerating(false); }
       return;
     }
 
-    // 2. باقي الأدوات (تتطلب مفتاح API)
     const userKey = localStorage.getItem('user_api_key');
     if (!userKey) {
         setIsGenerating(false);
-        setIsApiKeyModalOpen(true); // فتح النافذة لطلب المفتاح
+        setIsApiKeyModalOpen(true);
         return;
     }
 
     try {
-      const ai = new GoogleGenAI({ apiKey: userKey });
-      const prompt = customPrompt || (language === 'ar' ? 'تحسين جودة الصورة' : 'Enhance image quality');
-      const mimeType = sourceImage.includes('png') ? 'image/png' : 'image/jpeg';
-      const base64Data = sourceImage.split(',')[1];
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash', // موديل أكثر استقراراً
-        contents: {
-          parts: [
-            { inlineData: { data: base64Data, mimeType } },
-            { text: prompt }
-          ]
-        }
-      });
-      
-      // ملاحظة: Gemini Flash قد يعيد نصاً، لكننا سنحاول
-      // ... (نفس منطق الاستجابة السابق)
-      addNotification('Info', 'Gemini processed the request (Result might be text-only)', 'system');
-
-    } catch (error: any) {
-      console.error("Action error:", error);
-      addNotification('Error', `Processing failed: ${error.message}`, 'system');
-    } finally { 
-        setIsGenerating(false); 
-    }
-  }, [activeImage, settings.uploadedImage, language, addNotification]);
-
+      const ai = new GoogleGenAI(userKey);
+      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+      addNotification('Info', 'جاري المعالجة عبر Gemini', 'system');
+    } catch (error) { addNotification('Error', 'فشلت المعالجة', 'system'); }
+    finally { setIsGenerating(false); }
+  }, [activeImage, settings.uploadedImage, addNotification]);
 
   if (!user) return <AuthScreen onLogin={setUser} language={language} />;
 
   return (
     <div className={`flex flex-col h-screen overflow-hidden ${userSettings.theme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
       
-      {/* 🚀 Sovereign Injection: Master HTML */}
+      {/* 🚀 السيطرة السيادية */}
       {siteConfig.global_html && <div dangerouslySetInnerHTML={{ __html: siteConfig.global_html }} />}
-      
-      {/* 🚀 Sovereign Injection: Master CSS */}
       {siteConfig.custom_css && <style>{siteConfig.custom_css}</style>}
 
       <Header 
         credits={50} user={user} language={language} siteConfig={siteConfig} notifications={notifications}
-        onMarkAllRead={() => setNotifications(prev => prev.map(n => ({...n, isRead: true})))}
         onToggleLang={() => setLanguage(l => l === 'ar' ? 'en' : 'ar')}
-        onUpgrade={() => { setAccountTab('api_key'); setIsAccountOpen(true); }} // تعديل الرابط لفتح تبويب الـ API
+        onUpgrade={() => setIsApiKeyModalOpen(true)}
         onProfile={() => { setAccountTab('profile'); setIsAccountOpen(true); }}
-        onLogout={handleLogout}
+        onLogout={() => setUser(null)}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         onAdmin={() => setIsAdminOpen(true)}
       />
       
       <div className="flex flex-1 overflow-hidden relative">
-        <Sidebar
-          settings={settings} setSettings={setSettings}
-          onGenerate={() => handleGenerate()}
-          isGenerating={isGenerating}
-          language={language}
-          onClose={() => setIsSidebarOpen(false)}
-        />
+        <Sidebar settings={settings} setSettings={setSettings} onGenerate={handleGenerate} isGenerating={isGenerating} language={language} onClose={() => setIsSidebarOpen(false)} />
         
-        <MainPreview
-          imageUrl={activeImage}
-          originalImageUrl={originalImage}
-          isGenerating={isGenerating}
-          prompt={settings.prompt}
-          language={language}
+        <MainPreview 
+          imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} prompt={settings.prompt} language={language}
           onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)}
           onRemoveBackground={() => handleImageAction('Cleaned')}
           onUpscale={() => handleImageAction('Upscaled')}
@@ -263,8 +175,6 @@ const App: React.FC = () => {
           onColorize={() => handleImageAction('Colorized')}
           onCartoonize={() => handleImageAction('Cartoonized')}
           onMagicEraser={() => handleImageAction('ObjectRemoved')}
-          onSmartEdit={() => { const p = prompt(translations[language].smartEdit + '?'); if (p) handleImageAction('Edited', p); }}
-          onVirtualTryOn={() => handleImageAction('VirtualTryOn')}
         />
         
         {isGalleryOpen && (
@@ -272,28 +182,19 @@ const App: React.FC = () => {
         )}
       </div>
 
-      <AccountModal 
-        isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} 
-        activeTab={accountTab} setActiveTab={setAccountTab} 
-        credits={50} user={user} language={language} userSettings={userSettings} 
-        setUserSettings={s => setUserSettings(prev => ({ ...prev, ...s }))} 
-      />
+      <AccountModal isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} activeTab={accountTab} setActiveTab={setAccountTab} credits={50} user={user} language={language} userSettings={userSettings} setUserSettings={s => setUserSettings(prev => ({ ...prev, ...s }))} />
 
       {isAdminOpen && <AdminPanel config={siteConfig} setConfig={setSiteConfig} apiKeys={[]} setApiKeys={() => {}} onClose={() => setIsAdminOpen(false)} language={language} currentUser={user} setCurrentUser={setUser} />}
       
-      {/* نافذة المفتاح الإجبارية */}
-      <ApiKeyModal 
-        isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} 
-        onConfirm={(key) => { localStorage.setItem('user_api_key', key); setIsApiKeyModalOpen(false); }}
-        language={language} 
-      />
+      <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} onConfirm={(key) => { localStorage.setItem('user_api_key', key); setIsApiKeyModalOpen(false); }} language={language} />
 
       <ToastNotification toast={toast} onClose={() => setToast(null)} language={language} />
       
-      {/* زر المدير السري */}
       {user?.isAdmin && (
-        <div className="fixed bottom-4 left-4 z-[9999] opacity-0 hover:opacity-100 transition-opacity">
-          <button onClick={() => setIsAdminOpen(true)} className="p-2 bg-slate-900 text-white rounded-full shadow-lg border border-white/10"><Fingerprint className="w-5 h-5" /></button>
+        <div className="fixed bottom-4 left-4 z-[9999]">
+          <button onClick={() => setIsAdminOpen(true)} className="p-2 bg-slate-900 text-white rounded-full border border-white/10 shadow-lg hover:scale-110 transition-transform">
+            <Fingerprint className="w-5 h-5" />
+          </button>
         </div>
       )}
     </div>
@@ -301,5 +202,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
-
