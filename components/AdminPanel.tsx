@@ -7,7 +7,8 @@ import {
   User, Camera, Briefcase, Users, UserX, UserCheck, 
   ImageIcon, Sparkles, Megaphone, Palette, Eye, EyeOff, Key,
   Upload, Fingerprint, MapPin, Calendar, ShieldCheck, AlignLeft,
-  Type, Layers, Sliders, Smartphone, CheckCircle, Reply, Send
+  Type, Layers, Sliders, Smartphone, CheckCircle, Reply, Send, Music, Volume2, Video,
+  Clock, Circle, Activity, TrendingUp, Globe, FileCode
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -31,6 +32,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('MANAGER_PROFILE');
   const [tempConfig, setTempConfig] = useState<SiteConfig>(config);
+  const [tempAdminIdentity, setTempAdminIdentity] = useState(adminIdentity);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateStatus, setUpdateStatus] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -40,6 +42,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [replyText, setReplyText] = useState('');
 
   const storyFileRef = useRef<HTMLInputElement>(null);
+  const videoFileRef = useRef<HTMLInputElement>(null);
+  const audioFileRef = useRef<HTMLInputElement>(null);
   const managerFileRef = useRef<HTMLInputElement>(null);
   const logoFileRef = useRef<HTMLInputElement>(null);
 
@@ -47,6 +51,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsUpdating(true);
     setTimeout(() => {
       setConfig(tempConfig);
+      setAdminIdentity(tempAdminIdentity);
       setIsUpdating(false);
       setUpdateStatus(language === 'ar' ? '✅ تم حفظ الإعدادات بنجاح' : '✅ Settings saved!');
       setTimeout(() => setUpdateStatus(''), 3000);
@@ -54,36 +59,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handlePublishNewStory = () => {
-    // توليد معرف فريد لضمان أنها تظهر كـ "جديدة" لجميع المستخدمين في كل مرة
-    const newStoryId = `STORY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newStoryId = `STORY-${Date.now()}`;
     const newStory = {
-      ...(tempConfig.global_story || { image: '', message: '' }),
+      ...(tempConfig.global_story || { message: '', active: false }),
       id: newStoryId,
       active: true
     };
-    
-    const updatedConfig = { ...tempConfig, global_story: newStory };
-    setTempConfig(updatedConfig);
-    
-    // حفظ مباشر للقصة لضمان النشر الفوري
-    setIsUpdating(true);
-    setTimeout(() => {
-      setConfig(updatedConfig);
-      setIsUpdating(false);
-      setUpdateStatus(language === 'ar' ? '🚀 تم نشر الستوري الجديد بنجاح' : '🚀 New Story Published!');
-      setTimeout(() => setUpdateStatus(''), 3000);
-    }, 500);
-  };
-
-  const toggleBan = (email: string) => {
-    if (bannedEmails.includes(email)) setBannedEmails(bannedEmails.filter(e => e !== email));
-    else setBannedEmails([...bannedEmails, email]);
-  };
-
-  const deleteUser = (email: string) => {
-    if (confirm(language === 'ar' ? 'هل أنت متأكد من حذف المستخدم؟' : 'Delete user permanently?')) {
-      setAllUsers(allUsers.filter(u => u.email !== email));
-    }
+    const updated = { ...tempConfig, global_story: newStory };
+    setTempConfig(updated);
+    setConfig(updated);
+    setUpdateStatus(language === 'ar' ? '🚀 تم نشر الستوري' : '🚀 Story Published!');
   };
 
   const deleteMessage = (id: string) => {
@@ -92,27 +77,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleSendReply = (messageId: string) => {
     if (!replyText.trim()) return;
-    
-    const updatedMessages = messages.map(msg => {
-      if (msg.id === messageId) {
-        return {
-          ...msg,
-          reply: replyText,
-          replyTimestamp: new Date(),
-          isRead: true
-        };
-      }
-      return msg;
-    });
-
+    const updatedMessages = messages.map(msg => 
+      msg.id === messageId ? { ...msg, reply: replyText, replyTimestamp: new Date(), isRead: true } : msg
+    );
     setMessages(updatedMessages);
     setReplyingToId(null);
     setReplyText('');
     setUpdateStatus(language === 'ar' ? '✅ تم إرسال الرد' : '✅ Reply sent!');
-    setTimeout(() => setUpdateStatus(''), 3000);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'logo' | 'story' | 'manager') => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'logo' | 'story' | 'manager' | 'audio' | 'video') => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -120,10 +94,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         const dataUrl = event.target?.result as string;
         if (target === 'logo') setTempConfig({ ...tempConfig, site_logo: dataUrl });
         if (target === 'manager') setTempConfig({ ...tempConfig, manager_pic: dataUrl });
-        if (target === 'story') setTempConfig({ 
-            ...tempConfig, 
-            global_story: { ...(tempConfig.global_story || { id: '1', message: '', active: false }), image: dataUrl } 
-        });
+        if (target === 'story') setTempConfig({ ...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', message: '', active: false }), image: dataUrl, video: undefined } });
+        if (target === 'video') setTempConfig({ ...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', message: '', active: false }), video: dataUrl, image: undefined } });
+        if (target === 'audio') setTempConfig({ ...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', message: '', active: false }), audio: dataUrl } });
       };
       reader.readAsDataURL(file);
     }
@@ -131,7 +104,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const tabs: { id: AdminTab; icon: any; label: string; labelAr: string; color: string }[] = [
     { id: 'MANAGER_PROFILE', icon: User, label: 'Manager Profile', labelAr: 'بروفايل المدير', color: 'text-indigo-400' },
-    { id: 'MESSAGES', icon: MessageSquare, label: 'Inbox', labelAr: 'صندوق الوارد (الرسائل)', color: 'text-emerald-500' },
+    { id: 'MESSAGES', icon: MessageSquare, label: 'Inbox', labelAr: 'صندوق الوارد', color: 'text-emerald-500' },
     { id: 'UX_CONFIG', icon: MousePointer2, label: 'Identity & UI', labelAr: 'هوية الموقع', color: 'text-orange-500' },
     { id: 'USERS', icon: Users, label: 'Users', labelAr: 'المستخدمين', color: 'text-blue-400' },
     { id: 'GLOBAL_STORY', icon: Megaphone, label: 'Global Story', labelAr: 'الستوري العام', color: 'text-rose-500' },
@@ -147,6 +120,262 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'MESSAGES':
+        return (
+          <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="flex items-center justify-between mb-4">
+               <h3 className="text-xl font-black text-white">{isRtl ? 'رسائل المستخدمين' : 'User Messages'}</h3>
+               <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-black">{messages.length} {isRtl ? 'رسالة' : 'Messages'}</span>
+            </div>
+            <div className="space-y-4">
+              {messages.map((msg) => (
+                <div key={msg.id} className="p-6 bg-slate-800/40 rounded-3xl border border-white/5 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400"><User className="w-5 h-5" /></div>
+                      <div>
+                        <p className="text-xs font-black text-white">{msg.senderName}</p>
+                        <p className="text-[10px] text-slate-500">{msg.senderEmail}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => deleteMessage(msg.id)} className="p-2 text-slate-500 hover:text-rose-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                  <p className="text-sm text-slate-300 bg-slate-900/40 p-4 rounded-2xl border border-white/5">{msg.content}</p>
+                  
+                  {msg.reply ? (
+                    <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                      <p className="text-[10px] font-black text-emerald-400 uppercase mb-2 flex items-center gap-2"><CheckCircle className="w-3 h-3" /> {isRtl ? 'تم الرد' : 'Replied'}</p>
+                      <p className="text-sm text-emerald-100">{msg.reply}</p>
+                    </div>
+                  ) : (
+                    <div className="pt-2">
+                       {replyingToId === msg.id ? (
+                         <div className="space-y-3">
+                           <textarea value={replyText} onChange={e => setReplyText(e.target.value)} className="w-full h-24 p-4 bg-slate-950 border border-indigo-500/30 rounded-2xl text-white text-sm outline-none" placeholder={isRtl ? 'اكتب ردك هنا...' : 'Write your reply...'} />
+                           <div className="flex gap-2">
+                              <button onClick={() => handleSendReply(msg.id)} className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase flex items-center gap-2"><Send className="w-3.5 h-3.5" /> {isRtl ? 'إرسال الرد' : 'Send Reply'}</button>
+                              <button onClick={() => setReplyingToId(null)} className="px-6 py-2 bg-slate-700 text-slate-300 rounded-xl text-xs font-black uppercase">{isRtl ? 'إلغاء' : 'Cancel'}</button>
+                           </div>
+                         </div>
+                       ) : (
+                         <button onClick={() => setReplyingToId(msg.id)} className="px-6 py-2 bg-slate-700 hover:bg-indigo-600 text-white rounded-xl text-xs font-black uppercase flex items-center gap-2 transition-all"><Reply className="w-3.5 h-3.5" /> {isRtl ? 'رد الآن' : 'Reply Now'}</button>
+                       )}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {messages.length === 0 && <div className="p-20 text-center text-slate-500 font-black uppercase tracking-widest">{isRtl ? 'لا توجد رسائل حالياً' : 'No messages in inbox'}</div>}
+            </div>
+          </div>
+        );
+
+      case 'UX_CONFIG':
+        return (
+          <div className="space-y-8 animate-in fade-in duration-500">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="p-8 bg-slate-800/40 rounded-[2.5rem] border border-white/5 space-y-6">
+                   <h4 className="text-white font-black flex items-center gap-3"><Palette className="w-5 h-5 text-orange-500" /> {isRtl ? 'الهوية البصرية' : 'Brand Identity'}</h4>
+                   <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                         <div className="space-y-1">
+                            <p className="text-xs font-black text-white">{isRtl ? 'شعار الموقع' : 'Site Logo'}</p>
+                            <p className="text-[10px] text-slate-500">{isRtl ? 'يفضل استخدام PNG شفاف' : 'Transparent PNG recommended'}</p>
+                         </div>
+                         <button onClick={() => logoFileRef.current?.click()} className="p-3 bg-indigo-600 text-white rounded-xl hover:scale-105 transition-all"><Upload className="w-4 h-4" /></button>
+                         <input type="file" ref={logoFileRef} className="hidden" onChange={e => handleFileUpload(e, 'logo')} />
+                      </div>
+                      <div className="p-4 bg-slate-950 rounded-2xl flex items-center justify-center min-h-[100px] border border-white/5">
+                         {tempConfig.site_logo ? <img src={tempConfig.site_logo} style={{ height: `${(tempConfig.site_logo_scale || 1) * 32}px` }} /> : <ImageIcon className="w-10 h-10 text-slate-700" />}
+                      </div>
+                      <div className="space-y-2">
+                         <div className="flex justify-between">
+                            <label className="text-[10px] font-black text-slate-500 uppercase">{isRtl ? 'حجم الشعار' : 'Logo Scale'}</label>
+                            <span className="text-[10px] font-bold text-indigo-400">{(tempConfig.site_logo_scale || 1).toFixed(2)}x</span>
+                         </div>
+                         <input type="range" min="0.5" max="6.2" step="0.1" value={tempConfig.site_logo_scale || 1} onChange={e => setTempConfig({...tempConfig, site_logo_scale: parseFloat(e.target.value)})} className="w-full accent-indigo-600" />
+                      </div>
+                   </div>
+                </div>
+
+                <div className="p-8 bg-slate-800/40 rounded-[2.5rem] border border-white/5 space-y-6">
+                   <h4 className="text-white font-black flex items-center gap-3"><Sliders className="w-5 h-5 text-indigo-500" /> {isRtl ? 'واجهة المستخدم' : 'UI Settings'}</h4>
+                   <div className="space-y-6">
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black text-slate-500 uppercase">{isRtl ? 'لون التمييز' : 'Accent Color'}</label>
+                         <div className="flex gap-4">
+                            <input type="color" value={tempConfig.ux_accent_color} onChange={e => setTempConfig({...tempConfig, ux_accent_color: e.target.value})} className="w-12 h-12 bg-transparent border-none cursor-pointer" />
+                            <input type="text" value={tempConfig.ux_accent_color} onChange={e => setTempConfig({...tempConfig, ux_accent_color: e.target.value})} className="flex-1 p-3 bg-slate-900 border border-white/5 rounded-xl text-white font-mono text-xs" />
+                         </div>
+                      </div>
+                      <div className="space-y-2">
+                         <div className="flex justify-between">
+                            <label className="text-[10px] font-black text-slate-500 uppercase">{isRtl ? 'شدة ضبابية الزجاج' : 'Glass Blur Intensity'}</label>
+                            <span className="text-[10px] font-bold text-indigo-400">{tempConfig.ux_blur_intensity}</span>
+                         </div>
+                         <input type="range" min="0" max="40" value={parseInt(tempConfig.ux_blur_intensity)} onChange={e => setTempConfig({...tempConfig, ux_blur_intensity: `${e.target.value}px`})} className="w-full accent-indigo-600" />
+                      </div>
+                   </div>
+                </div>
+             </div>
+          </div>
+        );
+
+      case 'ADMIN_SECURITY':
+        return (
+          <div className="max-w-xl mx-auto space-y-8 animate-in fade-in duration-500">
+             <div className="p-10 bg-slate-800/40 rounded-[3rem] border border-white/5 space-y-8">
+                <div className="text-center">
+                   <div className="w-20 h-20 bg-rose-500/20 rounded-3xl flex items-center justify-center mx-auto mb-4 text-rose-500"><ShieldCheck className="w-10 h-10" /></div>
+                   <h4 className="text-xl font-black text-white">{isRtl ? 'أمان حساب المدير' : 'Admin Security'}</h4>
+                   <p className="text-xs text-slate-500 mt-2">{isRtl ? 'قم بتعديل بيانات الدخول الخاصة باللوحة' : 'Change your admin credentials here'}</p>
+                </div>
+                
+                <div className="space-y-6">
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase px-1">{isRtl ? 'البريد الإلكتروني للإدارة' : 'Admin Email'}</label>
+                      <div className="relative">
+                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                         <input type="email" value={tempAdminIdentity.email} onChange={e => setTempAdminIdentity({...tempAdminIdentity, email: e.target.value})} className="w-full p-4 pl-12 bg-slate-950 border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-indigo-500" />
+                      </div>
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase px-1">{isRtl ? 'كلمة المرور الجديدة' : 'Admin Password'}</label>
+                      <div className="relative">
+                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                         <input type={showAdminPass ? "text" : "password"} value={tempAdminIdentity.password} onChange={e => setTempAdminIdentity({...tempAdminIdentity, password: e.target.value})} className="w-full p-4 pl-12 bg-slate-950 border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-indigo-500" />
+                         <button onClick={() => setShowAdminPass(!showAdminPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600">{showAdminPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                      </div>
+                   </div>
+                </div>
+             </div>
+          </div>
+        );
+
+      case 'GLOBAL_HTML':
+      case 'CSS':
+      case 'JS':
+        const codeType = activeTab === 'GLOBAL_HTML' ? 'global_html' : activeTab === 'CSS' ? 'custom_css' : 'custom_js';
+        const icon = activeTab === 'GLOBAL_HTML' ? <LayoutTemplate className="w-5 h-5 text-indigo-500" /> : activeTab === 'CSS' ? <Layout className="w-5 h-5 text-pink-500" /> : <Code className="w-5 h-5 text-cyan-500" />;
+        return (
+          <div className="h-full flex flex-col space-y-4 animate-in fade-in duration-500">
+             <div className="flex items-center gap-3">
+                {icon}
+                <h4 className="text-white font-black">{activeTab} Injection</h4>
+             </div>
+             <div className="flex-1 relative group">
+                <div className="absolute top-4 right-4 z-10 p-2 bg-indigo-600/20 text-indigo-400 rounded-lg text-[10px] font-mono border border-indigo-500/20 opacity-0 group-hover:opacity-100 transition-opacity">Editable Code Block</div>
+                <textarea 
+                  value={(tempConfig as any)[codeType]} 
+                  onChange={e => setTempConfig({...tempConfig, [codeType]: e.target.value})}
+                  className="w-full h-[500px] p-8 bg-slate-950 border border-white/5 rounded-[2.5rem] text-indigo-300 font-mono text-xs outline-none focus:border-indigo-500/50 transition-all resize-none shadow-inner leading-relaxed"
+                  placeholder={`/* Add your custom ${activeTab} here... */`}
+                />
+             </div>
+          </div>
+        );
+
+      case 'SEO':
+        return (
+          <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-500">
+             <div className="p-10 bg-slate-800/40 rounded-[3rem] border border-white/5 space-y-8">
+                <div className="flex items-center gap-4 mb-2">
+                   <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-500"><Globe className="w-6 h-6" /></div>
+                   <div>
+                      <h4 className="text-xl font-black text-white">Search Engine Optimization</h4>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Meta tags & Social Presence</p>
+                   </div>
+                </div>
+                
+                <div className="space-y-6">
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase px-1">SEO Title (Browser Tab)</label>
+                      <input value={tempConfig.seo_title} onChange={e => setTempConfig({...tempConfig, seo_title: e.target.value})} className="w-full p-4 bg-slate-950 border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-indigo-500" placeholder="Imagine AI - Professional Studio" />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase px-1">SEO Description (Meta Tag)</label>
+                      <textarea value={tempConfig.seo_desc} onChange={e => setTempConfig({...tempConfig, seo_desc: e.target.value})} className="w-full h-32 p-4 bg-slate-950 border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-indigo-500 resize-none" placeholder="The ultimate generative art platform driven by Google Gemini..." />
+                   </div>
+                </div>
+
+                <div className="p-6 bg-blue-500/5 border border-blue-500/10 rounded-3xl">
+                   <p className="text-[10px] font-black text-blue-400 uppercase mb-3 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Search Preview</p>
+                   <div className="space-y-1">
+                      <h5 className="text-blue-400 text-lg font-medium hover:underline cursor-pointer">{tempConfig.seo_title || 'Site Title'}</h5>
+                      <p className="text-emerald-600 text-[11px]">https://imagine-ai-pro.com</p>
+                      <p className="text-slate-400 text-xs line-clamp-2">{tempConfig.seo_desc || 'Describe your site for search engines...'}</p>
+                   </div>
+                </div>
+             </div>
+          </div>
+        );
+
+      case 'USERS':
+        const onlineCount = allUsers.filter(u => u.isOnline).length;
+        return (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               <div className="p-6 bg-slate-800/50 rounded-3xl border border-white/5 flex items-center gap-5">
+                  <div className="w-14 h-14 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400"><Users className="w-7 h-7" /></div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'إجمالي المستخدمين' : 'Total Users'}</p>
+                    <h3 className="text-2xl font-black text-white">{allUsers.length}</h3>
+                  </div>
+               </div>
+               <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/10 flex items-center gap-5">
+                  <div className="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-400 relative">
+                    <Activity className="w-7 h-7" />
+                    {onlineCount > 0 && <span className="absolute top-3 right-3 w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'متصل الآن' : 'Currently Online'}</p>
+                    <h3 className="text-2xl font-black text-emerald-400">{onlineCount}</h3>
+                  </div>
+               </div>
+               <div className="p-6 bg-slate-800/50 rounded-3xl border border-white/5 flex items-center gap-5">
+                  <div className="w-14 h-14 bg-rose-500/20 rounded-2xl flex items-center justify-center text-rose-400"><Shield className="w-7 h-7" /></div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'حسابات معلقة' : 'Suspended'}</p>
+                    <h3 className="text-2xl font-black text-white">{bannedEmails.length}</h3>
+                  </div>
+               </div>
+            </div>
+
+            <div className="bg-slate-800/30 rounded-[2.5rem] border border-white/5 overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-slate-900/50 border-b border-white/5">
+                  <tr>
+                    <th className={`p-5 text-[10px] font-black text-slate-500 uppercase ${isRtl ? 'text-right' : 'text-left'}`}>{isRtl ? 'المستخدم' : 'User'}</th>
+                    <th className={`p-5 text-[10px] font-black text-slate-500 uppercase ${isRtl ? 'text-right' : 'text-left'}`}>{isRtl ? 'البريد' : 'Email'}</th>
+                    <th className={`p-5 text-[10px] font-black text-slate-500 uppercase ${isRtl ? 'text-right' : 'text-left'}`}>{isRtl ? 'الحالة' : 'Status'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {allUsers.map(u => (
+                    <tr key={u.email} className="hover:bg-white/5 transition-all group">
+                      <td className="p-5">
+                         <div className={`flex items-center gap-3 ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <img src={u.profilePic || "https://i.pravatar.cc/100"} className="w-10 h-10 rounded-xl object-cover border border-white/10" />
+                            <div className={isRtl ? 'text-right' : 'text-left'}>
+                               <p className="text-xs font-black text-white">{u.name}</p>
+                               <p className="text-[10px] text-slate-500 font-mono">@{u.username}</p>
+                            </div>
+                         </div>
+                      </td>
+                      <td className={`p-5 text-[11px] text-slate-300 font-mono ${isRtl ? 'text-right' : 'text-left'}`}>{u.email}</td>
+                      <td className="p-5">
+                        {bannedEmails.includes(u.email) ? 
+                          <span className="px-2 py-1 bg-rose-500/20 text-rose-500 rounded-md text-[9px] font-black uppercase">{isRtl ? 'محظور' : 'Banned'}</span> :
+                          <span className="px-2 py-1 bg-emerald-500/20 text-emerald-500 rounded-md text-[9px] font-black uppercase">{isRtl ? 'نشط' : 'Active'}</span>
+                        }
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+
       case 'MANAGER_PROFILE':
         return (
           <div className="space-y-6 animate-in fade-in duration-500">
@@ -174,213 +403,43 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
         );
 
-      case 'UX_CONFIG':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in duration-500">
-             <div className="space-y-6">
-                <div className="p-6 bg-slate-800/50 rounded-3xl border border-white/5 space-y-4">
-                   <h4 className="text-sm font-black text-white flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-400" /> Branding</h4>
-                   <div className="space-y-4">
-                      <div className="flex items-center gap-4">
-                         <img src={tempConfig.site_logo} className="h-12 w-auto bg-slate-900 p-2 rounded-lg object-contain border border-white/10" alt="Logo" />
-                         <button onClick={() => logoFileRef.current?.click()} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase">Change Logo</button>
-                         <input type="file" ref={logoFileRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'logo')} />
-                      </div>
-                      <div className="space-y-1">
-                         <label className="text-[10px] font-black text-slate-500 uppercase">Logo Scale (1.0 = Default)</label>
-                         <input type="number" step="0.1" value={tempConfig.site_logo_scale} onChange={e => setTempConfig({...tempConfig, site_logo_scale: parseFloat(e.target.value)})} className="w-full p-3 bg-slate-800 border border-white/5 rounded-xl text-white font-mono" />
-                      </div>
-                   </div>
-                </div>
-             </div>
-             <div className="space-y-6">
-                <div className="p-6 bg-slate-800/50 rounded-3xl border border-white/5 space-y-4">
-                   <h4 className="text-sm font-black text-white flex items-center gap-2"><Palette className="w-4 h-4 text-orange-400" /> Visual Styles</h4>
-                   <div className="space-y-4">
-                      <div className="space-y-1">
-                         <label className="text-[10px] font-black text-slate-500 uppercase">Accent Color</label>
-                         <div className="flex gap-2">
-                           <input type="color" value={tempConfig.ux_accent_color} onChange={e => setTempConfig({...tempConfig, ux_accent_color: e.target.value})} className="w-12 h-12 bg-transparent border-0 cursor-pointer" />
-                           <input type="text" value={tempConfig.ux_accent_color} onChange={e => setTempConfig({...tempConfig, ux_accent_color: e.target.value})} className="flex-1 p-3 bg-slate-800 border border-white/5 rounded-xl text-white font-mono" />
-                         </div>
-                      </div>
-                      <div className="space-y-1">
-                         <label className="text-[10px] font-black text-slate-500 uppercase">UI Blur Intensity</label>
-                         <input type="text" value={tempConfig.ux_blur_intensity} onChange={e => setTempConfig({...tempConfig, ux_blur_intensity: e.target.value})} className="w-full p-3 bg-slate-800 border border-white/5 rounded-xl text-white font-mono" placeholder="20px" />
-                      </div>
-                   </div>
-                </div>
-             </div>
-          </div>
-        );
-
-      case 'MESSAGES':
-        return (
-          <div className="space-y-6 animate-in fade-in duration-500">
-            {messages.length === 0 ? (
-              <div className="p-20 text-center text-slate-500 font-black uppercase tracking-widest bg-slate-800/20 rounded-[3rem]">Inbox is Empty</div>
-            ) : (
-              messages.map(msg => (
-                <div key={msg.id} className="p-6 bg-slate-800/50 rounded-[2rem] border border-white/5 hover:border-indigo-500/30 transition-all flex flex-col gap-6">
-                   <div className="flex flex-col md:flex-row justify-between gap-4">
-                      <div className="space-y-3 flex-1">
-                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20">{msg.senderName[0]}</div>
-                            <div>
-                               <h5 className="text-white text-sm font-black flex items-center gap-2">
-                                 {msg.senderName}
-                                 {msg.reply && <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />}
-                               </h5>
-                               <p className="text-[10px] text-slate-500 font-mono">{msg.senderEmail}</p>
-                            </div>
-                         </div>
-                         <div className="bg-slate-900/50 p-5 rounded-2xl border border-white/5">
-                            <p className="text-xs text-slate-300 leading-relaxed">{msg.content}</p>
-                         </div>
-
-                         {msg.reply && (
-                           <div className="bg-indigo-500/10 p-5 rounded-2xl border border-indigo-500/20 mt-4 animate-in slide-in-from-top-2">
-                              <div className="flex items-center gap-2 mb-2">
-                                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Admin Reply</span>
-                              </div>
-                              <p className="text-xs text-slate-200 leading-relaxed italic">"{msg.reply}"</p>
-                           </div>
-                         )}
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 self-end md:self-start">
-                         <button 
-                          onClick={() => setReplyingToId(replyingToId === msg.id ? null : msg.id)}
-                          className={`p-3 rounded-xl transition-all flex items-center gap-2 ${replyingToId === msg.id ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-400 hover:bg-indigo-500 hover:text-white'}`}
-                         >
-                           <Reply className="w-4 h-4" />
-                           <span className="text-[10px] font-black uppercase">Reply</span>
-                         </button>
-                         <button onClick={() => deleteMessage(msg.id)} className="p-3 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-xl transition-all">
-                           <Trash2 className="w-4 h-4" />
-                         </button>
-                      </div>
-                   </div>
-
-                   {replyingToId === msg.id && (
-                     <div className="animate-in slide-in-from-top-4 duration-300 space-y-4 p-6 bg-slate-900 rounded-2xl border border-indigo-500/20">
-                        <textarea 
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          placeholder={isRtl ? "اكتب ردك هنا..." : "Type your reply..."}
-                          className="w-full h-32 p-4 bg-slate-800 border border-white/5 rounded-xl text-white text-sm outline-none focus:border-indigo-500 transition-all resize-none"
-                        />
-                        <div className="flex justify-end gap-3">
-                           <button onClick={() => setReplyingToId(null)} className="px-5 py-2.5 text-[10px] font-black text-slate-400 hover:text-white uppercase">Cancel</button>
-                           <button 
-                            onClick={() => handleSendReply(msg.id)}
-                            className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase flex items-center gap-2 shadow-xl hover:bg-indigo-700 active:scale-95 transition-all"
-                           >
-                             <Send className="w-3.5 h-3.5" /> Send Reply
-                           </button>
-                        </div>
-                     </div>
-                   )}
-                </div>
-              ))
-            )}
-          </div>
-        );
-
-      case 'USERS':
-        return (
-          <div className="bg-slate-800/30 rounded-[2.5rem] border border-white/5 overflow-hidden animate-in fade-in duration-500">
-            <table className="w-full text-left">
-              <thead className="bg-slate-900/50 border-b border-white/5">
-                <tr>
-                  <th className="p-5 text-[10px] font-black text-slate-500 uppercase">User</th>
-                  <th className="p-5 text-[10px] font-black text-slate-500 uppercase">Email</th>
-                  <th className="p-5 text-[10px] font-black text-slate-500 uppercase">Status</th>
-                  <th className="p-5 text-[10px] font-black text-slate-500 uppercase text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {allUsers.map(u => (
-                  <tr key={u.email} className="hover:bg-white/5 transition-all">
-                    <td className="p-5">
-                       <div className="flex items-center gap-3">
-                          <img src={u.profilePic || "https://i.pravatar.cc/100"} className="w-8 h-8 rounded-lg object-cover" />
-                          <div>
-                             <p className="text-xs font-black text-white">{u.name}</p>
-                             <p className="text-[10px] text-slate-500 font-mono">@{u.username}</p>
-                          </div>
-                       </div>
-                    </td>
-                    <td className="p-5 text-[11px] text-slate-300">{u.email}</td>
-                    <td className="p-5">
-                       {bannedEmails.includes(u.email) ? 
-                         <span className="px-2 py-1 bg-rose-500/20 text-rose-500 rounded-md text-[9px] font-black uppercase">Suspended</span> :
-                         <span className="px-2 py-1 bg-emerald-500/20 text-emerald-500 rounded-md text-[9px] font-black uppercase">Active</span>
-                       }
-                    </td>
-                    <td className="p-5 text-right">
-                       <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => toggleBan(u.email)} className={`p-2 rounded-lg transition-all ${bannedEmails.includes(u.email) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                             {bannedEmails.includes(u.email) ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
-                          </button>
-                          <button onClick={() => deleteUser(u.email)} className="p-2 bg-slate-700 text-white rounded-lg hover:bg-rose-600 transition-all"><Trash2 className="w-4 h-4" /></button>
-                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-
       case 'GLOBAL_STORY':
         return (
           <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500">
              <div className="p-8 bg-slate-800/50 rounded-[3rem] border border-white/5 space-y-6">
                 <div className="flex items-center justify-between">
                    <h4 className="text-white font-black flex items-center gap-3"><Megaphone className="w-5 h-5 text-rose-500" /> Story Center</h4>
-                   <div className="flex items-center gap-3">
-                     <button 
-                      onClick={() => setTempConfig({...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', image: '', message: '', active: false }), active: !tempConfig.global_story?.active }})}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${tempConfig.global_story?.active ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-400'}`}
-                     >
-                       {tempConfig.global_story?.active ? 'Story Active' : 'Story Disabled'}
-                     </button>
+                   <button 
+                    onClick={() => setTempConfig({...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', message: '', active: false }), active: !tempConfig.global_story?.active }})}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${tempConfig.global_story?.active ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-400'}`}
+                   >
+                     {tempConfig.global_story?.active ? 'Story Active' : 'Story Disabled'}
+                   </button>
                 </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="relative aspect-square bg-slate-900 rounded-2xl overflow-hidden border-2 border-dashed border-white/10 flex flex-col items-center justify-center">
+                    {tempConfig.global_story?.image ? <img src={tempConfig.global_story.image} className="w-full h-full object-cover" /> : <ImageIcon className="w-8 h-8 opacity-20" />}
+                    <button onClick={() => storyFileRef.current?.click()} className="absolute bottom-3 right-3 p-2 bg-indigo-600 text-white rounded-lg"><Upload className="w-4 h-4" /></button>
+                    <input type="file" ref={storyFileRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'story')} />
+                  </div>
+                  <div className="relative aspect-square bg-slate-900 rounded-2xl overflow-hidden border-2 border-dashed border-white/10 flex flex-col items-center justify-center">
+                    {tempConfig.global_story?.video ? <video src={tempConfig.global_story.video} className="w-full h-full object-cover" /> : <Video className="w-8 h-8 opacity-20" />}
+                    <button onClick={() => videoFileRef.current?.click()} className="absolute bottom-3 right-3 p-2 bg-rose-600 text-white rounded-lg"><Upload className="w-4 h-4" /></button>
+                    <input type="file" ref={videoFileRef} className="hidden" accept="video/*" onChange={(e) => handleFileUpload(e, 'video')} />
+                  </div>
+                  <div className="relative aspect-square bg-slate-900 rounded-2xl overflow-hidden border-2 border-dashed border-white/10 flex flex-col items-center justify-center">
+                    {tempConfig.global_story?.audio ? <Music className="w-8 h-8 text-emerald-500" /> : <Volume2 className="w-8 h-8 opacity-20" />}
+                    <button onClick={() => audioFileRef.current?.click()} className="absolute bottom-3 right-3 p-2 bg-emerald-600 text-white rounded-lg"><Upload className="w-4 h-4" /></button>
+                    <input type="file" ref={audioFileRef} className="hidden" accept="audio/*" onChange={(e) => handleFileUpload(e, 'audio')} />
+                  </div>
                 </div>
-                
-                <div className="relative aspect-video bg-slate-900 rounded-2xl overflow-hidden group border-2 border-dashed border-white/10">
-                   {tempConfig.global_story?.image ? (
-                     <img src={tempConfig.global_story.image} className="w-full h-full object-cover" />
-                   ) : (
-                     <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
-                        <ImageIcon className="w-12 h-12 mb-2 opacity-20" />
-                        <span className="text-xs font-black uppercase">No Media Attached</span>
-                     </div>
-                   )}
-                   <button onClick={() => storyFileRef.current?.click()} className="absolute bottom-4 right-4 p-4 bg-indigo-600 text-white rounded-2xl shadow-2xl hover:scale-110 transition-all"><Upload className="w-6 h-6" /></button>
-                   <input type="file" ref={storyFileRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'story')} />
-                </div>
-
-                <div className="space-y-2">
-                   <label className="text-[10px] font-black text-slate-500 uppercase px-1">Message Content</label>
-                   <textarea 
-                    value={tempConfig.global_story?.message}
-                    onChange={e => setTempConfig({...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', image: tempConfig.global_story?.image || '', message: '', active: tempConfig.global_story?.active || false }), message: e.target.value }})}
-                    className="w-full h-32 p-4 bg-slate-900 border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-indigo-500 transition-all resize-none"
-                    placeholder="Write your story message here..."
-                   />
-                </div>
-
-                <button 
-                  onClick={handlePublishNewStory}
-                  className="w-full py-5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-sm uppercase flex items-center justify-center gap-3 shadow-xl shadow-rose-900/20 active:scale-95 transition-all mt-4"
-                >
-                  <Sparkles className="w-5 h-5" />
-                  Publish As New Story
-                </button>
-                <p className="text-[9px] text-slate-500 text-center font-bold uppercase tracking-widest mt-2">Posting a "New Story" will generate a unique ID, ensuring it appears as a red ring for everyone again.</p>
+                <textarea 
+                  value={tempConfig.global_story?.message}
+                  onChange={e => setTempConfig({...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', message: '', active: false }), message: e.target.value }})}
+                  className="w-full h-24 p-4 bg-slate-900 border border-white/5 rounded-2xl text-white text-sm outline-none"
+                  placeholder="Story message..."
+                />
+                <button onClick={handlePublishNewStory} className="w-full py-5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-sm uppercase shadow-xl transition-all">Publish Story</button>
              </div>
           </div>
         );
@@ -392,7 +451,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <Key className="absolute -top-10 -right-10 w-40 h-40 text-white/5 rotate-12" />
                 <h3 className="text-lg font-black text-white mb-2">Master Gemini API Key</h3>
                 <p className="text-xs text-slate-400 leading-relaxed mb-6">This key will be used as the fallback/global generator for users who haven't provided their own keys. Ensure it has a paid tier for stability.</p>
-                
                 <div className="relative group">
                    <input 
                     type={showApiKey ? "text" : "password"} 
@@ -412,92 +470,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
         );
 
-      case 'ADMIN_SECURITY':
-        return (
-          <div className="max-w-xl mx-auto space-y-6 animate-in fade-in duration-500">
-             <div className="p-8 bg-rose-950/20 rounded-[3rem] border border-rose-500/10 space-y-6">
-                <div className="flex items-center gap-4 mb-2">
-                   <div className="w-12 h-12 bg-rose-600 rounded-2xl flex items-center justify-center text-white"><ShieldCheck className="w-6 h-6" /></div>
-                   <div>
-                      <h3 className="text-white font-black uppercase tracking-widest text-sm">Security Core</h3>
-                      <p className="text-[10px] text-rose-400 font-bold">Update Admin Credentials</p>
-                   </div>
-                </div>
-                
-                <div className="space-y-4">
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase px-1">Admin Email</label>
-                      <input 
-                        type="email" 
-                        value={adminIdentity.email}
-                        onChange={e => setAdminIdentity({...adminIdentity, email: e.target.value})}
-                        className="w-full p-4 bg-slate-900 border border-white/5 rounded-2xl text-white text-xs font-bold"
-                      />
-                   </div>
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase px-1">System Password</label>
-                      <div className="relative">
-                        <input 
-                          type={showAdminPass ? "text" : "password"}
-                          value={adminIdentity.password}
-                          onChange={e => setAdminIdentity({...adminIdentity, password: e.target.value})}
-                          className="w-full p-4 bg-slate-900 border border-white/5 rounded-2xl text-white font-mono text-sm"
-                        />
-                        <button onClick={() => setShowAdminPass(!showAdminPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">{showAdminPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
-                      </div>
-                   </div>
-                </div>
-             </div>
-          </div>
-        );
-
-      case 'GLOBAL_HTML':
-      case 'CSS':
-      case 'JS':
-      case 'SEO':
-        const fieldMap: Record<string, keyof SiteConfig> = {
-          'GLOBAL_HTML': 'global_html',
-          'CSS': 'custom_css',
-          'JS': 'custom_js',
-          'SEO': 'seo_desc'
-        };
-        const titleMap: Record<string, string> = {
-          'GLOBAL_HTML': 'Header/Body HTML Injection',
-          'CSS': 'Global Style Override (CSS)',
-          'JS': 'Dynamic Script Logic (JS)',
-          'SEO': 'Meta Description'
-        };
-        
-        return (
-          <div className="h-full flex flex-col gap-4 animate-in fade-in duration-500">
-             <div className="flex items-center justify-between">
-                <h4 className="text-white font-black text-sm uppercase tracking-[0.2em]">{titleMap[activeTab]}</h4>
-                <span className="px-2 py-1 bg-indigo-500 text-[9px] font-black rounded uppercase">Editor Mode</span>
-             </div>
-             {activeTab === 'SEO' && (
-               <div className="space-y-4 mb-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase px-1">Meta Title</label>
-                    <input 
-                      value={tempConfig.seo_title}
-                      onChange={e => setTempConfig({...tempConfig, seo_title: e.target.value})}
-                      className="w-full p-3 bg-slate-900 border border-white/5 rounded-xl text-white text-xs font-bold"
-                      placeholder="Enter SEO Title..."
-                    />
-                  </div>
-               </div>
-             )}
-             <textarea 
-              value={tempConfig[fieldMap[activeTab] as keyof SiteConfig] as string}
-              onChange={e => setTempConfig({...tempConfig, [fieldMap[activeTab]]: e.target.value})}
-              className="flex-1 w-full p-6 bg-slate-950 border border-white/5 rounded-[2rem] text-indigo-400 font-mono text-xs outline-none focus:border-indigo-500 transition-all resize-none custom-scrollbar"
-              placeholder={`Enter ${activeTab} content here...`}
-             />
-          </div>
-        );
-
       default:
-        return null;
+        return <div className="p-20 text-center text-slate-500 font-black uppercase tracking-widest">Under Development</div>;
     }
   };
 
@@ -524,7 +498,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
              <button onClick={onClose} className="w-full py-4 bg-slate-800 text-slate-400 rounded-2xl font-black text-[10px] uppercase hover:bg-rose-600 hover:text-white transition-all shadow-xl">Close Panel</button>
           </div>
         </aside>
-
         <main className="flex-1 flex flex-col overflow-hidden bg-slate-950">
           <header className="p-8 flex items-center justify-between border-b border-white/5">
              <div>
@@ -546,16 +519,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   {isUpdating ? 'Applying...' : 'Save Changes'}
                 </button>
-                <button 
-                  onClick={onClose}
-                  className="p-4 bg-white/5 hover:bg-rose-600 text-slate-400 hover:text-white rounded-2xl transition-all shadow-xl border border-white/10 group"
-                  title={isRtl ? 'إغلاق' : 'Close'}
-                >
+                <button onClick={onClose} className="p-4 bg-white/5 hover:bg-rose-600 text-slate-400 hover:text-white rounded-2xl transition-all shadow-xl border border-white/10 group">
                   <X className="w-6 h-6 group-hover:scale-110" />
                 </button>
              </div>
           </header>
-          
           <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
              <div className="max-w-6xl mx-auto h-full">
                 {renderTabContent()}

@@ -5,6 +5,13 @@ export const translations = {
     slogan: "مختبر الإبداع الذكي",
     generate: "توليد الصورة",
     generating: "جاري التوليد...",
+    loadingMessages: [
+      "جاري تحليل الوصف الذكي...",
+      "جاري استحضار الألوان والتفاصيل...",
+      "جاري رسم الخطوط الفنية...",
+      "جاري وضع اللمسات الأخيرة...",
+      "أوشكنا على الانتهاء من تحفتك..."
+    ],
     promptPlaceholder: "صف ما تريد إنشاءه...",
     promptLabel: "الوصف",
     clear: "مسح",
@@ -150,6 +157,13 @@ export const translations = {
     slogan: "Smart Creativity Lab",
     generate: "Generate Image",
     generating: "Generating...",
+    loadingMessages: [
+      "Analyzing smart prompt...",
+      "Visualizing colors and details...",
+      "Sketching artistic lines...",
+      "Applying final touches...",
+      "Your masterpiece is almost ready..."
+    ],
     promptPlaceholder: "Describe what you want to create...",
     promptLabel: "Prompt",
     clear: "Clear",

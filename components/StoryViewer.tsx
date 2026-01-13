@@ -1,10 +1,10 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { X, Sparkles, Send, Heart, Share2, CheckCircle, MessageCircle } from 'lucide-react';
+import { X, Sparkles, Send, Heart, Share2, CheckCircle, MessageCircle, Volume2, VolumeX, Music } from 'lucide-react';
 import { Language, SiteConfig } from '../types.ts';
 
 interface StoryViewerProps {
-  story: { id: string; image: string; message: string; timestamp: number };
+  story: { id: string; image?: string; video?: string; audio?: string; message: string; timestamp: number };
   onClose: () => void;
   language: Language;
   siteConfig: SiteConfig;
@@ -16,18 +16,41 @@ const StoryViewer: React.FC<StoryViewerProps> = ({ story, onClose, language, sit
   const [liked, setLiked] = useState(false);
   const [comment, setComment] = useState('');
   const [isPaused, setIsPaused] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showBigHeart, setShowBigHeart] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
-  const commentInputRef = useRef<HTMLInputElement>(null);
   
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const commentInputRef = useRef<HTMLInputElement>(null);
   const lastTap = useRef<number>(0);
   const isRtl = language === 'ar';
 
   useEffect(() => {
-    if (isPaused) return;
+    if (audioRef.current) {
+      audioRef.current.play().catch(() => setIsMuted(true));
+    }
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => setIsMuted(true));
+    }
+  }, []);
 
-    // مدة الستوري ثابتة: 10 ثوانٍ
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.muted = isMuted;
+    if (videoRef.current) videoRef.current.muted = isMuted;
+  }, [isMuted]);
+
+  useEffect(() => {
+    if (isPaused) {
+      audioRef.current?.pause();
+      videoRef.current?.pause();
+      return;
+    } else {
+      audioRef.current?.play().catch(() => {});
+      videoRef.current?.play().catch(() => {});
+    }
+
     const duration = 10000; 
     const intervalTime = 50; 
     const step = 100 / (duration / intervalTime);
@@ -76,8 +99,7 @@ const StoryViewer: React.FC<StoryViewerProps> = ({ story, onClose, language, sit
     triggerFeedback(isRtl ? 'تمت المشاركة' : 'Shared');
   };
 
-  const handleDoubleTap = (e: React.MouseEvent | React.TouchEvent) => {
-    const now = Date.now();
+  const handleDoubleTap = (now: number) => {
     if (now - lastTap.current < 300) {
       if (!liked) handleLike();
       setShowBigHeart(true);
@@ -99,12 +121,14 @@ const StoryViewer: React.FC<StoryViewerProps> = ({ story, onClose, language, sit
       onTouchStart={() => setIsPaused(true)}
       onTouchEnd={() => !commentInputRef.current?.matches(':focus') && setIsPaused(false)}
     >
+      {story.audio && <audio ref={audioRef} src={story.audio} loop />}
+      
       <div 
         className="w-full max-w-lg h-full md:h-[850px] relative bg-slate-900 md:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col border border-white/5"
-        onClick={handleDoubleTap}
+        onClick={() => handleDoubleTap(Date.now())}
       >
         
-        {/* شريط التقدم */}
+        {/* Progress Bars */}
         <div className="absolute top-4 left-0 w-full px-4 flex gap-1.5 z-[70]">
           <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
             <div 
@@ -114,7 +138,7 @@ const StoryViewer: React.FC<StoryViewerProps> = ({ story, onClose, language, sit
           </div>
         </div>
 
-        {/* رأس الصفحة */}
+        {/* Header */}
         <div className="absolute top-8 left-0 w-full px-6 flex items-center justify-between z-[70]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl border-2 border-indigo-500 p-0.5 bg-black/40 backdrop-blur-md">
@@ -122,21 +146,42 @@ const StoryViewer: React.FC<StoryViewerProps> = ({ story, onClose, language, sit
             </div>
             <div className="drop-shadow-lg">
                <h4 className="text-white text-xs font-black uppercase tracking-widest">{siteConfig.manager_name}</h4>
-               <p className="text-[10px] text-indigo-400 font-black">{isRtl ? 'تحديث المدير' : 'Manager Update'}</p>
+               <div className="flex items-center gap-2">
+                 <p className="text-[10px] text-indigo-400 font-black">{isRtl ? 'تحديث المدير' : 'Manager Update'}</p>
+                 {(story.audio || story.video) && !isMuted && (
+                   <div className="flex items-center gap-0.5 h-2">
+                      <div className="w-0.5 bg-indigo-400 animate-[soundWave_0.6s_ease-in-out_infinite] h-full"></div>
+                      <div className="w-0.5 bg-indigo-400 animate-[soundWave_0.8s_ease-in-out_infinite_0.1s] h-1/2"></div>
+                      <div className="w-0.5 bg-indigo-400 animate-[soundWave_0.5s_ease-in-out_infinite_0.2s] h-3/4"></div>
+                   </div>
+                 )}
+               </div>
             </div>
           </div>
           
-          <button 
-            onClick={(e) => { e.stopPropagation(); onClose(); }} 
-            className="p-2 bg-white/10 hover:bg-rose-500 text-white rounded-xl backdrop-blur-xl transition-all border border-white/10 group"
-          >
-            <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-          </button>
+          <div className="flex items-center gap-2">
+            {(story.audio || story.video) && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-xl transition-all border border-white/10"
+              >
+                {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+              </button>
+            )}
+            <button 
+              onClick={(e) => { e.stopPropagation(); onClose(); }} 
+              className="p-2 bg-white/10 hover:bg-rose-500 text-white rounded-xl backdrop-blur-xl transition-all border border-white/10 group"
+            >
+              <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+            </button>
+          </div>
         </div>
 
-        {/* منطقة المحتوى البصري */}
+        {/* Content Area */}
         <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-black">
-           {story.image ? (
+           {story.video ? (
+             <video ref={videoRef} src={story.video} className="w-full h-full object-cover select-none pointer-events-none" playsInline loop />
+           ) : story.image ? (
              <img src={story.image} className="w-full h-full object-cover select-none pointer-events-none" alt="Story" />
            ) : (
              <div className="p-10 text-center space-y-4">
@@ -153,7 +198,7 @@ const StoryViewer: React.FC<StoryViewerProps> = ({ story, onClose, language, sit
 
            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none"></div>
 
-           {/* أزرار تفاعلية جانبية */}
+           {/* Side Actions */}
            <div className={`absolute bottom-40 ${isRtl ? 'left-6' : 'right-6'} flex flex-col gap-5 z-[70]`}>
               <button 
                 onClick={(e) => { e.stopPropagation(); handleLike(); }}
@@ -177,7 +222,7 @@ const StoryViewer: React.FC<StoryViewerProps> = ({ story, onClose, language, sit
               </button>
            </div>
 
-           {/* نص الستوري السفلي */}
+           {/* Bottom Content Message */}
            <div className="absolute inset-x-0 bottom-40 px-8 pr-20 pointer-events-none">
               <div className="bg-black/20 backdrop-blur-xl p-5 rounded-[2rem] border border-white/10 shadow-2xl transform animate-in slide-in-from-bottom-5 duration-700">
                  <p className={`text-white text-base font-bold leading-relaxed ${isRtl ? 'text-right' : 'text-left'}`}>
@@ -187,7 +232,7 @@ const StoryViewer: React.FC<StoryViewerProps> = ({ story, onClose, language, sit
            </div>
         </div>
 
-        {/* شريط الإدخال السفلي */}
+        {/* Input Bar */}
         <div className="absolute bottom-0 left-0 w-full p-6 pb-12 bg-gradient-to-t from-black to-transparent flex flex-col gap-4 z-[70]">
            <div className="relative group">
               <input 
@@ -221,6 +266,13 @@ const StoryViewer: React.FC<StoryViewerProps> = ({ story, onClose, language, sit
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes soundWave {
+          0%, 100% { height: 20%; }
+          50% { height: 100%; }
+        }
+      `}</style>
     </div>
   );
 };

@@ -30,6 +30,7 @@
     "lucide-react": "https://esm.sh/lucide-react@0.475.0",
     "@google/genai": "https://esm.sh/@google/genai@1.35.0",
     "@emailjs/browser": "https://esm.sh/@emailjs/browser@4.4.1",
+    "@imgly/background-removal": "https://esm.sh/@imgly/background-removal@1.5.5",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/"
   }
@@ -85,6 +86,15 @@
 
       .floating-item {
         animation: float 6s ease-in-out infinite;
+      }
+
+      .image-fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.98); }
+        to { opacity: 1; transform: scale(1); }
       }
     </style>
 </head>

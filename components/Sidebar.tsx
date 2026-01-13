@@ -12,6 +12,7 @@ interface SidebarProps {
   settings: GenerationSettings;
   setSettings: React.Dispatch<React.SetStateAction<GenerationSettings>>;
   onGenerate: () => void;
+  onUpload?: (dataUrl: string) => void;
   isGenerating: boolean;
   language: Language;
   onClose: () => void;
@@ -22,7 +23,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
-  isOpen, settings, setSettings, onGenerate, isGenerating, language,
+  isOpen, settings, setSettings, onGenerate, onUpload, isGenerating, language,
   onClose, onOpenApiKey, onLogout, onQuickAction, showTooltips
 }) => {
   const t = translations[language];
@@ -31,8 +32,18 @@ const Sidebar: React.FC<SidebarProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => setSettings(prev => ({ ...prev, uploadedImage: event.target?.result as string }));
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        if (onUpload) onUpload(dataUrl);
+        else setSettings(prev => ({ ...prev, uploadedImage: dataUrl }));
+      };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      onGenerate();
     }
   };
 
@@ -64,12 +75,14 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="w-8 h-8 bg-rose-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-rose-500/20">1</div>
               <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.promptLabel}</h3>
             </div>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter opacity-50">Ctrl+Enter</span>
           </div>
           <div className="relative group">
             <textarea
               className={`w-full h-40 lg:h-48 p-5 text-sm bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none resize-none dark:text-white font-medium transition-all ${language === 'ar' ? 'text-right' : 'text-left'}`}
               placeholder={t.promptPlaceholder}
               value={settings.prompt}
+              onKeyDown={handleKeyDown}
               onChange={(e) => setSettings(prev => ({ ...prev, prompt: e.target.value }))}
             />
           </div>
@@ -87,7 +100,13 @@ const Sidebar: React.FC<SidebarProps> = ({
             {settings.uploadedImage ? (
               <div className="relative aspect-video rounded-xl overflow-hidden">
                 <img src={settings.uploadedImage} className="w-full h-full object-cover" alt="Ref" />
-                <button onClick={() => setSettings(prev => ({ ...prev, uploadedImage: null }))} className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-transform">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSettings(prev => ({ ...prev, uploadedImage: null }));
+                  }} 
+                  className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-transform"
+                >
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -105,8 +124,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-6 border-t dark:border-white/5 lg:border-0 bg-white dark:bg-slate-900 lg:bg-transparent">
         <button 
           onClick={onGenerate} 
-          disabled={isGenerating} 
-          className={`w-full py-5 lg:py-6 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 ${isGenerating ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-rose-500/20'}`}
+          disabled={isGenerating || !settings.prompt.trim()} 
+          className={`w-full py-5 lg:py-6 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 ${isGenerating || !settings.prompt.trim() ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-50' : 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-rose-500/20'}`}
         >
           {isGenerating ? <LoaderIcon className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-current" />}
           {isGenerating ? t.generating : t.generate}

@@ -79,11 +79,13 @@ export interface SiteConfig {
   manager_location: string;
   manager_pic: string;
   site_logo?: string;
-  site_logo_scale?: number; // الحقل الجديد لتكبير الشعار
+  site_logo_scale?: number; 
   global_api_key?: string; 
   global_story?: {
     id: string;
-    image: string;
+    image?: string;
+    video?: string; // الحقل الجديد للفيديو
+    audio?: string;
     message: string;
     active: boolean;
   };

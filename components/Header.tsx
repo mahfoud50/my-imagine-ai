@@ -117,7 +117,7 @@ const Header: React.FC<HeaderProps> = ({
               className="w-auto object-contain transition-all hover:scale-105 active:scale-95"
               style={{ 
                 height: `${(siteConfig.site_logo_scale || 1) * 32}px`, 
-                maxHeight: '48px',
+                maxHeight: '200px', // زيادة الارتفاع الأقصى للسماح بالتكبير الجديد
                 minHeight: '14px'
               }}
               onError={() => setLogoError(true)}
