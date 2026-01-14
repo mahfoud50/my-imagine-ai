@@ -115,17 +115,21 @@ const StoryViewer: React.FC<StoryViewerProps> = ({ story, onClose, language, sit
 
   return (
     <div 
-      className="fixed inset-0 z-[2000] bg-black/95 backdrop-blur-2xl flex items-center justify-center animate-in fade-in duration-500"
+      className="fixed inset-0 z-[2000] bg-black/95 backdrop-blur-2xl flex items-center justify-center animate-in fade-in duration-500 cursor-pointer"
       onMouseDown={() => setIsPaused(true)}
       onMouseUp={() => !commentInputRef.current?.matches(':focus') && setIsPaused(false)}
       onTouchStart={() => setIsPaused(true)}
       onTouchEnd={() => !commentInputRef.current?.matches(':focus') && setIsPaused(false)}
+      onClick={onClose} // الخروج عند الضغط على أي مكان في الخلفية
     >
       {story.audio && <audio ref={audioRef} src={story.audio} loop />}
       
       <div 
-        className="w-full max-w-lg h-full md:h-[850px] relative bg-slate-900 md:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col border border-white/5"
-        onClick={() => handleDoubleTap(Date.now())}
+        className="w-full max-w-lg h-full md:h-[850px] relative bg-slate-900 md:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col border border-white/5 cursor-default"
+        onClick={(e) => {
+          e.stopPropagation(); // منع إغلاق الستوري عند الضغط داخل البطاقة نفسها
+          handleDoubleTap(Date.now());
+        }}
       >
         
         {/* Progress Bars */}

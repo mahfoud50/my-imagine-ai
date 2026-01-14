@@ -14,17 +14,20 @@ import SpeechModal from './components/SpeechModal.tsx';
 import { GoogleGenAI, Modality } from "@google/genai";
 import { Fingerprint } from 'lucide-react';
 import { translations } from './translations.ts';
-import { removeBackground } from "@imgly/background-removal";
 
 // Helper functions for audio processing
 function decode(base64: string) {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+  try {
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  } catch (e) {
+    return new Uint8Array(0);
   }
-  return bytes;
 }
 
 async function decodeAudioData(
@@ -50,8 +53,7 @@ const safeParse = (key: string, defaultValue: any) => {
   try {
     const item = localStorage.getItem(key);
     if (!item) return defaultValue;
-    const parsed = JSON.parse(item);
-    return parsed;
+    return JSON.parse(item);
   } catch (e) {
     return defaultValue;
   }
@@ -120,11 +122,16 @@ const App: React.FC = () => {
       scriptTag.textContent = siteConfig.custom_js || '';
       try {
         if (siteConfig.custom_js) {
-          const executeCode = new Function(siteConfig.custom_js);
-          executeCode();
+          // Execute in a timeout to prevent blocking React render
+          setTimeout(() => {
+            try {
+              const executeCode = new Function(siteConfig.custom_js!);
+              executeCode();
+            } catch (e) { console.error("Admin JS Exec Error:", e); }
+          }, 100);
         }
       } catch (e) {
-        console.error("Admin JS Injection Error:", e);
+        console.error("Admin JS Injection Parsing Error:", e);
       }
     }
   }, [siteConfig.custom_css, siteConfig.custom_js, siteConfig.seo_title, siteConfig.seo_desc]);
@@ -151,7 +158,6 @@ const App: React.FC = () => {
     if (!text.trim()) return;
     setIsSpeechGenerating(true);
     try {
-      // Use injected API key for TTS
       const targetKey = siteConfig.api_key_tts || siteConfig.global_api_key || process.env.API_KEY || '';
       const ai = new GoogleGenAI({ apiKey: targetKey });
       const response = await ai.models.generateContent({
@@ -192,7 +198,6 @@ const App: React.FC = () => {
     setIsGenerating(true);
     setActiveImage(null);
     
-    // Inject API key for Logo or Text to Image or Global
     const targetKey = isLogo 
       ? (siteConfig.api_key_logo || siteConfig.global_api_key || process.env.API_KEY || '')
       : (siteConfig.api_key_text_to_image || siteConfig.global_api_key || process.env.API_KEY || '');
@@ -243,7 +248,6 @@ const App: React.FC = () => {
 
     setIsGenerating(true);
     
-    // Key Injection Mapping
     let targetKey = siteConfig.global_api_key || process.env.API_KEY || '';
     if (type === 'Cleaned') targetKey = siteConfig.api_key_remove_bg || targetKey;
     if (type === 'Upscaled') targetKey = siteConfig.api_key_upscale || targetKey;
@@ -256,7 +260,6 @@ const App: React.FC = () => {
     if (type === 'VirtualTryOn') targetKey = siteConfig.api_key_virtual_try_on || targetKey;
     if (type === 'AddSunglasses') targetKey = siteConfig.api_key_sunglasses || targetKey;
 
-    // Default prompt mapping for tools
     const ACTION_PROMPTS: Partial<Record<GenerationType, string>> = {
       Cleaned: "Remove the background from this image. Keep only the main subject on a solid clean white background.",
       Upscaled: "Enhance and upscale this image to 4K resolution, sharpening every detail and removing noise.",
@@ -309,26 +312,30 @@ const App: React.FC = () => {
     finally { setIsGenerating(false); }
   }, [activeImage, settings.uploadedImage, language, addNotification, siteConfig]);
 
-  // Persist State
+  // Persistent Storage with Safety
   useEffect(() => {
-    if (user) localStorage.setItem('imagine_ai_user', JSON.stringify(user));
-    if (siteConfig) localStorage.setItem('imagine_ai_config', JSON.stringify(siteConfig));
-    if (adminIdentity) localStorage.setItem('admin_identity', JSON.stringify(adminIdentity));
-    if (userSettings) localStorage.setItem('imagine_ai_settings', JSON.stringify(userSettings));
-    if (allUsers) localStorage.setItem('site_verified_users', JSON.stringify(allUsers));
-    if (bannedEmails) localStorage.setItem('banned_emails', JSON.stringify(bannedEmails));
-    
-    if (history) {
+    const saveToLocal = (key: string, data: any) => {
       try {
-        localStorage.setItem('imagine_ai_history', JSON.stringify(history));
+        localStorage.setItem(key, JSON.stringify(data));
       } catch (e) {
-        if (history.length > 5) {
-          const trimmedHistory = history.slice(0, history.length - 5);
-          localStorage.setItem('imagine_ai_history', JSON.stringify(trimmedHistory));
+        console.warn(`LocalStorage Save Failed for ${key}:`, e);
+        if (key === 'imagine_ai_history' && Array.isArray(data) && data.length > 2) {
+           // If history fails, drop oldest 5 and retry
+           const reduced = data.slice(0, data.length - 2);
+           saveToLocal(key, reduced);
         }
       }
-    }
-  }, [user, siteConfig, adminIdentity, userSettings, history, allUsers, bannedEmails]);
+    };
+
+    if (user) saveToLocal('imagine_ai_user', user);
+    if (siteConfig) saveToLocal('imagine_ai_config', siteConfig);
+    if (adminIdentity) saveToLocal('admin_identity', adminIdentity);
+    if (userSettings) saveToLocal('imagine_ai_settings', userSettings);
+    if (allUsers) saveToLocal('site_verified_users', allUsers);
+    if (bannedEmails) saveToLocal('banned_emails', bannedEmails);
+    if (messages) saveToLocal('imagine_ai_messages', messages);
+    if (history) saveToLocal('imagine_ai_history', history);
+  }, [user, siteConfig, adminIdentity, userSettings, history, allUsers, bannedEmails, messages]);
 
   if (!user) return <AuthScreen onLogin={setUser} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} adminIdentity={adminIdentity} />;
 

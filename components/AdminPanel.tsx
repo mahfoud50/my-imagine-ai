@@ -43,19 +43,40 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleUpdateSystem = () => {
+    if (isUpdating) return;
     setIsUpdating(true);
+    
+    // Use a small timeout to allow UI feedback before heavy operations
     setTimeout(() => {
-      setConfig(tempConfig);
-      setAdminIdentity(tempAdminIdentity);
-      setIsUpdating(false);
-      setUpdateStatus(language === 'ar' ? '✅ تم حفظ الإعدادات وتطبيقها بنجاح' : '✅ Settings saved and applied!');
-      setTimeout(() => setUpdateStatus(''), 3000);
-    }, 800);
+      try {
+        // Ensure critical values are never undefined to prevent render crashes
+        const finalConfig = {
+          ...tempConfig,
+          site_logo_scale: tempConfig.site_logo_scale ?? 1.0,
+          ux_blur_intensity: tempConfig.ux_blur_intensity || '20px'
+        };
+
+        setConfig(finalConfig);
+        setAdminIdentity(tempAdminIdentity);
+        
+        setIsUpdating(false);
+        setUpdateStatus(language === 'ar' ? '✅ تم حفظ الإعدادات وتطبيقها بنجاح' : '✅ Settings saved and applied!');
+        setTimeout(() => setUpdateStatus(''), 3000);
+      } catch (err) {
+        console.error("Save Error:", err);
+        setIsUpdating(false);
+        setUpdateStatus(language === 'ar' ? '❌ خطأ أثناء الحفظ (ربما بسبب حجم الصور)' : '❌ Save error (likely image size)');
+      }
+    }, 500);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'logo' | 'story' | 'manager' | 'audio' | 'video') => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert(language === 'ar' ? 'الملف كبير جداً (الأقصى 2MB)' : 'File too large (Max 2MB)');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
