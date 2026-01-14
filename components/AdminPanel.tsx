@@ -352,6 +352,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <div className="col-span-full border-b border-white/5 pb-2 mb-2">
                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">{isRtl ? 'تخصيص مفاتيح الأدوات الذكية' : 'Smart Tools Specific Keys'}</h4>
                 </div>
+                {renderApiKeyInput(isRtl ? 'توليد الصور من النص' : 'Text to Image', 'api_key_text_to_image', <ImageIcon className="w-4 h-4" />, 'bg-rose-600')}
                 {renderApiKeyInput(isRtl ? 'إنشاء لوجو' : 'Logo Creation', 'api_key_logo', <PenTool className="w-4 h-4" />, 'bg-blue-600')}
                 {renderApiKeyInput(isRtl ? 'نص إلى صوت' : 'Text to Speech', 'api_key_tts', <Mic2 className="w-4 h-4" />, 'bg-indigo-600')}
                 {renderApiKeyInput(isRtl ? 'تعديل ذكي' : 'Smart Edit', 'api_key_smart_edit', <Wand2 className="w-4 h-4" />, 'bg-purple-600')}

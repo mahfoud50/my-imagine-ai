@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Settings as SettingsIcon, Bell, Key, LogOut, ChevronDown, CheckCircle, Clock, Sparkles, X, Languages, Menu, Zap, MessageSquare, Shield } from 'lucide-react';
 import { Language, AppNotification, SiteConfig } from '../types.ts';
@@ -47,6 +48,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const hasNewStory = checkHasNewStory();
+  const isStoryActive = siteConfig?.global_story?.active;
 
   useEffect(() => {
     setLogoError(false);
@@ -70,8 +72,10 @@ const Header: React.FC<HeaderProps> = ({
     setIsProfileOpen(false);
   };
 
-  const handleProfileClick = () => {
-    if (hasNewStory && onOpenStory) {
+  // Fixed: handleProfileClick now allows re-watching active stories
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isStoryActive && onOpenStory) {
       onOpenStory();
     } else if (onProfile) {
       onProfile();
@@ -196,7 +200,7 @@ const Header: React.FC<HeaderProps> = ({
 
         <div className="flex items-center gap-3 relative" ref={dropdownRef}>
           <div className="flex items-center gap-2 md:gap-3 cursor-pointer group" onClick={handleProfileClick}>
-            <div className={`relative p-0.5 rounded-full transition-all duration-500 ${hasNewStory ? 'bg-rose-600 animate-spin-slow p-[2px]' : ''}`}>
+            <div className={`relative p-0.5 rounded-full transition-all duration-500 ${isStoryActive ? 'bg-rose-600 p-[2px]' : ''} ${hasNewStory ? 'animate-spin-slow' : ''}`}>
               <div className={`rounded-full bg-[#0f172a] p-0.5`}>
                 <img 
                   src={user?.profilePic || "https://i.pravatar.cc/40"} 
@@ -216,14 +220,12 @@ const Header: React.FC<HeaderProps> = ({
                 {credits > 0 ? `${credits} ${t.points}` : t.free}
               </span>
             </div>
-            {!hasNewStory && (
-              <button 
-                onClick={(e) => { e.stopPropagation(); setIsProfileOpen(!isProfileOpen); }}
-                className="p-1 hover:bg-white/5 rounded-lg transition-all"
-              >
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
-              </button>
-            )}
+            <button 
+              onClick={(e) => { e.stopPropagation(); setIsProfileOpen(!isProfileOpen); }}
+              className="p-1 hover:bg-white/5 rounded-lg transition-all"
+            >
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+            </button>
           </div>
 
           {isProfileOpen && (

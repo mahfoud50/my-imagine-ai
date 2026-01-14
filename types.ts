@@ -82,6 +82,7 @@ export interface SiteConfig {
   site_logo_scale?: number; 
   global_api_key?: string;
   // Smart Tools API Keys
+  api_key_text_to_image?: string;
   api_key_logo?: string;
   api_key_tts?: string;
   api_key_smart_edit?: string;

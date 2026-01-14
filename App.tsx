@@ -76,7 +76,8 @@ const App: React.FC = () => {
     global_html: '', custom_css: '', custom_js: '', ux_blur_intensity: '20px', ux_accent_color: '#6366f1',
     manager_name: 'Ahmad kharbicha', manager_dob: 'Jan 1, 1987', manager_location: 'SAHTEREANN',
     manager_pic: 'https://i.pravatar.cc/150?u=manager', site_logo_scale: 1.0, 
-    global_api_key: '' 
+    global_api_key: '',
+    api_key_text_to_image: ''
   }));
 
   const [userSettings, setUserSettings] = useState<UserSettings>(() => safeParse('imagine_ai_settings', {
@@ -146,27 +147,11 @@ const App: React.FC = () => {
     setToast(newNotif);
   }, []);
 
-  const resetApiKeySession = async () => {
-    // @ts-ignore
-    if (window.aistudio?.openSelectKey) {
-      // @ts-ignore
-      await window.aistudio.openSelectKey();
-    }
-  };
-
-  const ensureApiKey = async () => {
-    // @ts-ignore
-    const hasKey = await window.aistudio?.hasSelectedApiKey();
-    if (!hasKey) {
-      await resetApiKeySession();
-    }
-    return true;
-  };
-
   const handleGenerateSpeech = async (text: string, voice: string) => {
     if (!text.trim()) return;
     setIsSpeechGenerating(true);
     try {
+      // Use injected API key for TTS
       const targetKey = siteConfig.api_key_tts || siteConfig.global_api_key || process.env.API_KEY || '';
       const ai = new GoogleGenAI({ apiKey: targetKey });
       const response = await ai.models.generateContent({
@@ -190,6 +175,7 @@ const App: React.FC = () => {
         source.buffer = audioBuffer;
         source.connect(audioCtx.destination);
         source.start();
+        addNotification(language === 'ar' ? 'تم توليد الصوت' : 'Voice Generated', language === 'ar' ? 'يمكنك الاستماع الآن' : 'You can listen now', 'success');
       }
     } catch (err: any) {
       console.error("TTS Error:", err);
@@ -206,51 +192,14 @@ const App: React.FC = () => {
     setIsGenerating(true);
     setActiveImage(null);
     
+    // Inject API key for Logo or Text to Image or Global
     const targetKey = isLogo 
       ? (siteConfig.api_key_logo || siteConfig.global_api_key || process.env.API_KEY || '')
-      : (siteConfig.global_api_key || process.env.API_KEY || '');
-
-    if (targetKey.startsWith('r8_') && userSettings.modelStrategy === 'accurate') {
-      try {
-        const response = await fetch('https://api.replicate.com/v1/models/google/nano-banana-pro/predictions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${targetKey}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'wait'
-          },
-          body: JSON.stringify({
-            input: {
-              prompt: p,
-              aspect_ratio: settings.aspectRatio || "1:1",
-              output_format: "png"
-            }
-          })
-        });
-        
-        const data = await response.json();
-        if (data.error) throw new Error(data.error.message || "Replicate Error");
-
-        const resultUrl = Array.isArray(data.output) ? data.output[0] : data.output;
-        if (resultUrl) {
-          setActiveImage(resultUrl);
-          setOriginalImage(resultUrl);
-          const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: resultUrl, prompt: p, timestamp: new Date(), model: 'Plus', type: 'Generated' };
-          setHistory(prev => [newItem, ...prev].slice(0, 30));
-          addNotification(language === 'ar' ? 'تم التوليد' : 'Generated', language === 'ar' ? 'صورتك جاهزة الآن بدقة عالية' : 'Your high-res image is ready', 'success');
-        }
-      } catch (err: any) {
-        console.error("Replicate Error:", err);
-        addNotification('Error', 'API Auth Failed', 'system');
-      } finally {
-        setIsGenerating(false);
-      }
-      return;
-    }
+      : (siteConfig.api_key_text_to_image || siteConfig.global_api_key || process.env.API_KEY || '');
 
     try {
       const ai = new GoogleGenAI({ apiKey: targetKey });
-      const finalPrompt = isLogo ? `Professional minimal logo design for: ${p}, high resolution, vector style` : p;
+      const finalPrompt = isLogo ? `Professional minimal high-end logo design for: ${p}, solid background, vector style, 4k` : p;
       const modelName = userSettings.modelStrategy === 'fast' ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview';
 
       const response = await ai.models.generateContent({
@@ -279,10 +228,11 @@ const App: React.FC = () => {
         setOriginalImage(resultUrl);
         const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: resultUrl, prompt: p, timestamp: new Date(), model: settings.model, type: isLogo ? 'LogoCreation' : 'Generated' };
         setHistory(prev => [newItem, ...prev].slice(0, 30));
+        addNotification(isLogo ? (language === 'ar' ? 'تم تصميم الشعار' : 'Logo Designed') : (language === 'ar' ? 'تم التوليد' : 'Generated'), language === 'ar' ? 'صورتك جاهزة الآن' : 'Your image is ready', 'success');
       }
     } catch (e: any) { 
       console.error("Generation error:", e);
-      addNotification('Error', 'Generation failed', 'system');
+      addNotification('Error', 'Generation failed. Check your API Key.', 'system');
     }
     finally { setIsGenerating(false); }
   }, [settings.prompt, settings.aspectRatio, settings.model, language, addNotification, userSettings.modelStrategy, siteConfig]);
@@ -293,6 +243,7 @@ const App: React.FC = () => {
 
     setIsGenerating(true);
     
+    // Key Injection Mapping
     let targetKey = siteConfig.global_api_key || process.env.API_KEY || '';
     if (type === 'Cleaned') targetKey = siteConfig.api_key_remove_bg || targetKey;
     if (type === 'Upscaled') targetKey = siteConfig.api_key_upscale || targetKey;
@@ -305,25 +256,23 @@ const App: React.FC = () => {
     if (type === 'VirtualTryOn') targetKey = siteConfig.api_key_virtual_try_on || targetKey;
     if (type === 'AddSunglasses') targetKey = siteConfig.api_key_sunglasses || targetKey;
 
-    if (type === 'Cleaned') {
-      try {
-        const blob = await removeBackground(sourceImage);
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          setActiveImage(result);
-          const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: result, prompt: language === 'ar' ? 'إزالة الخلفية' : 'Background Removed', timestamp: new Date(), model: 'Plus', type: 'Cleaned' };
-          setHistory(prev => [newItem, ...prev].slice(0, 30));
-          setIsGenerating(false);
-        };
-        reader.readAsDataURL(blob);
-      } catch (err) { setIsGenerating(false); }
-      return;
-    }
+    // Default prompt mapping for tools
+    const ACTION_PROMPTS: Partial<Record<GenerationType, string>> = {
+      Cleaned: "Remove the background from this image. Keep only the main subject on a solid clean white background.",
+      Upscaled: "Enhance and upscale this image to 4K resolution, sharpening every detail and removing noise.",
+      WatermarkRemoved: "Identify and seamlessly remove any watermarks, logos, or text overlays from this image.",
+      Colorized: "Colorize this black and white photo with natural, vibrant, and realistic colors.",
+      ObjectRemoved: "Identify distracting background objects and remove them seamlessly while filling the space naturally.",
+      Cartoonized: "Transform this photo into a high-quality 3D Disney/Pixar style animated cartoon character.",
+      Restored: "Restore this old photo by fixing scratches, improving contrast, and sharpening blurry areas.",
+      VirtualTryOn: "Imagine the person in this image wearing new stylish clothes, looking perfectly fitted and realistic.",
+      AddSunglasses: "Add a pair of stylish modern sunglasses to the person in this image, matching the lighting perfectly."
+    };
+
+    const promptText = customPrompt || ACTION_PROMPTS[type] || "Enhance this image.";
 
     try {
       const ai = new GoogleGenAI({ apiKey: targetKey });
-      const promptText = customPrompt || (language === 'ar' ? 'تحسين جودة الصورة وتوضيح التفاصيل' : 'Enhance image quality and sharpen details');
       const mimeType = sourceImage.split(';')[0].split(':')[1] || 'image/png';
       const base64Data = sourceImage.split(',')[1];
       
@@ -351,14 +300,16 @@ const App: React.FC = () => {
         setActiveImage(resultUrl);
         const newItem: HistoryItem = { id: Date.now().toString(), imageUrl: resultUrl, prompt: promptText, timestamp: new Date(), model: 'Plus', type };
         setHistory(prev => [newItem, ...prev].slice(0, 30));
+        addNotification(language === 'ar' ? 'اكتملت المعالجة' : 'Process Complete', language === 'ar' ? `تم تنفيذ أداة: ${type}` : `Tool executed: ${type}`, 'success');
       }
     } catch (error: any) { 
       console.error("Action error:", error);
-      addNotification('Process Error', 'Failed to process image', 'system');
+      addNotification('API Error', 'Tool processing failed. Check your API Key settings.', 'system');
     }
     finally { setIsGenerating(false); }
   }, [activeImage, settings.uploadedImage, language, addNotification, siteConfig]);
 
+  // Persist State
   useEffect(() => {
     if (user) localStorage.setItem('imagine_ai_user', JSON.stringify(user));
     if (siteConfig) localStorage.setItem('imagine_ai_config', JSON.stringify(siteConfig));
