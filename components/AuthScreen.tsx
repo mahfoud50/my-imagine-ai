@@ -7,7 +7,7 @@ import { translations } from '../translations.ts';
 import AdminLogin from './AdminLogin.tsx';
 
 interface AuthScreenProps {
-  onLogin: (userData: any) => void;
+  onLogin: (userData: any, directToAdmin?: boolean) => void;
   language: Language;
   allUsers: any[];
   setAllUsers: (users: any[]) => void;
@@ -73,13 +73,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
     }
 
     if (isLogin && email.toLowerCase() === adminIdentity.email.toLowerCase() && password === adminIdentity.password) {
-        onLogin({ email, name: 'Mahfoud', username: 'admin', isAdmin: true });
+        onLogin({ email, name: 'Mahfoud', username: 'admin', isAdmin: true }, false);
         return;
     }
 
     if (isLogin) {
         const found = allUsers.find((u: any) => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password);
-        if (found) onLogin({ ...found, isAdmin: false });
+        if (found) onLogin({ ...found, isAdmin: false }, false);
         else setError(language === 'ar' ? 'بيانات الدخول غير صحيحة.' : 'Invalid credentials.');
         setIsLoading(false);
         return;
@@ -109,7 +109,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
     if (enteredOtp === generatedOtp) {
       const newUser = { email, name: name || 'User', username: username.trim().toLowerCase(), password, isAdmin: false };
       setAllUsers([...allUsers, newUser]);
-      onLogin(newUser);
+      onLogin(newUser, false);
     } else {
       setError(language === 'ar' ? 'رمز التحقق غير صحيح.' : 'Invalid OTP.');
     }

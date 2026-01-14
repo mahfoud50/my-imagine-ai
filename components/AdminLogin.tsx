@@ -7,7 +7,7 @@ import { translations } from '../translations.ts';
 interface AdminLoginProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (userData: any) => void;
+  onLogin: (userData: any, directToAdmin?: boolean) => void;
   language: Language;
   adminIdentity: any;
 }
@@ -24,7 +24,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email.trim().toLowerCase() === adminIdentity.email.toLowerCase() && password === adminIdentity.password) {
-      onLogin({ email: adminIdentity.email, name: 'Mahfoud', username: 'admin', isAdmin: true });
+      onLogin({ email: adminIdentity.email, name: 'Mahfoud', username: 'admin', isAdmin: true }, true);
       onClose();
     } else {
       setError(language === 'ar' ? 'بيانات الوصول غير صحيحة.' : 'Credentials invalid.');
