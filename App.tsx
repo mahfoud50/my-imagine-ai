@@ -117,18 +117,15 @@ const App: React.FC = () => {
     prompt: '', model: 'Plus', aspectRatio: '1:1', steps: 30, uploadedImage: null
   });
 
-  // ⚡ Code Injection & SEO Real-time Sync
+  // ⚡ Code Injection & SEO Sync
   useEffect(() => {
-    // Apply SEO
     document.title = siteConfig.seo_title || 'Imagine AI';
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', siteConfig.seo_desc || '');
 
-    // Apply CSS Injection
     const styleTag = document.getElementById('admin-dynamic-css');
     if (styleTag) styleTag.textContent = siteConfig.custom_css || '';
 
-    // Apply JS Injection
     const scriptTag = document.getElementById('admin-dynamic-js');
     if (scriptTag) {
       scriptTag.textContent = siteConfig.custom_js || '';
@@ -141,9 +138,7 @@ const App: React.FC = () => {
             } catch (e) { console.error("Admin JS Exec Error:", e); }
           }, 100);
         }
-      } catch (e) {
-        console.error("Admin JS Injection Parsing Error:", e);
-      }
+      } catch (e) { console.error("Admin JS Injection Error:", e); }
     }
   }, [siteConfig.custom_css, siteConfig.custom_js, siteConfig.seo_title, siteConfig.seo_desc]);
 
@@ -169,7 +164,6 @@ const App: React.FC = () => {
     if (!text.trim()) return;
     setIsSpeechGenerating(true);
     try {
-      // Use TTS specific key if exists
       const targetKey = siteConfig.api_key_tts || siteConfig.global_api_key || process.env.API_KEY || '';
       const ai = new GoogleGenAI({ apiKey: targetKey });
       const response = await ai.models.generateContent({
@@ -197,7 +191,7 @@ const App: React.FC = () => {
       }
     } catch (err: any) {
       console.error("TTS Error:", err);
-      addNotification('Speech Error', 'Failed to generate voice', 'system');
+      addNotification('Speech Error', 'Check API Key in Admin Panel', 'system');
     } finally {
       setIsSpeechGenerating(false);
     }
@@ -210,14 +204,13 @@ const App: React.FC = () => {
     setIsGenerating(true);
     setActiveImage(null);
     
-    // Choose correct API Key from Admin Config
     const targetKey = isLogo 
       ? (siteConfig.api_key_logo || siteConfig.global_api_key || process.env.API_KEY || '')
       : (siteConfig.api_key_text_to_image || siteConfig.global_api_key || process.env.API_KEY || '');
 
     try {
       const ai = new GoogleGenAI({ apiKey: targetKey });
-      const finalPrompt = isLogo ? `Professional high-end minimalist vector logo design for: ${p}. Solid background, sharp clean lines, 4k, branding style.` : p;
+      const finalPrompt = isLogo ? `High-end professional minimal vector logo for: ${p}, solid clean background, 4k resolution.` : p;
       const modelName = userSettings.modelStrategy === 'fast' ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview';
 
       const response = await ai.models.generateContent({
@@ -249,10 +242,9 @@ const App: React.FC = () => {
         addNotification(isLogo ? (language === 'ar' ? 'تم تصميم الشعار' : 'Logo Designed') : (language === 'ar' ? 'تم التوليد' : 'Generated'), language === 'ar' ? 'صورتك جاهزة الآن' : 'Your image is ready', 'success');
       }
     } catch (e: any) { 
-      console.error("Generation error:", e);
-      addNotification('Error', 'Generation failed. Check your API Key settings in Admin Panel.', 'system');
-    }
-    finally { setIsGenerating(false); }
+      console.error("Gen Error:", e);
+      addNotification('API Error', 'Please check specific keys in Admin Panel', 'system');
+    } finally { setIsGenerating(false); }
   }, [settings.prompt, settings.aspectRatio, settings.model, language, addNotification, userSettings.modelStrategy, siteConfig]);
 
   const handleImageAction = useCallback(async (type: GenerationType, customPrompt?: string) => {
@@ -261,7 +253,6 @@ const App: React.FC = () => {
 
     setIsGenerating(true);
     
-    // Key Injection Mapping from Admin Settings
     let targetKey = siteConfig.global_api_key || process.env.API_KEY || '';
     if (type === 'Cleaned') targetKey = siteConfig.api_key_remove_bg || targetKey;
     if (type === 'Upscaled') targetKey = siteConfig.api_key_upscale || targetKey;
@@ -274,18 +265,17 @@ const App: React.FC = () => {
     if (type === 'VirtualTryOn') targetKey = siteConfig.api_key_virtual_try_on || targetKey;
     if (type === 'AddSunglasses') targetKey = siteConfig.api_key_sunglasses || targetKey;
 
-    // Specialized Tool Prompts
     const ACTION_PROMPTS: Partial<Record<GenerationType, string>> = {
-      Cleaned: "Remove the background of this image. Keep only the main subject on a pure white solid background.",
-      Upscaled: "Upscale and enhance this image to 4K resolution. Sharpen details, remove artifacts, and improve clarity.",
-      WatermarkRemoved: "Identify any text, logos, or watermarks in this image and remove them seamlessly while filling the texture.",
-      Colorized: "Vibrantly colorize this black and white image. Use natural, realistic skin tones and environmental colors.",
-      ObjectRemoved: "Identify and remove distracting background objects. Fill the empty space with a natural, matching texture.",
-      Cartoonized: "Transform the subject of this photo into a high-quality 3D Disney/Pixar style animated character.",
-      Restored: "Restore this old photo. Remove scratches, fix faded colors, sharpen blurred areas, and improve contrast.",
-      VirtualTryOn: "Synthesize the person in this image wearing high-fashion clothes that fit perfectly and match the lighting.",
-      AddSunglasses: "Add a pair of stylish, modern sunglasses to the person in this image. Ensure the reflections and lighting look natural.",
-      Edited: customPrompt || "Edit this image based on user request."
+      Cleaned: "Extract subject and remove background, result in high contrast against white.",
+      Upscaled: "Enhance image quality to 4K, remove artifacts and sharpen edges.",
+      WatermarkRemoved: "Seamlessly remove watermarks and text overlays from this image.",
+      Colorized: "Apply natural, realistic colors to this monochromatic image.",
+      ObjectRemoved: "Remove background distractions and fill space naturally with matching textures.",
+      Cartoonized: "Stylize this person into a 3D Disney/Pixar animation character.",
+      Restored: "Fix scratches and improve lighting in this old photograph.",
+      VirtualTryOn: "Imagine the subject wearing new high-fashion clothes that fit perfectly.",
+      AddSunglasses: "Place stylish sunglasses on the subject's face matching the lighting.",
+      Edited: customPrompt || "Apply intelligent edits to this image."
     };
 
     const promptText = ACTION_PROMPTS[type] || customPrompt || "Enhance this image.";
@@ -323,25 +313,19 @@ const App: React.FC = () => {
       }
     } catch (error: any) { 
       console.error("Action error:", error);
-      addNotification('API Error', 'Tool processing failed. Check your API Key in Admin Panel.', 'system');
-    }
-    finally { setIsGenerating(false); }
+      addNotification('API Error', 'Ensure tool specific API key is set in Admin Panel', 'system');
+    } finally { setIsGenerating(false); }
   }, [activeImage, settings.uploadedImage, language, addNotification, siteConfig]);
 
-  // Persistent Storage with Safety
+  // Persistent Storage logic
   useEffect(() => {
     const saveToLocal = (key: string, data: any) => {
-      try {
-        localStorage.setItem(key, JSON.stringify(data));
-      } catch (e) {
-        console.warn(`LocalStorage Save Failed for ${key}:`, e);
-        if (key === 'imagine_ai_history' && Array.isArray(data) && data.length > 2) {
-           const reduced = data.slice(0, data.length - 2);
-           saveToLocal(key, reduced);
+      try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) {
+        if (key === 'imagine_ai_history' && Array.isArray(data)) {
+           localStorage.setItem(key, JSON.stringify(data.slice(0, 10)));
         }
       }
     };
-
     if (user) saveToLocal('imagine_ai_user', user);
     if (siteConfig) saveToLocal('imagine_ai_config', siteConfig);
     if (adminIdentity) saveToLocal('admin_identity', adminIdentity);
@@ -382,6 +366,8 @@ const App: React.FC = () => {
           loadingStep={loadingStep}
           prompt={settings.prompt} 
           language={language} 
+          isSidebarOpen={isSidebarOpen}
+          isGalleryOpen={isGalleryOpen}
           onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)} 
           onRemoveBackground={() => handleImageAction('Cleaned')} 
           onUpscale={() => handleImageAction('Upscaled')} 
@@ -406,7 +392,7 @@ const App: React.FC = () => {
       {isAdminOpen && <AdminPanel config={siteConfig} setConfig={setSiteConfig} messages={messages} setMessages={setMessages} onClose={() => setIsAdminOpen(false)} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} setBannedEmails={setBannedEmails} adminIdentity={adminIdentity} setAdminIdentity={setAdminIdentity} />}
       
       {isStoryOpen && siteConfig.global_story?.active && (
-        <StoryViewer story={{...siteConfig.global_story, timestamp: Date.now()}} onClose={() => { setIsStoryOpen(false); const seen = JSON.parse(localStorage.getItem('seen_stories') || '[]'); if (!seen.includes(siteConfig.global_story?.id)) seen.push(siteConfig.global_story?.id); localStorage.setItem('seen_stories', JSON.stringify(seen)); }} language={language} siteConfig={siteConfig} />
+        <StoryViewer story={{...siteConfig.global_story, timestamp: Date.now()}} onClose={() => { setIsStoryOpen(false); }} language={language} siteConfig={siteConfig} />
       )}
       <ToastNotification toast={toast} onClose={() => setToast(null)} language={language} />
       {isSpeechModalOpen && <SpeechModal isOpen={isSpeechModalOpen} onClose={() => setIsSpeechModalOpen(false)} onGenerate={handleGenerateSpeech} language={language} isGenerating={isSpeechGenerating} />}
