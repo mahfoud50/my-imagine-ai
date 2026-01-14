@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Upload, X, Zap, MessageSquare, 
@@ -53,13 +52,13 @@ const Sidebar: React.FC<SidebarProps> = ({
     <aside className={`
       fixed lg:relative inset-y-0 ${isRtl ? 'right-0' : 'left-0'} 
       w-80 max-w-[85vw] h-full lg:h-[calc(100vh-5rem)] 
-      bg-white dark:bg-slate-900 backdrop-blur-2xl border-x lg:border dark:border-white/5 
+      bg-white dark:bg-slate-900 backdrop-blur-xl border-x lg:border dark:border-white/5 
       lg:m-4 lg:rounded-[2.5rem] flex flex-col overflow-hidden 
       shadow-2xl z-[60] transition-all duration-500 ease-in-out
       ${isOpen ? 'translate-x-0 opacity-100' : (isRtl ? 'translate-x-full opacity-0 pointer-events-none' : '-translate-x-full opacity-0 pointer-events-none')}
       ${!isOpen ? 'w-0 m-0 border-0' : 'w-80'}
     `}>
-      {/* Header for Mobile/Sidebar control */}
+      {/* العنوان */}
       <div className="flex items-center justify-between p-6 border-b dark:border-white/5">
         <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-widest text-xs">{t.promptLabel}</h3>
         <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all">
@@ -68,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
-        {/* Step 1: Prompt */}
+        {/* الخطوة 1: الوصف (مع الـ ID الجديد للتحكم) */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -79,6 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <div className="relative group">
             <textarea
+              id="main-prompt-input" // ⚡ الـ ID المطلوب للربط مع المحرك الجديد
               className={`w-full h-40 lg:h-48 p-5 text-sm bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none resize-none dark:text-white font-medium transition-all ${language === 'ar' ? 'text-right' : 'text-left'}`}
               placeholder={t.promptPlaceholder}
               value={settings.prompt}
@@ -88,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </section>
 
-        {/* Step 2: Upload Reference */}
+        {/* الخطوة 2: رفع الصورة */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -101,10 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="relative aspect-video rounded-xl overflow-hidden">
                 <img src={settings.uploadedImage} className="w-full h-full object-cover" alt="Ref" />
                 <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSettings(prev => ({ ...prev, uploadedImage: null }));
-                  }} 
+                  onClick={(e) => { e.stopPropagation(); setSettings(prev => ({ ...prev, uploadedImage: null })); }} 
                   className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-transform"
                 >
                   <X className="w-4 h-4" />
@@ -121,8 +118,10 @@ const Sidebar: React.FC<SidebarProps> = ({
         </section>
       </div>
 
+      {/* زر التوليد (مع الـ ID المطلوب للتحكم) */}
       <div className="p-6 border-t dark:border-white/5 bg-white dark:bg-slate-900 lg:bg-transparent">
         <button 
+          id="main-generate-btn" // ⚡ الـ ID المطلوب
           onClick={onGenerate} 
           disabled={isGenerating || !settings.prompt.trim()} 
           className={`w-full py-5 lg:py-6 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 ${isGenerating || !settings.prompt.trim() ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-50' : 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-rose-500/20'}`}
