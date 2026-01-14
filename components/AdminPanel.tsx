@@ -8,7 +8,9 @@ import {
   ImageIcon, Sparkles, Megaphone, Palette, Eye, EyeOff, Key,
   Upload, Fingerprint, MapPin, Calendar, ShieldCheck, AlignLeft,
   Type, Layers, Sliders, Smartphone, CheckCircle, Reply, Send, Music, Volume2, Video,
-  Clock, Circle, Activity, TrendingUp, Globe, FileCode
+  Clock, Circle, Activity, TrendingUp, Globe, FileCode, Wand2, Eraser, Maximize2, Shirt, PenTool, Mic2, Scissors, Wind, Smile,
+  // Add missing ShieldAlert import
+  ShieldAlert
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -35,17 +37,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [tempAdminIdentity, setTempAdminIdentity] = useState(adminIdentity);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateStatus, setUpdateStatus] = useState('');
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [showAdminPass, setShowAdminPass] = useState(false);
+  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
 
-  const [replyingToId, setReplyingToId] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState('');
-
-  const storyFileRef = useRef<HTMLInputElement>(null);
-  const videoFileRef = useRef<HTMLInputElement>(null);
-  const audioFileRef = useRef<HTMLInputElement>(null);
-  const managerFileRef = useRef<HTMLInputElement>(null);
-  const logoFileRef = useRef<HTMLInputElement>(null);
+  const toggleKeyVisibility = (key: string) => {
+    setVisibleKeys(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const handleUpdateSystem = () => {
     setIsUpdating(true);
@@ -53,37 +49,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       setConfig(tempConfig);
       setAdminIdentity(tempAdminIdentity);
       setIsUpdating(false);
-      setUpdateStatus(language === 'ar' ? '✅ تم حفظ الإعدادات بنجاح' : '✅ Settings saved!');
+      setUpdateStatus(language === 'ar' ? '✅ تم حفظ الإعدادات وتطبيقها بنجاح' : '✅ Settings saved and applied!');
       setTimeout(() => setUpdateStatus(''), 3000);
     }, 800);
-  };
-
-  const handlePublishNewStory = () => {
-    const newStoryId = `STORY-${Date.now()}`;
-    const newStory = {
-      ...(tempConfig.global_story || { message: '', active: false }),
-      id: newStoryId,
-      active: true
-    };
-    const updated = { ...tempConfig, global_story: newStory };
-    setTempConfig(updated);
-    setConfig(updated);
-    setUpdateStatus(language === 'ar' ? '🚀 تم نشر الستوري' : '🚀 Story Published!');
-  };
-
-  const deleteMessage = (id: string) => {
-    setMessages(messages.filter(m => m.id !== id));
-  };
-
-  const handleSendReply = (messageId: string) => {
-    if (!replyText.trim()) return;
-    const updatedMessages = messages.map(msg => 
-      msg.id === messageId ? { ...msg, reply: replyText, replyTimestamp: new Date(), isRead: true } : msg
-    );
-    setMessages(updatedMessages);
-    setReplyingToId(null);
-    setReplyText('');
-    setUpdateStatus(language === 'ar' ? '✅ تم إرسال الرد' : '✅ Reply sent!');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'logo' | 'story' | 'manager' | 'audio' | 'video') => {
@@ -118,54 +86,292 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const isRtl = language === 'ar';
 
+  const renderApiKeyInput = (label: string, configKey: keyof SiteConfig, icon: any, color: string) => (
+    <div className="space-y-2 group">
+      <div className="flex items-center gap-2 mb-1">
+        <div className={`p-1.5 rounded-lg ${color} text-white shadow-sm`}>{icon}</div>
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
+      </div>
+      <div className="relative">
+        <input 
+          type={visibleKeys[configKey] ? "text" : "password"} 
+          value={(tempConfig as any)[configKey] || ''} 
+          onChange={e => setTempConfig({...tempConfig, [configKey]: e.target.value})}
+          placeholder="sk-..."
+          className="w-full p-3.5 bg-slate-900 border border-white/5 rounded-xl text-white font-mono text-[11px] outline-none focus:border-indigo-500 transition-all shadow-inner"
+        />
+        <button 
+          onClick={() => toggleKeyVisibility(configKey)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-indigo-400"
+        >
+          {visibleKeys[configKey] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+    </div>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'MANAGER_PROFILE':
+        return (
+          <div className="space-y-8 animate-in fade-in duration-500">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="p-8 bg-slate-800/40 rounded-[2.5rem] border border-white/5 space-y-6">
+                   <h4 className="text-white font-black flex items-center gap-3"><User className="w-5 h-5 text-indigo-400" /> {isRtl ? 'بيانات المدير الأساسية' : 'Manager Basic Info'}</h4>
+                   <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                         <img src={tempConfig.manager_pic} className="w-16 h-16 rounded-2xl object-cover border-2 border-white/10" alt="" />
+                         <button onClick={() => document.getElementById('manager-pic-up')?.click()} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase">Change Photo</button>
+                         <input id="manager-pic-up" type="file" className="hidden" onChange={e => handleFileUpload(e, 'manager')} />
+                      </div>
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black text-slate-500 uppercase">Manager Name</label>
+                         <input value={tempConfig.manager_name} onChange={e => setTempConfig({...tempConfig, manager_name: e.target.value})} className="w-full p-3 bg-slate-900 border border-white/5 rounded-xl text-white text-xs" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase">Birth Date</label>
+                            <input value={tempConfig.manager_dob} onChange={e => setTempConfig({...tempConfig, manager_dob: e.target.value})} className="w-full p-3 bg-slate-900 border border-white/5 rounded-xl text-white text-xs" />
+                         </div>
+                         <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase">Location</label>
+                            <input value={tempConfig.manager_location} onChange={e => setTempConfig({...tempConfig, manager_location: e.target.value})} className="w-full p-3 bg-slate-900 border border-white/5 rounded-xl text-white text-xs" />
+                         </div>
+                      </div>
+                   </div>
+                </div>
+             </div>
+          </div>
+        );
+
       case 'MESSAGES':
         return (
           <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center justify-between mb-4">
-               <h3 className="text-xl font-black text-white">{isRtl ? 'رسائل المستخدمين' : 'User Messages'}</h3>
-               <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-black">{messages.length} {isRtl ? 'رسالة' : 'Messages'}</span>
+               <h3 className="text-xl font-black text-white">{isRtl ? 'صندوق الوارد' : 'Inbox Messages'}</h3>
+               <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-black">{messages.length}</span>
             </div>
-            <div className="space-y-4">
-              {messages.map((msg) => (
-                <div key={msg.id} className="p-6 bg-slate-800/40 rounded-3xl border border-white/5 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400"><User className="w-5 h-5" /></div>
-                      <div>
-                        <p className="text-xs font-black text-white">{msg.senderName}</p>
-                        <p className="text-[10px] text-slate-500">{msg.senderEmail}</p>
+            {messages.length === 0 ? (
+               <div className="py-20 text-center text-slate-500 font-black uppercase tracking-widest">{isRtl ? 'لا توجد رسائل حالياً' : 'No messages yet'}</div>
+            ) : (
+              <div className="space-y-4">
+                {messages.map((msg) => (
+                  <div key={msg.id} className="p-6 bg-slate-800/40 rounded-3xl border border-white/5 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400"><User className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-xs font-black text-white">{msg.senderName}</p>
+                          <p className="text-[10px] text-slate-500">{msg.senderEmail}</p>
+                        </div>
                       </div>
+                      <button onClick={() => setMessages(messages.filter(m => m.id !== msg.id))} className="p-2 text-slate-500 hover:text-rose-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
-                    <button onClick={() => deleteMessage(msg.id)} className="p-2 text-slate-500 hover:text-rose-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    <p className="text-sm text-slate-300 bg-slate-900/40 p-4 rounded-2xl border border-white/5">{msg.content}</p>
+                    {msg.reply ? (
+                      <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                        <p className="text-[10px] font-black text-emerald-400 uppercase mb-2 flex items-center gap-2"><CheckCircle className="w-3 h-3" /> {isRtl ? 'رد الإدارة' : 'Manager Reply'}</p>
+                        <p className="text-sm text-emerald-100">{msg.reply}</p>
+                      </div>
+                    ) : (
+                      <button onClick={() => {
+                        const reply = prompt(isRtl ? 'اكتب ردك:' : 'Write reply:');
+                        if (reply) setMessages(messages.map(m => m.id === msg.id ? {...m, reply, replyTimestamp: new Date(), isRead: true} : m));
+                      }} className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase flex items-center gap-2"><Reply className="w-3.5 h-3.5" /> {isRtl ? 'رد الآن' : 'Reply Now'}</button>
+                    )}
                   </div>
-                  <p className="text-sm text-slate-300 bg-slate-900/40 p-4 rounded-2xl border border-white/5">{msg.content}</p>
-                  
-                  {msg.reply ? (
-                    <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
-                      <p className="text-[10px] font-black text-emerald-400 uppercase mb-2 flex items-center gap-2"><CheckCircle className="w-3 h-3" /> {isRtl ? 'تم الرد' : 'Replied'}</p>
-                      <p className="text-sm text-emerald-100">{msg.reply}</p>
-                    </div>
-                  ) : (
-                    <div className="pt-2">
-                       {replyingToId === msg.id ? (
-                         <div className="space-y-3">
-                           <textarea value={replyText} onChange={e => setReplyText(e.target.value)} className="w-full h-24 p-4 bg-slate-950 border border-indigo-500/30 rounded-2xl text-white text-sm outline-none" placeholder={isRtl ? 'اكتب ردك هنا...' : 'Write your reply...'} />
-                           <div className="flex gap-2">
-                              <button onClick={() => handleSendReply(msg.id)} className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase flex items-center gap-2"><Send className="w-3.5 h-3.5" /> {isRtl ? 'إرسال الرد' : 'Send Reply'}</button>
-                              <button onClick={() => setReplyingToId(null)} className="px-6 py-2 bg-slate-700 text-slate-300 rounded-xl text-xs font-black uppercase">{isRtl ? 'إلغاء' : 'Cancel'}</button>
-                           </div>
-                         </div>
-                       ) : (
-                         <button onClick={() => setReplyingToId(msg.id)} className="px-6 py-2 bg-slate-700 hover:bg-indigo-600 text-white rounded-xl text-xs font-black uppercase flex items-center gap-2 transition-all"><Reply className="w-3.5 h-3.5" /> {isRtl ? 'رد الآن' : 'Reply Now'}</button>
-                       )}
-                    </div>
-                  )}
+                ))}
+              </div>
+            )}
+          </div>
+        );
+
+      case 'USERS':
+        return (
+          <div className="space-y-6 animate-in fade-in duration-500">
+             <div className="flex items-center justify-between">
+                <h3 className="text-xl font-black text-white">{isRtl ? 'إدارة المستخدمين' : 'User Management'}</h3>
+                <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-black">{allUsers.length} Users</span>
+             </div>
+             <div className="bg-slate-800/40 border border-white/5 rounded-3xl overflow-hidden">
+                <table className="w-full text-[11px] text-left">
+                   <thead className="bg-white/5 text-slate-400 font-black uppercase tracking-widest border-b border-white/5">
+                      <tr>
+                         <th className="px-6 py-4">{isRtl ? 'المستخدم' : 'User'}</th>
+                         <th className="px-6 py-4">{isRtl ? 'البريد' : 'Email'}</th>
+                         <th className="px-6 py-4">{isRtl ? 'الحالة' : 'Status'}</th>
+                         <th className="px-6 py-4 text-center">{isRtl ? 'إجراءات' : 'Actions'}</th>
+                      </tr>
+                   </thead>
+                   <tbody className="divide-y divide-white/5">
+                      {allUsers.map(u => (
+                        <tr key={u.email} className="hover:bg-white/5 transition-colors">
+                           <td className="px-6 py-4 text-white font-bold">{u.name}</td>
+                           <td className="px-6 py-4 text-slate-400 font-mono">{u.email}</td>
+                           <td className="px-6 py-4">
+                              {bannedEmails.includes(u.email) ? (
+                                 <span className="px-2 py-0.5 bg-rose-500/20 text-rose-500 rounded-full font-black text-[9px] uppercase">Banned</span>
+                              ) : (
+                                 <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-500 rounded-full font-black text-[9px] uppercase">Active</span>
+                              )}
+                           </td>
+                           <td className="px-6 py-4 flex items-center justify-center gap-2">
+                              {bannedEmails.includes(u.email) ? (
+                                 <button onClick={() => setBannedEmails(bannedEmails.filter(e => e !== u.email))} className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-lg"><UserCheck className="w-4 h-4" /></button>
+                              ) : (
+                                 <button onClick={() => setBannedEmails([...bannedEmails, u.email])} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg"><UserX className="w-4 h-4" /></button>
+                              )}
+                              <button onClick={() => setAllUsers(allUsers.filter(usr => usr.email !== u.email))} className="p-2 text-slate-500 hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>
+                           </td>
+                        </tr>
+                      ))}
+                   </tbody>
+                </table>
+             </div>
+          </div>
+        );
+
+      case 'GLOBAL_STORY':
+        return (
+          <div className="space-y-8 animate-in fade-in duration-500">
+             <div className="p-8 bg-slate-800/40 rounded-[2.5rem] border border-white/5 space-y-6">
+                <div className="flex items-center justify-between">
+                   <h4 className="text-white font-black flex items-center gap-3"><Megaphone className="w-5 h-5 text-rose-500" /> {isRtl ? 'الستوري الترويجي العام' : 'Global Story Promo'}</h4>
+                   <button onClick={() => setTempConfig({...tempConfig, global_story: {...(tempConfig.global_story || {id: '1', message: '', active: false}), active: !tempConfig.global_story?.active}})} className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase ${tempConfig.global_story?.active ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                      {tempConfig.global_story?.active ? 'ACTIVE' : 'DISABLED'}
+                   </button>
                 </div>
-              ))}
-              {messages.length === 0 && <div className="p-20 text-center text-slate-500 font-black uppercase tracking-widest">{isRtl ? 'لا توجد رسائل حالياً' : 'No messages in inbox'}</div>}
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-4">
+                      <label className="text-[10px] font-black text-slate-500 uppercase">Story Message</label>
+                      <textarea value={tempConfig.global_story?.message} onChange={e => setTempConfig({...tempConfig, global_story: {...(tempConfig.global_story || {id: '1', message: '', active: false}), message: e.target.value}})} className="w-full h-32 p-4 bg-slate-900 border border-white/5 rounded-2xl text-white text-xs outline-none" placeholder="Write something..." />
+                   </div>
+                   <div className="space-y-4">
+                      <label className="text-[10px] font-black text-slate-500 uppercase">Media Content</label>
+                      <div className="grid grid-cols-2 gap-2">
+                         <button onClick={() => document.getElementById('story-img-up')?.click()} className="p-4 bg-slate-900 border border-white/5 rounded-2xl flex flex-col items-center gap-2 text-slate-400 hover:text-indigo-400">
+                            <ImageIcon className="w-6 h-6" /> <span className="text-[9px] font-black uppercase">Image</span>
+                         </button>
+                         <button onClick={() => document.getElementById('story-vid-up')?.click()} className="p-4 bg-slate-900 border border-white/5 rounded-2xl flex flex-col items-center gap-2 text-slate-400 hover:text-rose-400">
+                            <Video className="w-6 h-6" /> <span className="text-[9px] font-black uppercase">Video</span>
+                         </button>
+                         <button onClick={() => document.getElementById('story-aud-up')?.click()} className="p-4 bg-slate-900 border border-white/5 rounded-2xl flex flex-col items-center gap-2 text-slate-400 hover:text-emerald-400">
+                            <Music className="w-6 h-6" /> <span className="text-[9px] font-black uppercase">Audio</span>
+                         </button>
+                      </div>
+                      <input id="story-img-up" type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'story')} />
+                      <input id="story-vid-up" type="file" className="hidden" accept="video/*" onChange={e => handleFileUpload(e, 'video')} />
+                      <input id="story-aud-up" type="file" className="hidden" accept="audio/*" onChange={e => handleFileUpload(e, 'audio')} />
+                   </div>
+                </div>
+             </div>
+          </div>
+        );
+
+      case 'ADMIN_SECURITY':
+        return (
+          <div className="space-y-8 animate-in fade-in duration-500">
+             <div className="p-8 bg-slate-800/40 rounded-[2.5rem] border border-white/5 space-y-6">
+                <h4 className="text-white font-black flex items-center gap-3"><Lock className="w-5 h-5 text-rose-600" /> {isRtl ? 'تغيير بيانات الوصول' : 'Access Credentials'}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase">Admin Email</label>
+                      <input value={tempAdminIdentity.email} onChange={e => setTempAdminIdentity({...tempAdminIdentity, email: e.target.value})} className="w-full p-3 bg-slate-900 border border-white/5 rounded-xl text-white font-mono text-xs" />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase">Admin Password</label>
+                      <input type="password" value={tempAdminIdentity.password} onChange={e => setTempAdminIdentity({...tempAdminIdentity, password: e.target.value})} className="w-full p-3 bg-slate-900 border border-white/5 rounded-xl text-white font-mono text-xs" />
+                   </div>
+                </div>
+                <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-4">
+                   <ShieldAlert className="w-6 h-6 text-rose-500 shrink-0" />
+                   <p className="text-[10px] text-rose-200 leading-relaxed font-bold">{isRtl ? 'تحذير: تغيير هذه البيانات يتطلب استخدام البيانات الجديدة في المرة القادمة. تأكد من حفظها جيداً.' : 'Warning: Changing these credentials requires using the new ones for next login. Save them securely.'}</p>
+                </div>
+             </div>
+          </div>
+        );
+
+      case 'GLOBAL_HTML':
+      case 'CSS':
+      case 'JS':
+        const codeKey = activeTab === 'GLOBAL_HTML' ? 'global_html' : activeTab === 'CSS' ? 'custom_css' : 'custom_js';
+        const codeIcon = activeTab === 'GLOBAL_HTML' ? <LayoutTemplate className="w-5 h-5 text-indigo-500" /> : activeTab === 'CSS' ? <Layout className="w-5 h-5 text-pink-500" /> : <Code className="w-5 h-5 text-cyan-500" />;
+        return (
+          <div className="space-y-6 animate-in fade-in duration-500 h-full flex flex-col">
+             <div className="flex items-center justify-between">
+                <h4 className="text-white font-black flex items-center gap-3">{codeIcon} {isRtl ? tabs.find(t => t.id === activeTab)?.labelAr : tabs.find(t => t.id === activeTab)?.label}</h4>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'سيتم الحقن فور الحفظ' : 'Injected live after save'}</span>
+             </div>
+             <div className="flex-1 bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-inner relative">
+                <div className="absolute top-4 left-4 flex gap-2 z-10">
+                   <div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div>
+                   <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                </div>
+                <textarea 
+                  value={(tempConfig as any)[codeKey]} 
+                  onChange={e => setTempConfig({...tempConfig, [codeKey]: e.target.value})} 
+                  className="w-full h-[500px] p-12 bg-transparent text-cyan-400 font-mono text-xs outline-none resize-none"
+                  placeholder={activeTab === 'CSS' ? 'body { filter: grayscale(1); }' : '// Enter logic here...'}
+                />
+             </div>
+          </div>
+        );
+
+      case 'SEO':
+        return (
+          <div className="space-y-8 animate-in fade-in duration-500">
+             <div className="p-8 bg-slate-800/40 rounded-[2.5rem] border border-white/5 space-y-6">
+                <h4 className="text-white font-black flex items-center gap-3"><Search className="w-5 h-5 text-blue-500" /> {isRtl ? 'إعدادات محركات البحث' : 'SEO Management'}</h4>
+                <div className="space-y-4">
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase">Site Title (SEO)</label>
+                      <input value={tempConfig.seo_title} onChange={e => setTempConfig({...tempConfig, seo_title: e.target.value})} className="w-full p-4 bg-slate-900 border border-white/5 rounded-2xl text-white font-bold" />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase">Meta Description</label>
+                      <textarea value={tempConfig.seo_desc} onChange={e => setTempConfig({...tempConfig, seo_desc: e.target.value})} className="w-full h-32 p-4 bg-slate-900 border border-white/5 rounded-2xl text-white text-xs" />
+                   </div>
+                </div>
+                <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-3xl">
+                   <p className="text-white font-black text-xs mb-3 flex items-center gap-2"><Globe className="w-4 h-4 text-blue-400" /> Google Search Preview</p>
+                   <div className="space-y-1">
+                      <p className="text-blue-400 font-medium text-lg hover:underline cursor-pointer truncate">{tempConfig.seo_title || 'Imagine AI - Smart Art'}</p>
+                      <p className="text-emerald-500 text-xs truncate">https://imagine-ai.pro/</p>
+                      <p className="text-slate-400 text-xs line-clamp-2">{tempConfig.seo_desc || 'The ultimate generative art platform driven by Google Gemini.'}</p>
+                   </div>
+                </div>
+             </div>
+          </div>
+        );
+
+      case 'API_SETTINGS':
+        return (
+          <div className="space-y-8 animate-in fade-in duration-500">
+             <div className="p-8 bg-gradient-to-br from-indigo-900/40 to-slate-900 rounded-[3rem] border border-white/10 shadow-2xl relative overflow-hidden">
+                <Key className="absolute -top-10 -right-10 w-40 h-40 text-white/5 rotate-12" />
+                <h3 className="text-lg font-black text-white mb-2">{isRtl ? 'المفتاح العالمي (Gemini API)' : 'Master Gemini API Key'}</h3>
+                <p className="text-[10px] text-slate-400 leading-relaxed mb-6">{isRtl ? 'هذا المفتاح يستخدم كبديل عام في حال عدم توفر مفاتيح مخصصة للأدوات.' : 'This key acts as a global fallback if tool-specific keys are empty.'}</p>
+                {renderApiKeyInput(isRtl ? 'المفتاح الرئيسي' : 'Global Master Key', 'global_api_key', <ShieldCheck className="w-4 h-4" />, 'bg-indigo-600')}
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="col-span-full border-b border-white/5 pb-2 mb-2">
+                   <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">{isRtl ? 'تخصيص مفاتيح الأدوات الذكية' : 'Smart Tools Specific Keys'}</h4>
+                </div>
+                {renderApiKeyInput(isRtl ? 'إنشاء لوجو' : 'Logo Creation', 'api_key_logo', <PenTool className="w-4 h-4" />, 'bg-blue-600')}
+                {renderApiKeyInput(isRtl ? 'نص إلى صوت' : 'Text to Speech', 'api_key_tts', <Mic2 className="w-4 h-4" />, 'bg-indigo-600')}
+                {renderApiKeyInput(isRtl ? 'تعديل ذكي' : 'Smart Edit', 'api_key_smart_edit', <Wand2 className="w-4 h-4" />, 'bg-purple-600')}
+                {renderApiKeyInput(isRtl ? 'إزالة الخلفية' : 'Remove Background', 'api_key_remove_bg', <Eraser className="w-4 h-4" />, 'bg-rose-500')}
+                {renderApiKeyInput(isRtl ? 'تحسين الدقة' : 'Upscale', 'api_key_upscale', <Maximize2 className="w-4 h-4" />, 'bg-emerald-500')}
+                {renderApiKeyInput(isRtl ? 'تغيير الملابس' : 'Virtual Try-On', 'api_key_virtual_try_on', <Shirt className="w-4 h-4" />, 'bg-blue-500')}
+                {renderApiKeyInput(isRtl ? 'نظارات شمسية' : 'Add Sunglasses', 'api_key_sunglasses', <Eye className="w-4 h-4" />, 'bg-amber-500')}
+                {renderApiKeyInput(isRtl ? 'إزالة العلامة' : 'Remove Watermark', 'api_key_watermark', <Scissors className="w-4 h-4" />, 'bg-orange-500')}
+                {renderApiKeyInput(isRtl ? 'تلوين قديم' : 'Colorize Photo', 'api_key_colorize', <Palette className="w-4 h-4" />, 'bg-indigo-500')}
+                {renderApiKeyInput(isRtl ? 'ممحاة سحرية' : 'Magic Eraser', 'api_key_magic_eraser', <Wind className="w-4 h-4" />, 'bg-rose-500')}
+                {renderApiKeyInput(isRtl ? 'تحويل كرتون' : 'Cartoonize', 'api_key_cartoonize', <Smile className="w-4 h-4" />, 'bg-emerald-500')}
+                {renderApiKeyInput(isRtl ? 'مصلح الصور' : 'Photo Restore', 'api_key_restore', <Sparkles className="w-4 h-4" />, 'bg-amber-600')}
+             </div>
           </div>
         );
 
@@ -179,10 +385,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       <div className="flex items-center justify-between">
                          <div className="space-y-1">
                             <p className="text-xs font-black text-white">{isRtl ? 'شعار الموقع' : 'Site Logo'}</p>
-                            <p className="text-[10px] text-slate-500">{isRtl ? 'يفضل استخدام PNG شفاف' : 'Transparent PNG recommended'}</p>
                          </div>
-                         <button onClick={() => logoFileRef.current?.click()} className="p-3 bg-indigo-600 text-white rounded-xl hover:scale-105 transition-all"><Upload className="w-4 h-4" /></button>
-                         <input type="file" ref={logoFileRef} className="hidden" onChange={e => handleFileUpload(e, 'logo')} />
+                         <button onClick={() => document.getElementById('logo-upload')?.click()} className="p-3 bg-indigo-600 text-white rounded-xl hover:scale-105 transition-all"><Upload className="w-4 h-4" /></button>
+                         <input id="logo-upload" type="file" className="hidden" onChange={e => handleFileUpload(e, 'logo')} />
                       </div>
                       <div className="p-4 bg-slate-950 rounded-2xl flex items-center justify-center min-h-[100px] border border-white/5">
                          {tempConfig.site_logo ? <img src={tempConfig.site_logo} style={{ height: `${(tempConfig.site_logo_scale || 1) * 32}px` }} /> : <ImageIcon className="w-10 h-10 text-slate-700" />}
@@ -196,282 +401,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
                    </div>
                 </div>
-
-                <div className="p-8 bg-slate-800/40 rounded-[2.5rem] border border-white/5 space-y-6">
-                   <h4 className="text-white font-black flex items-center gap-3"><Sliders className="w-5 h-5 text-indigo-500" /> {isRtl ? 'واجهة المستخدم' : 'UI Settings'}</h4>
-                   <div className="space-y-6">
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-black text-slate-500 uppercase">{isRtl ? 'لون التمييز' : 'Accent Color'}</label>
-                         <div className="flex gap-4">
-                            <input type="color" value={tempConfig.ux_accent_color} onChange={e => setTempConfig({...tempConfig, ux_accent_color: e.target.value})} className="w-12 h-12 bg-transparent border-none cursor-pointer" />
-                            <input type="text" value={tempConfig.ux_accent_color} onChange={e => setTempConfig({...tempConfig, ux_accent_color: e.target.value})} className="flex-1 p-3 bg-slate-900 border border-white/5 rounded-xl text-white font-mono text-xs" />
-                         </div>
-                      </div>
-                      <div className="space-y-2">
-                         <div className="flex justify-between">
-                            <label className="text-[10px] font-black text-slate-500 uppercase">{isRtl ? 'شدة ضبابية الزجاج' : 'Glass Blur Intensity'}</label>
-                            <span className="text-[10px] font-bold text-indigo-400">{tempConfig.ux_blur_intensity}</span>
-                         </div>
-                         <input type="range" min="0" max="40" value={parseInt(tempConfig.ux_blur_intensity)} onChange={e => setTempConfig({...tempConfig, ux_blur_intensity: `${e.target.value}px`})} className="w-full accent-indigo-600" />
-                      </div>
-                   </div>
-                </div>
-             </div>
-          </div>
-        );
-
-      case 'ADMIN_SECURITY':
-        return (
-          <div className="max-w-xl mx-auto space-y-8 animate-in fade-in duration-500">
-             <div className="p-10 bg-slate-800/40 rounded-[3rem] border border-white/5 space-y-8">
-                <div className="text-center">
-                   <div className="w-20 h-20 bg-rose-500/20 rounded-3xl flex items-center justify-center mx-auto mb-4 text-rose-500"><ShieldCheck className="w-10 h-10" /></div>
-                   <h4 className="text-xl font-black text-white">{isRtl ? 'أمان حساب المدير' : 'Admin Security'}</h4>
-                   <p className="text-xs text-slate-500 mt-2">{isRtl ? 'قم بتعديل بيانات الدخول الخاصة باللوحة' : 'Change your admin credentials here'}</p>
-                </div>
-                
-                <div className="space-y-6">
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase px-1">{isRtl ? 'البريد الإلكتروني للإدارة' : 'Admin Email'}</label>
-                      <div className="relative">
-                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                         <input type="email" value={tempAdminIdentity.email} onChange={e => setTempAdminIdentity({...tempAdminIdentity, email: e.target.value})} className="w-full p-4 pl-12 bg-slate-950 border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-indigo-500" />
-                      </div>
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase px-1">{isRtl ? 'كلمة المرور الجديدة' : 'Admin Password'}</label>
-                      <div className="relative">
-                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                         <input type={showAdminPass ? "text" : "password"} value={tempAdminIdentity.password} onChange={e => setTempAdminIdentity({...tempAdminIdentity, password: e.target.value})} className="w-full p-4 pl-12 bg-slate-950 border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-indigo-500" />
-                         <button onClick={() => setShowAdminPass(!showAdminPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600">{showAdminPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
-                      </div>
-                   </div>
-                </div>
-             </div>
-          </div>
-        );
-
-      case 'GLOBAL_HTML':
-      case 'CSS':
-      case 'JS':
-        const codeType = activeTab === 'GLOBAL_HTML' ? 'global_html' : activeTab === 'CSS' ? 'custom_css' : 'custom_js';
-        const icon = activeTab === 'GLOBAL_HTML' ? <LayoutTemplate className="w-5 h-5 text-indigo-500" /> : activeTab === 'CSS' ? <Layout className="w-5 h-5 text-pink-500" /> : <Code className="w-5 h-5 text-cyan-500" />;
-        return (
-          <div className="h-full flex flex-col space-y-4 animate-in fade-in duration-500">
-             <div className="flex items-center gap-3">
-                {icon}
-                <h4 className="text-white font-black">{activeTab} Injection</h4>
-             </div>
-             <div className="flex-1 relative group">
-                <div className="absolute top-4 right-4 z-10 p-2 bg-indigo-600/20 text-indigo-400 rounded-lg text-[10px] font-mono border border-indigo-500/20 opacity-0 group-hover:opacity-100 transition-opacity">Editable Code Block</div>
-                <textarea 
-                  value={(tempConfig as any)[codeType]} 
-                  onChange={e => setTempConfig({...tempConfig, [codeType]: e.target.value})}
-                  className="w-full h-[500px] p-8 bg-slate-950 border border-white/5 rounded-[2.5rem] text-indigo-300 font-mono text-xs outline-none focus:border-indigo-500/50 transition-all resize-none shadow-inner leading-relaxed"
-                  placeholder={`/* Add your custom ${activeTab} here... */`}
-                />
-             </div>
-          </div>
-        );
-
-      case 'SEO':
-        return (
-          <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-500">
-             <div className="p-10 bg-slate-800/40 rounded-[3rem] border border-white/5 space-y-8">
-                <div className="flex items-center gap-4 mb-2">
-                   <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-500"><Globe className="w-6 h-6" /></div>
-                   <div>
-                      <h4 className="text-xl font-black text-white">Search Engine Optimization</h4>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Meta tags & Social Presence</p>
-                   </div>
-                </div>
-                
-                <div className="space-y-6">
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase px-1">SEO Title (Browser Tab)</label>
-                      <input value={tempConfig.seo_title} onChange={e => setTempConfig({...tempConfig, seo_title: e.target.value})} className="w-full p-4 bg-slate-950 border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-indigo-500" placeholder="Imagine AI - Professional Studio" />
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase px-1">SEO Description (Meta Tag)</label>
-                      <textarea value={tempConfig.seo_desc} onChange={e => setTempConfig({...tempConfig, seo_desc: e.target.value})} className="w-full h-32 p-4 bg-slate-950 border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-indigo-500 resize-none" placeholder="The ultimate generative art platform driven by Google Gemini..." />
-                   </div>
-                </div>
-
-                <div className="p-6 bg-blue-500/5 border border-blue-500/10 rounded-3xl">
-                   <p className="text-[10px] font-black text-blue-400 uppercase mb-3 flex items-center gap-2"><Sparkles className="w-3 h-3" /> Search Preview</p>
-                   <div className="space-y-1">
-                      <h5 className="text-blue-400 text-lg font-medium hover:underline cursor-pointer">{tempConfig.seo_title || 'Site Title'}</h5>
-                      <p className="text-emerald-600 text-[11px]">https://imagine-ai-pro.com</p>
-                      <p className="text-slate-400 text-xs line-clamp-2">{tempConfig.seo_desc || 'Describe your site for search engines...'}</p>
-                   </div>
-                </div>
-             </div>
-          </div>
-        );
-
-      case 'USERS':
-        const onlineCount = allUsers.filter(u => u.isOnline).length;
-        return (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <div className="p-6 bg-slate-800/50 rounded-3xl border border-white/5 flex items-center gap-5">
-                  <div className="w-14 h-14 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400"><Users className="w-7 h-7" /></div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'إجمالي المستخدمين' : 'Total Users'}</p>
-                    <h3 className="text-2xl font-black text-white">{allUsers.length}</h3>
-                  </div>
-               </div>
-               <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/10 flex items-center gap-5">
-                  <div className="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-400 relative">
-                    <Activity className="w-7 h-7" />
-                    {onlineCount > 0 && <span className="absolute top-3 right-3 w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>}
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'متصل الآن' : 'Currently Online'}</p>
-                    <h3 className="text-2xl font-black text-emerald-400">{onlineCount}</h3>
-                  </div>
-               </div>
-               <div className="p-6 bg-slate-800/50 rounded-3xl border border-white/5 flex items-center gap-5">
-                  <div className="w-14 h-14 bg-rose-500/20 rounded-2xl flex items-center justify-center text-rose-400"><Shield className="w-7 h-7" /></div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'حسابات معلقة' : 'Suspended'}</p>
-                    <h3 className="text-2xl font-black text-white">{bannedEmails.length}</h3>
-                  </div>
-               </div>
-            </div>
-
-            <div className="bg-slate-800/30 rounded-[2.5rem] border border-white/5 overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-900/50 border-b border-white/5">
-                  <tr>
-                    <th className={`p-5 text-[10px] font-black text-slate-500 uppercase ${isRtl ? 'text-right' : 'text-left'}`}>{isRtl ? 'المستخدم' : 'User'}</th>
-                    <th className={`p-5 text-[10px] font-black text-slate-500 uppercase ${isRtl ? 'text-right' : 'text-left'}`}>{isRtl ? 'البريد' : 'Email'}</th>
-                    <th className={`p-5 text-[10px] font-black text-slate-500 uppercase ${isRtl ? 'text-right' : 'text-left'}`}>{isRtl ? 'الحالة' : 'Status'}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {allUsers.map(u => (
-                    <tr key={u.email} className="hover:bg-white/5 transition-all group">
-                      <td className="p-5">
-                         <div className={`flex items-center gap-3 ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}>
-                            <img src={u.profilePic || "https://i.pravatar.cc/100"} className="w-10 h-10 rounded-xl object-cover border border-white/10" />
-                            <div className={isRtl ? 'text-right' : 'text-left'}>
-                               <p className="text-xs font-black text-white">{u.name}</p>
-                               <p className="text-[10px] text-slate-500 font-mono">@{u.username}</p>
-                            </div>
-                         </div>
-                      </td>
-                      <td className={`p-5 text-[11px] text-slate-300 font-mono ${isRtl ? 'text-right' : 'text-left'}`}>{u.email}</td>
-                      <td className="p-5">
-                        {bannedEmails.includes(u.email) ? 
-                          <span className="px-2 py-1 bg-rose-500/20 text-rose-500 rounded-md text-[9px] font-black uppercase">{isRtl ? 'محظور' : 'Banned'}</span> :
-                          <span className="px-2 py-1 bg-emerald-500/20 text-emerald-500 rounded-md text-[9px] font-black uppercase">{isRtl ? 'نشط' : 'Active'}</span>
-                        }
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-
-      case 'MANAGER_PROFILE':
-        return (
-          <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row gap-8 items-start">
-               <div className="relative group">
-                  <img src={tempConfig.manager_pic} className="w-32 h-32 rounded-3xl object-cover border-4 border-slate-800 shadow-2xl" alt="" />
-                  <button onClick={() => managerFileRef.current?.click()} className="absolute -bottom-2 -right-2 p-3 bg-indigo-600 text-white rounded-2xl shadow-xl hover:scale-110 transition-all opacity-0 group-hover:opacity-100"><Camera className="w-5 h-5" /></button>
-                  <input type="file" ref={managerFileRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'manager')} />
-               </div>
-               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase px-1">Manager Name</label>
-                    <input value={tempConfig.manager_name} onChange={e => setTempConfig({...tempConfig, manager_name: e.target.value})} className="w-full p-3 bg-slate-800 border border-white/5 rounded-xl text-white text-xs font-bold" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase px-1">Birth Date</label>
-                    <input value={tempConfig.manager_dob} onChange={e => setTempConfig({...tempConfig, manager_dob: e.target.value})} className="w-full p-3 bg-slate-800 border border-white/5 rounded-xl text-white text-xs font-bold" />
-                  </div>
-                  <div className="space-y-1 md:col-span-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase px-1">Location</label>
-                    <input value={tempConfig.manager_location} onChange={e => setTempConfig({...tempConfig, manager_location: e.target.value})} className="w-full p-3 bg-slate-800 border border-white/5 rounded-xl text-white text-xs font-bold" />
-                  </div>
-               </div>
-            </div>
-          </div>
-        );
-
-      case 'GLOBAL_STORY':
-        return (
-          <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500">
-             <div className="p-8 bg-slate-800/50 rounded-[3rem] border border-white/5 space-y-6">
-                <div className="flex items-center justify-between">
-                   <h4 className="text-white font-black flex items-center gap-3"><Megaphone className="w-5 h-5 text-rose-500" /> Story Center</h4>
-                   <button 
-                    onClick={() => setTempConfig({...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', message: '', active: false }), active: !tempConfig.global_story?.active }})}
-                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${tempConfig.global_story?.active ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-400'}`}
-                   >
-                     {tempConfig.global_story?.active ? 'Story Active' : 'Story Disabled'}
-                   </button>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="relative aspect-square bg-slate-900 rounded-2xl overflow-hidden border-2 border-dashed border-white/10 flex flex-col items-center justify-center">
-                    {tempConfig.global_story?.image ? <img src={tempConfig.global_story.image} className="w-full h-full object-cover" /> : <ImageIcon className="w-8 h-8 opacity-20" />}
-                    <button onClick={() => storyFileRef.current?.click()} className="absolute bottom-3 right-3 p-2 bg-indigo-600 text-white rounded-lg"><Upload className="w-4 h-4" /></button>
-                    <input type="file" ref={storyFileRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'story')} />
-                  </div>
-                  <div className="relative aspect-square bg-slate-900 rounded-2xl overflow-hidden border-2 border-dashed border-white/10 flex flex-col items-center justify-center">
-                    {tempConfig.global_story?.video ? <video src={tempConfig.global_story.video} className="w-full h-full object-cover" /> : <Video className="w-8 h-8 opacity-20" />}
-                    <button onClick={() => videoFileRef.current?.click()} className="absolute bottom-3 right-3 p-2 bg-rose-600 text-white rounded-lg"><Upload className="w-4 h-4" /></button>
-                    <input type="file" ref={videoFileRef} className="hidden" accept="video/*" onChange={(e) => handleFileUpload(e, 'video')} />
-                  </div>
-                  <div className="relative aspect-square bg-slate-900 rounded-2xl overflow-hidden border-2 border-dashed border-white/10 flex flex-col items-center justify-center">
-                    {tempConfig.global_story?.audio ? <Music className="w-8 h-8 text-emerald-500" /> : <Volume2 className="w-8 h-8 opacity-20" />}
-                    <button onClick={() => audioFileRef.current?.click()} className="absolute bottom-3 right-3 p-2 bg-emerald-600 text-white rounded-lg"><Upload className="w-4 h-4" /></button>
-                    <input type="file" ref={audioFileRef} className="hidden" accept="audio/*" onChange={(e) => handleFileUpload(e, 'audio')} />
-                  </div>
-                </div>
-                <textarea 
-                  value={tempConfig.global_story?.message}
-                  onChange={e => setTempConfig({...tempConfig, global_story: { ...(tempConfig.global_story || { id: '1', message: '', active: false }), message: e.target.value }})}
-                  className="w-full h-24 p-4 bg-slate-900 border border-white/5 rounded-2xl text-white text-sm outline-none"
-                  placeholder="Story message..."
-                />
-                <button onClick={handlePublishNewStory} className="w-full py-5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-sm uppercase shadow-xl transition-all">Publish Story</button>
-             </div>
-          </div>
-        );
-
-      case 'API_SETTINGS':
-        return (
-          <div className="max-w-xl mx-auto space-y-8 animate-in fade-in duration-500">
-             <div className="p-8 bg-gradient-to-br from-indigo-900/40 to-slate-900 rounded-[3rem] border border-white/10 shadow-2xl relative overflow-hidden">
-                <Key className="absolute -top-10 -right-10 w-40 h-40 text-white/5 rotate-12" />
-                <h3 className="text-lg font-black text-white mb-2">Master Gemini API Key</h3>
-                <p className="text-xs text-slate-400 leading-relaxed mb-6">This key will be used as the fallback/global generator for users who haven't provided their own keys. Ensure it has a paid tier for stability.</p>
-                <div className="relative group">
-                   <input 
-                    type={showApiKey ? "text" : "password"} 
-                    value={tempConfig.global_api_key} 
-                    onChange={e => setTempConfig({...tempConfig, global_api_key: e.target.value})}
-                    placeholder="sk-..."
-                    className="w-full p-5 bg-slate-950 border border-white/10 rounded-2xl text-white font-mono text-sm outline-none focus:border-indigo-500 transition-all"
-                   />
-                   <button 
-                    onClick={() => setShowApiKey(!showApiKey)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-indigo-400 transition-colors"
-                   >
-                     {showApiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                   </button>
-                </div>
              </div>
           </div>
         );
 
       default:
-        return <div className="p-20 text-center text-slate-500 font-black uppercase tracking-widest">Under Development</div>;
+        return <div className="p-20 text-center text-slate-500 font-black uppercase tracking-widest">{isRtl ? 'تحت التطوير' : 'Under Development'}</div>;
     }
   };
 
@@ -480,10 +415,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       <div className="flex w-full h-full overflow-hidden">
         <aside className="w-80 bg-slate-900 border-r border-white/5 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
           <div className="p-8 border-b border-white/5 flex items-center gap-4">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20"><Terminal className="w-6 h-6" /></div>
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Terminal className="w-6 h-6" /></div>
             <div>
               <h1 className="font-black text-white text-sm uppercase tracking-tighter leading-none">Admin Core</h1>
-              <p className="text-[10px] text-slate-500 font-bold mt-1">v3.5 Professional</p>
+              <p className="text-[10px] text-slate-500 font-bold mt-1">v4.0 Enterprise</p>
             </div>
           </div>
           <div className="p-4 space-y-1">
@@ -504,17 +439,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <h2 className="text-2xl font-black text-white uppercase tracking-tighter">
                   {tabs.find(t => t.id === activeTab)?.label}
                 </h2>
-                <div className="flex items-center gap-2 mt-1">
-                   <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                   <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{isRtl ? 'وضع التحكم الكامل نشط' : 'Full Control Mode Active'}</p>
-                </div>
              </div>
              <div className="flex items-center gap-4">
-                {updateStatus && <span className="text-[10px] font-bold text-emerald-400 animate-in fade-in slide-in-from-right-4">{updateStatus}</span>}
+                {updateStatus && <span className="text-[10px] font-bold text-emerald-400 animate-in fade-in">{updateStatus}</span>}
                 <button 
                   onClick={handleUpdateSystem}
                   disabled={isUpdating}
-                  className="px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase shadow-2xl shadow-indigo-500/20 flex items-center gap-3 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                  className="px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase shadow-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all"
                 >
                   {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   {isUpdating ? 'Applying...' : 'Save Changes'}

@@ -80,11 +80,24 @@ export interface SiteConfig {
   manager_pic: string;
   site_logo?: string;
   site_logo_scale?: number; 
-  global_api_key?: string; 
+  global_api_key?: string;
+  // Smart Tools API Keys
+  api_key_logo?: string;
+  api_key_tts?: string;
+  api_key_smart_edit?: string;
+  api_key_remove_bg?: string;
+  api_key_upscale?: string;
+  api_key_virtual_try_on?: string;
+  api_key_sunglasses?: string;
+  api_key_watermark?: string;
+  api_key_colorize?: string;
+  api_key_magic_eraser?: string;
+  api_key_cartoonize?: string;
+  api_key_restore?: string;
   global_story?: {
     id: string;
     image?: string;
-    video?: string; // الحقل الجديد للفيديو
+    video?: string;
     audio?: string;
     message: string;
     active: boolean;

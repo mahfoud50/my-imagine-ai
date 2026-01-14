@@ -75,7 +75,8 @@ const AccountModal: React.FC<AccountModalProps> = ({
       
       const checkKey = async () => {
         try {
-          const val = await (window as any).aistudio?.hasSelectedApiKey();
+          // @ts-ignore
+          const val = await window.aistudio?.hasSelectedApiKey();
           setHasSystemKey(!!val);
         } catch (e) {
           setHasSystemKey(false);
@@ -95,7 +96,8 @@ const AccountModal: React.FC<AccountModalProps> = ({
 
   const handleOpenAiStudioKey = async () => {
     try {
-      await (window as any).aistudio?.openSelectKey();
+      // @ts-ignore
+      await window.aistudio?.openSelectKey();
       setHasSystemKey(true);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -261,6 +263,14 @@ const AccountModal: React.FC<AccountModalProps> = ({
                       {hasSystemKey ? <RefreshCw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-700" /> : <CloudLightning className="w-3 h-3 animate-pulse" />}
                       {hasSystemKey ? (isRtl ? 'تحديث الربط' : 'Update Cloud') : t.goProjects}
                     </button>
+                    <a 
+                      href="https://ai.google.dev/gemini-api/docs/billing" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[9px] text-white/60 hover:text-white underline flex items-center gap-1"
+                    >
+                      {isRtl ? 'مركز الفوترة والدعم' : 'Billing & Support Documentation'} <ExternalLink className="w-2 h-2" />
+                    </a>
                   </div>
                </div>
 
