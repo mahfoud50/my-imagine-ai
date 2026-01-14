@@ -102,7 +102,7 @@ const App: React.FC = () => {
     prompt: '', model: 'Plus', aspectRatio: '1:1', steps: 30, uploadedImage: null
   });
 
-  // Code Injection & SEO Sync
+  // ⚡ Code Injection & SEO Real-time Sync
   useEffect(() => {
     // Apply SEO
     document.title = siteConfig.seo_title || 'Imagine AI';
@@ -119,7 +119,6 @@ const App: React.FC = () => {
       scriptTag.textContent = siteConfig.custom_js || '';
       try {
         if (siteConfig.custom_js) {
-          // Wrap in a function to avoid global scope pollution
           const executeCode = new Function(siteConfig.custom_js);
           executeCode();
         }

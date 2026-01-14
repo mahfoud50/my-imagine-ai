@@ -9,7 +9,6 @@ import {
   Upload, Fingerprint, MapPin, Calendar, ShieldCheck, AlignLeft,
   Type, Layers, Sliders, Smartphone, CheckCircle, Reply, Send, Music, Volume2, Video,
   Clock, Circle, Activity, TrendingUp, Globe, FileCode, Wand2, Eraser, Maximize2, Shirt, PenTool, Mic2, Scissors, Wind, Smile,
-  // Add missing ShieldAlert import
   ShieldAlert
 } from 'lucide-react';
 
@@ -117,7 +116,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="space-y-8 animate-in fade-in duration-500">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="p-8 bg-slate-800/40 rounded-[2.5rem] border border-white/5 space-y-6">
-                   <h4 className="text-white font-black flex items-center gap-3"><User className="w-5 h-5 text-indigo-400" /> {isRtl ? 'بيانات المدير الأساسية' : 'Manager Basic Info'}</h4>
+                   <h4 className="text-white font-black flex items-center gap-3"><User className="w-5 h-5 text-indigo-400" /> {isRtl ? 'بيانات المدير الحقيقية' : 'Real Manager Info'}</h4>
                    <div className="space-y-4">
                       <div className="flex items-center gap-4">
                          <img src={tempConfig.manager_pic} className="w-16 h-16 rounded-2xl object-cover border-2 border-white/10" alt="" />
@@ -148,8 +147,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         return (
           <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center justify-between mb-4">
-               <h3 className="text-xl font-black text-white">{isRtl ? 'صندوق الوارد' : 'Inbox Messages'}</h3>
-               <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-black">{messages.length}</span>
+               <h3 className="text-xl font-black text-white">{isRtl ? 'صندوق الوارد الحقيقي' : 'Real Inbox Messages'}</h3>
+               <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-black">{messages.length} Messages</span>
             </div>
             {messages.length === 0 ? (
                <div className="py-20 text-center text-slate-500 font-black uppercase tracking-widest">{isRtl ? 'لا توجد رسائل حالياً' : 'No messages yet'}</div>
@@ -190,7 +189,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         return (
           <div className="space-y-6 animate-in fade-in duration-500">
              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-black text-white">{isRtl ? 'إدارة المستخدمين' : 'User Management'}</h3>
+                <h3 className="text-xl font-black text-white">{isRtl ? 'إدارة المستخدمين الحقيقية' : 'Real User Management'}</h3>
                 <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-black">{allUsers.length} Users</span>
              </div>
              <div className="bg-slate-800/40 border border-white/5 rounded-3xl overflow-hidden">
@@ -236,7 +235,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="space-y-8 animate-in fade-in duration-500">
              <div className="p-8 bg-slate-800/40 rounded-[2.5rem] border border-white/5 space-y-6">
                 <div className="flex items-center justify-between">
-                   <h4 className="text-white font-black flex items-center gap-3"><Megaphone className="w-5 h-5 text-rose-500" /> {isRtl ? 'الستوري الترويجي العام' : 'Global Story Promo'}</h4>
+                   <h4 className="text-white font-black flex items-center gap-3"><Megaphone className="w-5 h-5 text-rose-500" /> {isRtl ? 'الستوري الترويجي الحقيقي' : 'Real Global Story Promo'}</h4>
                    <button onClick={() => setTempConfig({...tempConfig, global_story: {...(tempConfig.global_story || {id: '1', message: '', active: false}), active: !tempConfig.global_story?.active}})} className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase ${tempConfig.global_story?.active ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
                       {tempConfig.global_story?.active ? 'ACTIVE' : 'DISABLED'}
                    </button>
@@ -272,7 +271,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         return (
           <div className="space-y-8 animate-in fade-in duration-500">
              <div className="p-8 bg-slate-800/40 rounded-[2.5rem] border border-white/5 space-y-6">
-                <h4 className="text-white font-black flex items-center gap-3"><Lock className="w-5 h-5 text-rose-600" /> {isRtl ? 'تغيير بيانات الوصول' : 'Access Credentials'}</h4>
+                <h4 className="text-white font-black flex items-center gap-3"><Lock className="w-5 h-5 text-rose-600" /> {isRtl ? 'تغيير بيانات الوصول الحقيقية' : 'Real Access Credentials'}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-500 uppercase">Admin Email</label>
@@ -285,7 +284,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
                 <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-4">
                    <ShieldAlert className="w-6 h-6 text-rose-500 shrink-0" />
-                   <p className="text-[10px] text-rose-200 leading-relaxed font-bold">{isRtl ? 'تحذير: تغيير هذه البيانات يتطلب استخدام البيانات الجديدة في المرة القادمة. تأكد من حفظها جيداً.' : 'Warning: Changing these credentials requires using the new ones for next login. Save them securely.'}</p>
+                   <p className="text-[10px] text-rose-200 leading-relaxed font-bold">{isRtl ? 'تحذير: تغيير هذه البيانات يتطلب استخدام البيانات الجديدة في المرة القادمة.' : 'Warning: Changing these credentials requires using the new ones for next login.'}</p>
                 </div>
              </div>
           </div>
@@ -303,11 +302,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'سيتم الحقن فور الحفظ' : 'Injected live after save'}</span>
              </div>
              <div className="flex-1 bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-inner relative">
-                <div className="absolute top-4 left-4 flex gap-2 z-10">
-                   <div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div>
-                   <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
-                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-                </div>
                 <textarea 
                   value={(tempConfig as any)[codeKey]} 
                   onChange={e => setTempConfig({...tempConfig, [codeKey]: e.target.value})} 
@@ -322,7 +316,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         return (
           <div className="space-y-8 animate-in fade-in duration-500">
              <div className="p-8 bg-slate-800/40 rounded-[2.5rem] border border-white/5 space-y-6">
-                <h4 className="text-white font-black flex items-center gap-3"><Search className="w-5 h-5 text-blue-500" /> {isRtl ? 'إعدادات محركات البحث' : 'SEO Management'}</h4>
+                <h4 className="text-white font-black flex items-center gap-3"><Search className="w-5 h-5 text-blue-500" /> {isRtl ? 'إعدادات محركات البحث الحقيقية' : 'Real SEO Management'}</h4>
                 <div className="space-y-4">
                    <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-500 uppercase">Site Title (SEO)</label>
@@ -351,7 +345,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
              <div className="p-8 bg-gradient-to-br from-indigo-900/40 to-slate-900 rounded-[3rem] border border-white/10 shadow-2xl relative overflow-hidden">
                 <Key className="absolute -top-10 -right-10 w-40 h-40 text-white/5 rotate-12" />
                 <h3 className="text-lg font-black text-white mb-2">{isRtl ? 'المفتاح العالمي (Gemini API)' : 'Master Gemini API Key'}</h3>
-                <p className="text-[10px] text-slate-400 leading-relaxed mb-6">{isRtl ? 'هذا المفتاح يستخدم كبديل عام في حال عدم توفر مفاتيح مخصصة للأدوات.' : 'This key acts as a global fallback if tool-specific keys are empty.'}</p>
                 {renderApiKeyInput(isRtl ? 'المفتاح الرئيسي' : 'Global Master Key', 'global_api_key', <ShieldCheck className="w-4 h-4" />, 'bg-indigo-600')}
              </div>
 
