@@ -98,48 +98,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </section>
 
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-rose-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-rose-500/20">1</div>
-              <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.promptLabel}</h3>
-            </div>
-          </div>
-          <textarea
-            className={`w-full h-32 lg:h-40 p-5 text-sm bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none resize-none dark:text-white font-medium transition-all ${isRtl ? 'text-right' : 'text-left'}`}
-            placeholder={t.promptPlaceholder}
-            value={settings.prompt}
-            onKeyDown={handleKeyDown}
-            onChange={(e) => setSettings(prev => ({ ...prev, prompt: e.target.value }))}
-          />
-        </section>
-
+        {/* الخطوة 1: رفع صورة مرجعية */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-amber-500 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-amber-500/20">2</div>
-            <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.aspectRatio}</h3>
-          </div>
-          <div className="grid grid-cols-5 gap-2">
-            {aspectRatios.map((ratio) => (
-              <button
-                key={ratio.value}
-                onClick={() => setSettings(prev => ({ ...prev, aspectRatio: ratio.value }))}
-                className={`p-2 flex flex-col items-center gap-1 rounded-xl border transition-all ${
-                  settings.aspectRatio === ratio.value 
-                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
-                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-white/5 text-slate-400 hover:border-indigo-500/50'
-                }`}
-              >
-                <Layout className="w-4 h-4" />
-                <span className="text-[8px] font-black">{ratio.label}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-emerald-500/20">3</div>
+            <div className="w-8 h-8 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-emerald-500/20">1</div>
             <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.uploadRef}</h3>
           </div>
           <div className="relative border-2 border-dashed border-slate-200 dark:border-white/10 rounded-2xl p-2 hover:border-indigo-500 transition-all cursor-pointer bg-slate-50/50 dark:bg-slate-800/30 group">
@@ -164,6 +126,47 @@ const Sidebar: React.FC<SidebarProps> = ({
               </label>
             )}
           </div>
+        </section>
+
+        {/* الخطوة 2: نسبة الأبعاد */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-amber-500 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-amber-500/20">2</div>
+            <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.aspectRatio}</h3>
+          </div>
+          <div className="grid grid-cols-5 gap-2">
+            {aspectRatios.map((ratio) => (
+              <button
+                key={ratio.value}
+                onClick={() => setSettings(prev => ({ ...prev, aspectRatio: ratio.value }))}
+                className={`p-2 flex flex-col items-center gap-1 rounded-xl border transition-all ${
+                  settings.aspectRatio === ratio.value 
+                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
+                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-white/5 text-slate-400 hover:border-indigo-500/50'
+                }`}
+              >
+                <Layout className="w-4 h-4" />
+                <span className="text-[8px] font-black">{ratio.label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* الخطوة 3: الوصف الإبداعي */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-rose-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-rose-500/20">3</div>
+              <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.promptLabel}</h3>
+            </div>
+          </div>
+          <textarea
+            className={`w-full h-32 lg:h-40 p-5 text-sm bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none resize-none dark:text-white font-medium transition-all ${isRtl ? 'text-right' : 'text-left'}`}
+            placeholder={t.promptPlaceholder}
+            value={settings.prompt}
+            onKeyDown={handleKeyDown}
+            onChange={(e) => setSettings(prev => ({ ...prev, prompt: e.target.value }))}
+          />
         </section>
       </div>
 

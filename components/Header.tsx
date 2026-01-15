@@ -72,11 +72,20 @@ const Header: React.FC<HeaderProps> = ({
     setIsProfileOpen(false);
   };
 
-  const handleProfileClick = (e: React.MouseEvent) => {
+  // وظيفة فتح الستوري عند الضغط على الصورة
+  const handleAvatarClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isStoryActive && onOpenStory) {
       onOpenStory();
     } else if (onProfile) {
+      onProfile();
+    }
+  };
+
+  // وظيفة فتح البروفايل عند الضغط على الاسم
+  const handleNameClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onProfile) {
       onProfile();
     }
   };
@@ -198,8 +207,12 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-3 relative" ref={dropdownRef}>
-          <div className="flex items-center gap-2 md:gap-3 cursor-pointer group" onClick={handleProfileClick}>
-            <div className={`relative p-0.5 rounded-full transition-all duration-500 ${isStoryActive ? 'bg-rose-600 p-[2px]' : ''} ${hasNewStory ? 'animate-spin-slow' : ''}`}>
+          <div className="flex items-center gap-2 md:gap-3 group">
+            {/* منطقة الأفاتار / الستوري */}
+            <div 
+              onClick={handleAvatarClick}
+              className={`relative p-0.5 rounded-full transition-all duration-500 cursor-pointer ${isStoryActive ? 'bg-rose-600 p-[2px]' : ''} ${hasNewStory ? 'animate-spin-slow' : ''}`}
+            >
               <div className={`rounded-full bg-[#0f172a] p-0.5`}>
                 <img 
                   src={user?.profilePic || "https://i.pravatar.cc/150?u=anonymous"} 
@@ -213,12 +226,18 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
               )}
             </div>
-            <div className={`hidden sm:flex flex-col ${language === 'ar' ? 'items-end' : 'items-start'}`}>
+
+            {/* منطقة الاسم والبيانات */}
+            <div 
+              onClick={handleNameClick}
+              className={`hidden sm:flex flex-col cursor-pointer hover:opacity-80 transition-opacity ${language === 'ar' ? 'items-end' : 'items-start'}`}
+            >
               <span className="text-xs md:text-sm font-bold text-slate-200 leading-tight truncate max-w-[80px] md:max-w-[120px]">{user?.name}</span>
               <span className={`text-[8px] md:text-[10px] font-black px-1.5 py-0.5 rounded-full w-fit flex items-center gap-1 bg-emerald-500/20 text-emerald-400`}>
                 {credits > 0 ? `${credits} ${t.points}` : t.free}
               </span>
             </div>
+
             <button 
               onClick={(e) => { e.stopPropagation(); setIsProfileOpen(!isProfileOpen); }}
               className="p-1 hover:bg-white/5 rounded-lg transition-all"

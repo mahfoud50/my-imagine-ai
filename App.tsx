@@ -171,7 +171,8 @@ const App: React.FC = () => {
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text: `Say clearly: ${text}` }] }],
         config: {
-          responseModalalities: [Modality.AUDIO],
+          // Fix typo: changed responseModalalities to responseModalities
+          responseModalities: [Modality.AUDIO],
           speechConfig: {
             voiceConfig: {
               prebuiltVoiceConfig: { voiceName: voice || 'Kore' },
