@@ -25,7 +25,6 @@ interface AdminPanelProps {
   setAdminIdentity: (id: any) => void;
 }
 
-// إضافة DASHBOARD كنوع مسموح به محلياً لتجاوز أي مشاكل في types.ts
 type LocalAdminTab = AdminTab | 'DASHBOARD';
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
@@ -68,19 +67,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleUpdateSystem = () => {
-    if (isUpdating) return;
-    setIsUpdating(true);
-    setTimeout(() => {
-      try {
-        setConfig({...tempConfig});
-        setAdminIdentity(tempAdminIdentity);
-        setIsUpdating(false);
-        setUpdateStatus(isRtl ? '✅ تم تحديث النظام بنجاح' : '✅ System Updated Successfully!');
-        setTimeout(() => setUpdateStatus(''), 3000);
-      } catch (err) {
-        setIsUpdating(false);
-      }
-    }, 600);
+    // إزالة setIsUpdating والتأخير لجعل الاستجابة فورية
+    try {
+      setConfig({...tempConfig});
+      setAdminIdentity(tempAdminIdentity);
+      setUpdateStatus(isRtl ? '✅ تم تحديث النظام بنجاح' : '✅ System Updated Successfully!');
+      setTimeout(() => setUpdateStatus(''), 2000);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const tabs: { id: LocalAdminTab; icon: any; label: string; labelAr: string; color: string }[] = [
@@ -144,7 +139,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="flex items-center gap-4">
             {updateStatus && <span className="text-[10px] font-bold text-emerald-400 animate-pulse">{updateStatus}</span>}
             <button onClick={handleUpdateSystem} className="px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase shadow-2xl flex items-center gap-3 active:scale-95 transition-all">
-              {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <Save className="w-4 h-4" />
               {isRtl ? 'حفظ التعديلات' : 'SAVE CORE'}
             </button>
             <button onClick={onClose} className="p-4 bg-white/5 hover:bg-rose-600 text-white rounded-2xl transition-all"><X className="w-6 h-6" /></button>

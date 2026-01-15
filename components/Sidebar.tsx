@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { 
   Upload, X, Zap, Layout, 
   Loader2 as LoaderIcon, Sparkles, AlertCircle, Rocket
@@ -80,7 +80,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
-        {/* Toggle Mode: Fast vs Accurate */}
         <section className="space-y-4">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block px-1">{t.modelStrategy}</label>
           <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-2xl border dark:border-white/5">
@@ -182,4 +181,4 @@ const Sidebar: React.FC<SidebarProps> = ({
   );
 };
 
-export default Sidebar;
+export default memo(Sidebar);

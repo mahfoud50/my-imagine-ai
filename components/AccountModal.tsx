@@ -61,7 +61,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const managerFileRef = useRef<HTMLInputElement>(null);
 
-  // Filter messages for current user
   const userMessages = allMessages.filter(m => m.senderEmail === user?.email);
 
   useEffect(() => {
@@ -100,7 +99,7 @@ const AccountModal: React.FC<AccountModalProps> = ({
       await window.aistudio?.openSelectKey();
       setHasSystemKey(true);
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => setSuccess(false), 2000);
     } catch (err) {
       console.error("Failed to open AI Studio Key dialog", err);
     }
@@ -109,7 +108,7 @@ const AccountModal: React.FC<AccountModalProps> = ({
   const handleSaveManualKey = () => {
     setUserSettings({ manualApiKey: manualKey });
     setSuccess(true);
-    setTimeout(() => setSuccess(false), 3000);
+    setTimeout(() => setSuccess(false), 2000);
   };
 
   const handleSend = () => {
@@ -117,7 +116,7 @@ const AccountModal: React.FC<AccountModalProps> = ({
     onSendMessage(message);
     setMessage('');
     setMsgSent(true);
-    setTimeout(() => setMsgSent(false), 3000);
+    setTimeout(() => setMsgSent(false), 2000);
   };
 
   const handleSaveManagerProfile = () => {
@@ -130,7 +129,7 @@ const AccountModal: React.FC<AccountModalProps> = ({
       });
       setIsEditingManager(false);
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => setSuccess(false), 2000);
     }
   };
 
@@ -147,13 +146,10 @@ const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   const handleSaveProfile = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      if (onUpdateProfile) onUpdateProfile({ name, username, profilePic });
-      setIsSaving(false);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    }, 800);
+    // إزالة التأخير الاصطناعي 800ms
+    if (onUpdateProfile) onUpdateProfile({ name, username, profilePic });
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 2000);
   };
 
   if (!isOpen) return null;
@@ -218,7 +214,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
 
           {activeTab === 'profile' && (
             <div className="space-y-8 animate-in fade-in duration-500">
-              {/* User Personal Info */}
               <div className="flex flex-col items-center md:items-start gap-6">
                 <div className="relative">
                   <img src={profilePic} className="w-16 h-16 rounded-2xl object-cover border-4 border-slate-100 dark:border-slate-800 shadow-md" alt="Profile" />
@@ -238,8 +233,8 @@ const AccountModal: React.FC<AccountModalProps> = ({
                       <p className="text-[8px] text-slate-500 px-1">{isRtl ? '* اسم المستخدم لا يمكن تعديله' : '* Username is permanent'}</p>
                     </div>
                   </div>
-                  <button onClick={handleSaveProfile} disabled={isSaving} className="w-full md:w-auto px-8 py-3.5 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-indigo-600 transition-all">
-                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  <button onClick={handleSaveProfile} className="w-full md:w-auto px-8 py-3.5 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-indigo-600 transition-all">
+                    <Save className="w-4 h-4" />
                     {t.saveChanges}
                   </button>
                   {success && <p className="text-emerald-500 text-[10px] font-bold animate-pulse text-center">{t.saveSuccess}</p>}
@@ -308,7 +303,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
 
           {activeTab === 'manager' && (
             <div className="space-y-6 animate-in fade-in duration-500 flex flex-col h-full">
-              {/* CEO / Manager Info - Merged here at the top of Inbox */}
               <div className="shrink-0 mb-4">
                 <section className="space-y-4 bg-indigo-50 dark:bg-indigo-900/10 p-5 rounded-3xl border border-indigo-500/20 relative overflow-hidden group">
                   <div className="absolute -top-6 -right-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all"></div>
@@ -351,7 +345,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
                 </section>
               </div>
 
-              {/* Header Title for Inbox */}
               <div className="flex items-center justify-between shrink-0 mb-2">
                  <h4 className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-2">
                    <MessageSquare className="w-4 h-4 text-indigo-500" /> {t.inbox}
@@ -361,7 +354,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
                  </div>
               </div>
 
-              {/* سجل المحادثة */}
               <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 py-4 px-1 min-h-[150px]">
                 {userMessages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center opacity-40 space-y-3 py-10">
@@ -376,7 +368,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
                 ) : (
                   userMessages.map(msg => (
                     <div key={msg.id} className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
-                      {/* رسالة المستخدم */}
                       <div className={`flex flex-col ${isRtl ? 'items-start' : 'items-end'}`}>
                         <div className="max-w-[85%] p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl border dark:border-white/5">
                           <p className={`text-[11px] font-bold text-slate-800 dark:text-slate-200 ${isRtl ? 'text-right' : 'text-left'}`}>{msg.content}</p>
@@ -387,7 +378,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
                         </div>
                       </div>
 
-                      {/* رد المدير */}
                       {msg.reply && (
                         <div className={`flex flex-col ${isRtl ? 'items-end' : 'items-start'}`}>
                           <div className="max-w-[85%] p-4 bg-indigo-600 text-white rounded-2xl shadow-lg relative overflow-hidden group">
@@ -412,7 +402,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
                 )}
               </div>
 
-              {/* حقل الإرسال */}
               <div className="pt-4 border-t border-indigo-500/10 shrink-0">
                  <div className="relative">
                     <textarea 
@@ -430,7 +419,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
 
           {activeTab === 'settings' && (
             <div className="space-y-8 animate-in fade-in duration-500">
-              {/* المظهر العام */}
               <section className="space-y-4">
                 <h4 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
                   <Sun className="w-4 h-4 text-indigo-500" /> {t.appearance}
@@ -440,7 +428,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
                 </div>
               </section>
 
-              {/* تخصيص الخطوط */}
               <section className="space-y-4 pt-4 border-t dark:border-white/5">
                 <h4 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
                   <Type className="w-4 h-4 text-indigo-500" /> {t.fontFamilyLabel}
@@ -482,7 +469,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
                 </div>
               </section>
 
-              {/* سلوك النظام */}
               <section className="space-y-4 pt-4 border-t dark:border-white/5">
                 <h4 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
                   <Activity className="w-4 h-4 text-emerald-500" /> {t.systemBehavior}
@@ -494,7 +480,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
                 </div>
               </section>
 
-              {/* الأمان والخصوصية */}
               <section className="space-y-4 pt-4 border-t dark:border-white/5">
                 <h4 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 text-rose-500" /> {t.securityPrivacy}

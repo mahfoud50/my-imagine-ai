@@ -161,7 +161,9 @@ export const translations = {
     messagePlaceholder: "اكتب رسالتك هنا للمدير...",
     sendMessage: "إرسال الرسالة",
     messageSent: "تم إرسال رسالتك بنجاح للمدير!",
-    inbox: "صندوق الوارد (الرسائل)"
+    inbox: "صندوق الوارد (الرسائل)",
+    imageToVector: "تحويل لفيكتور (SVG)",
+    imageToVectorDesc: "تحويل الصورة لرسم متجّه"
   },
   en: {
     appName: "IMAGINE AI",
@@ -324,6 +326,8 @@ export const translations = {
     messagePlaceholder: "Write your message to the manager...",
     sendMessage: "Send Message",
     messageSent: "Message sent successfully to manager!",
-    inbox: "Inbox (Messages)"
+    inbox: "Inbox (Messages)",
+    imageToVector: "Image to Vector (SVG)",
+    imageToVectorDesc: "Convert image to vector art"
   }
 };

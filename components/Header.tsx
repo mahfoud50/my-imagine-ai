@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import { User, Settings as SettingsIcon, Bell, Key, LogOut, ChevronDown, CheckCircle, Clock, Sparkles, X, Languages, Menu, Zap, MessageSquare, Shield } from 'lucide-react';
 import { Language, AppNotification, SiteConfig } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -72,7 +72,6 @@ const Header: React.FC<HeaderProps> = ({
     setIsProfileOpen(false);
   };
 
-  // Fixed: handleProfileClick now allows re-watching active stories
   const handleProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isStoryActive && onOpenStory) {
@@ -203,13 +202,13 @@ const Header: React.FC<HeaderProps> = ({
             <div className={`relative p-0.5 rounded-full transition-all duration-500 ${isStoryActive ? 'bg-rose-600 p-[2px]' : ''} ${hasNewStory ? 'animate-spin-slow' : ''}`}>
               <div className={`rounded-full bg-[#0f172a] p-0.5`}>
                 <img 
-                  src={user?.profilePic || "https://i.pravatar.cc/40"} 
+                  src={user?.profilePic || "https://i.pravatar.cc/150?u=anonymous"} 
                   className={`w-7 h-7 md:w-10 md:h-10 rounded-full border border-[#00d2ff] p-0.5 group-hover:scale-105 transition-transform shadow-sm object-cover`} 
                   alt="Avatar"
                 />
               </div>
               {hasNewStory && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-rose-600 rounded-full flex items-center justify-center border-2 border-[#0f172a] animate-bounce">
+                <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 h-4 bg-rose-600 rounded-full flex items-center justify-center border-2 border-[#0f172a] animate-bounce">
                    <Sparkles className="w-2 md:w-2.5 h-2 md:h-2.5 text-white" />
                 </div>
               )}
@@ -277,4 +276,4 @@ const Header: React.FC<HeaderProps> = ({
   );
 };
 
-export default Header;
+export default memo(Header);
