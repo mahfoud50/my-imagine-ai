@@ -12,6 +12,8 @@ import StoryViewer from './components/StoryViewer.tsx';
 import ToastNotification from './components/ToastNotification.tsx';
 import SpeechModal from './components/SpeechModal.tsx';
 import HairModal from './components/HairModal.tsx';
+import QrModal from './components/QrModal.tsx';
+import CodeModal from './components/CodeModal.tsx';
 import { GoogleGenAI, Modality } from "@google/genai";
 import { Fingerprint, Sparkles, History, Loader2, MessageSquare, User as UserIcon } from 'lucide-react';
 import { translations } from './translations.ts';
@@ -110,6 +112,8 @@ const App: React.FC = () => {
   const [isSpeechGenerating, setIsSpeechGenerating] = useState(false);
   const [isSpeechModalOpen, setIsSpeechModalOpen] = useState(false);
   const [isHairModalOpen, setIsHairModalOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [toast, setToast] = useState<AppNotification | null>(null);
   
@@ -134,7 +138,6 @@ const App: React.FC = () => {
     localStorage.setItem('imagine_system_version', SYSTEM_VERSION);
   }, []);
 
-  // تحسين عملية المزامنة مع التخزين المحلي لمنع انهيار التطبيق
   useEffect(() => {
     try {
       localStorage.setItem('imagine_ai_user', JSON.stringify(user));
@@ -145,8 +148,7 @@ const App: React.FC = () => {
       localStorage.setItem('site_verified_users', JSON.stringify(allUsers));
       localStorage.setItem('banned_emails', JSON.stringify(bannedEmails));
       
-      // لا نحفظ الصور الكبيرة جداً في localStorage لتجنب QuotaExceededError
-      if (activeImage && activeImage.length < 2000000) { // أقل من 2MB تقريباً
+      if (activeImage && activeImage.length < 2000000) {
         localStorage.setItem('imagine_active_image', activeImage);
       } else {
         localStorage.removeItem('imagine_active_image');
@@ -157,9 +159,7 @@ const App: React.FC = () => {
       } else {
         localStorage.removeItem('imagine_original_image');
       }
-    } catch (e) {
-      console.warn("LocalStorage storage limit reached. Session data may not persist fully.", e);
-    }
+    } catch (e) {}
   }, [user, siteConfig, userSettings, history, messages, allUsers, bannedEmails, activeImage, originalImage]);
 
   const getEffectiveApiKey = useCallback((specificKey?: string) => {
@@ -182,48 +182,7 @@ const App: React.FC = () => {
     } catch (e) {}
   }, [user]);
 
-  const handleLoginSuccess = useCallback((userData: any, directToAdmin: boolean = false) => {
-    setUser(userData);
-    if (userData.deviceType) {
-      setUserSettings(prev => ({ ...prev, deviceType: userData.deviceType }));
-    }
-    if (directToAdmin && userData.isAdmin) {
-      setIsAdminOpen(true);
-    }
-  }, []);
-
-  const handleGenerateSpeech = useCallback(async (text: string, voice: string) => {
-    if (!text.trim()) return;
-    setIsSpeechGenerating(true);
-    try {
-      const targetKey = getEffectiveApiKey(siteConfig.api_key_tts);
-      const ai = new GoogleGenAI({ apiKey: targetKey });
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Say clearly: ${text}` }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice || 'Kore' } } },
-        },
-      });
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64Audio) {
-        trackDataUsage(`data:audio/pcm;base64,${base64Audio}`);
-        const AudioCtxClass = (window as any).AudioContext || (window as any).webkitAudioContext;
-        const audioCtx = new AudioCtxClass({ sampleRate: 24000 });
-        const audioBuffer = await decodeAudioData(decode(base64Audio), audioCtx, 24000, 1);
-        const source = audioCtx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioCtx.destination);
-        source.start();
-      }
-    } catch (err: any) {
-    } finally {
-      setIsSpeechGenerating(false);
-    }
-  }, [getEffectiveApiKey, siteConfig.api_key_tts, trackDataUsage]);
-
-  const handleGenerate = useCallback(async (customPrompt?: string, isLogo: boolean = false) => {
+  const handleGenerate = useCallback(async (customPrompt?: string, isLogo: boolean = false, overrideType?: GenerationType) => {
     const p = customPrompt || settings.prompt;
     if (!p.trim()) return;
     setIsGenerating(true);
@@ -232,10 +191,18 @@ const App: React.FC = () => {
       const targetKey = isLogo ? getEffectiveApiKey(siteConfig.api_key_logo) : getEffectiveApiKey(siteConfig.api_key_text_to_image);
       const ai = new GoogleGenAI({ apiKey: targetKey });
       const modelName = userSettings.modelStrategy === 'fast' ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview';
+      
+      let finalPrompt = isLogo ? `Professional minimalist logo for: ${p}, 4k.` : p;
+      if (overrideType === 'TextToCode') {
+        finalPrompt = `Beautiful syntax-highlighted code snippet image for: ${p}. Visual Studio Code style, dark theme, professional developer aesthetics.`;
+      } else if (overrideType === 'QrCode') {
+        finalPrompt = `High-quality, functional, scannable black and white QR code for URL: ${p}. Minimalist professional design, 4k.`;
+      }
+
       const response = await ai.models.generateContent({
         model: modelName,
-        contents: { parts: [{ text: isLogo ? `Professional minimalist logo for: ${p}, 4k.` : p }] },
-        config: { imageConfig: { aspectRatio: (settings.aspectRatio as any) || "1:1", imageSize: "1K" } }
+        contents: { parts: [{ text: finalPrompt }] },
+        config: { imageConfig: { aspectRatio: "1:1", imageSize: "1K" } }
       });
       let resultUrl = '';
       if (response.candidates?.[0]?.content?.parts) {
@@ -247,7 +214,7 @@ const App: React.FC = () => {
         trackDataUsage(resultUrl);
         setActiveImage(resultUrl);
         setOriginalImage(resultUrl);
-        setHistory(prev => [{ id: Date.now().toString(), imageUrl: resultUrl, prompt: p, timestamp: new Date(), model: settings.model, type: isLogo ? 'LogoCreation' : 'Generated' }, ...prev].slice(0, 30));
+        setHistory(prev => [{ id: Date.now().toString(), imageUrl: resultUrl, prompt: p, timestamp: new Date(), model: settings.model, type: overrideType || (isLogo ? 'LogoCreation' : 'Generated') }, ...prev].slice(0, 30));
       }
     } catch (e: any) { 
     } finally { setIsGenerating(false); }
@@ -255,7 +222,7 @@ const App: React.FC = () => {
 
   const handleImageAction = useCallback(async (type: GenerationType, customPrompt?: string) => {
     const sourceImage = activeImage || settings.uploadedImage;
-    if (!sourceImage) return;
+    if (!sourceImage && type !== 'TextToCode' && type !== 'QrCode') return;
     
     setIsGenerating(true);
     let specificKey = '';
@@ -271,10 +238,10 @@ const App: React.FC = () => {
     try {
       const targetKey = getEffectiveApiKey(specificKey);
       const ai = new GoogleGenAI({ apiKey: targetKey });
-      const mimeType = sourceImage.split(';')[0].split(':')[1] || 'image/png';
+      const mimeType = sourceImage?.split(';')[0].split(':')[1] || 'image/png';
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: { parts: [{ inlineData: { data: sourceImage.split(',')[1], mimeType } }, { text: actionPrompt }] }
+        contents: { parts: [{ inlineData: { data: sourceImage?.split(',')[1] || '', mimeType } }, { text: actionPrompt }] }
       });
       let resultUrl = '';
       if (response.candidates?.[0]?.content?.parts) {
@@ -290,9 +257,50 @@ const App: React.FC = () => {
     } finally { setIsGenerating(false); }
   }, [activeImage, settings.uploadedImage, siteConfig, getEffectiveApiKey, trackDataUsage]);
 
+  const handleGenerateSpeech = useCallback(async (text: string, voice: string) => {
+    if (!text.trim()) return;
+    setIsSpeechGenerating(true);
+    try {
+      const targetKey = getEffectiveApiKey(siteConfig.api_key_tts);
+      const ai = new GoogleGenAI({ apiKey: targetKey });
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: text }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: voice as any },
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        const audioBuffer = await decodeAudioData(
+          decode(base64Audio),
+          audioContext,
+          24000,
+          1
+        );
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContext.destination);
+        source.start();
+      }
+    } catch (e) {
+      console.error("Speech generation failed", e);
+    } finally {
+      setIsSpeechGenerating(false);
+    }
+  }, [getEffectiveApiKey, siteConfig.api_key_tts]);
+
   const authScreenMemo = useMemo(() => (
-    <AuthScreen onLogin={handleLoginSuccess} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} adminIdentity={adminIdentity} />
-  ), [handleLoginSuccess, language, allUsers, setAllUsers, bannedEmails, adminIdentity]);
+    <AuthScreen onLogin={(userData) => setUser(userData)} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} adminIdentity={adminIdentity} />
+  ), [language, allUsers, setAllUsers, bannedEmails, adminIdentity]);
 
   if (!user) return authScreenMemo;
 
@@ -304,7 +312,7 @@ const App: React.FC = () => {
       
       <div className="flex-1 flex overflow-hidden relative">
         <Sidebar isOpen={isSidebarOpen} settings={settings} setSettings={setSettings} onGenerate={() => handleGenerate()} onUpload={(url) => { setActiveImage(url); setSettings(s => ({...s, uploadedImage: url})); }} isGenerating={isGenerating} language={language} onClose={() => setIsSidebarOpen(false)} modelStrategy={userSettings.modelStrategy} setModelStrategy={(s) => setUserSettings(prev => ({ ...prev, modelStrategy: s }))} />
-        <MainPreview imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} loadingStep={loadingStep} prompt={settings.prompt} language={language} isSidebarOpen={isSidebarOpen} isGalleryOpen={isGalleryOpen} onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)} onRemoveBackground={() => handleImageAction('Cleaned')} onUpscale={() => handleImageAction('Upscaled')} onRemoveWatermark={() => handleImageAction('WatermarkRemoved')} onRestore={() => handleImageAction('Restored')} onColorize={() => handleImageAction('Colorized')} onCartoonize={() => handleImageAction('Cartoonized')} onMagicEraser={() => handleImageAction('ObjectRemoved')} onSmartEdit={() => { const p = prompt('Edit Prompt?'); if(p) handleImageAction('Edited', p); }} onVirtualTryOn={() => handleImageAction('VirtualTryOn')} onAddSunglasses={() => handleImageAction('AddSunglasses')} onChangeHairStyle={() => setIsHairModalOpen(true)} onCreateLogo={() => { const n = prompt('Logo Name?'); if(n) handleGenerate(n, true); }} onTextToSpeech={() => setIsSpeechModalOpen(true)} onGenerateImage={() => handleGenerate()} onImageToVector={() => handleImageAction('ImageToVector')} />
+        <MainPreview imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} loadingStep={loadingStep} prompt={settings.prompt} language={language} isSidebarOpen={isSidebarOpen} isGalleryOpen={isGalleryOpen} onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)} onRemoveBackground={() => handleImageAction('Cleaned')} onUpscale={() => handleImageAction('Upscaled')} onRemoveWatermark={() => handleImageAction('WatermarkRemoved')} onRestore={() => handleImageAction('Restored')} onColorize={() => handleImageAction('Colorized')} onCartoonize={() => handleImageAction('Cartoonized')} onMagicEraser={() => handleImageAction('ObjectRemoved')} onSmartEdit={() => { const p = prompt(translations[language].promptPlaceholder); if(p) handleImageAction('Edited', p); }} onVirtualTryOn={() => handleImageAction('VirtualTryOn')} onAddSunglasses={() => handleImageAction('AddSunglasses')} onChangeHairStyle={() => setIsHairModalOpen(true)} onCreateLogo={() => { const n = prompt(translations[language].logoPrompt); if(n) handleGenerate(n, true); }} onTextToSpeech={() => setIsSpeechModalOpen(true)} onGenerateImage={() => handleGenerate()} onImageToVector={() => handleImageAction('ImageToVector')} onTextToCode={() => setIsCodeModalOpen(true)} onQrCode={() => setIsQrModalOpen(true)} />
         <RightPanel isOpen={isGalleryOpen} history={history} onSelect={setActiveImage} onDelete={(id) => setHistory(h => h.filter(x => x.id !== id))} language={language} onClose={() => setIsGalleryOpen(false)} />
       </div>
 
@@ -314,6 +322,8 @@ const App: React.FC = () => {
       <ToastNotification toast={toast} onClose={() => setToast(null)} language={language} />
       {isSpeechModalOpen && <SpeechModal isOpen={isSpeechModalOpen} onClose={() => setIsSpeechModalOpen(false)} onGenerate={handleGenerateSpeech} language={language} isGenerating={isSpeechGenerating} />}
       {isHairModalOpen && <HairModal isOpen={isHairModalOpen} onClose={() => setIsHairModalOpen(false)} onApply={(p) => handleImageAction('ChangeHairStyle', p)} language={language} />}
+      <QrModal isOpen={isQrModalOpen} onClose={() => setIsQrModalOpen(false)} onGenerate={(url) => handleGenerate(url, false, 'QrCode')} language={language} isGenerating={isGenerating} />
+      <CodeModal isOpen={isCodeModalOpen} onClose={() => setIsCodeModalOpen(false)} onGenerate={(p) => handleGenerate(p, false, 'TextToCode')} language={language} isGenerating={isGenerating} />
     </div>
   );
 };

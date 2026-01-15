@@ -3,7 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Maximize2, Download, Eraser, Sparkles, History,
   Loader2, Scissors, X, Palette, Wind, Smile, Zap as ZapIcon, 
-  Wand2, Shirt, Eye, PenTool, Mic2, Layers, User as UserIcon
+  Wand2, Shirt, Eye, PenTool, Mic2, Layers, User as UserIcon,
+  Terminal, QrCode
 } from 'lucide-react';
 import { Language } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -33,6 +34,8 @@ interface MainPreviewProps {
   onToggleGallery?: () => void;
   onGenerateImage?: () => void;
   onImageToVector?: () => void;
+  onTextToCode?: () => void;
+  onQrCode?: () => void;
 }
 
 const MainPreview: React.FC<MainPreviewProps> = ({ 
@@ -40,7 +43,7 @@ const MainPreview: React.FC<MainPreviewProps> = ({
   isSidebarOpen, isGalleryOpen,
   onRemoveBackground, onUpscale, onRemoveWatermark, onColorize,
   onMagicEraser, onCartoonize, onRestore, onSmartEdit, onVirtualTryOn, onAddSunglasses, onChangeHairStyle, onCreateLogo,
-  onTextToSpeech, onToggleGallery, onGenerateImage, onImageToVector
+  onTextToSpeech, onToggleGallery, onGenerateImage, onImageToVector, onTextToCode, onQrCode
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const t = translations[language];
@@ -58,6 +61,8 @@ const MainPreview: React.FC<MainPreviewProps> = ({
 
   const smartTools = useMemo(() => [
     { id: 1, name: t.logoCreation, icon: <PenTool className="w-5 h-5" />, action: onCreateLogo, color: 'bg-blue-600', desc: 'Create AI Logo' },
+    { id: 16, name: t.textToCode, icon: <Terminal className="w-5 h-5" />, action: onTextToCode, color: 'bg-amber-600', desc: t.textToCodeDesc },
+    { id: 17, name: t.qrCode, icon: <QrCode className="w-5 h-5" />, action: onQrCode, color: 'bg-indigo-700', desc: t.qrCodeDesc },
     { id: 2, name: t.textToSpeech, icon: <Mic2 className="w-5 h-5" />, action: onTextToSpeech, color: 'bg-indigo-600', desc: 'Text to Voice' },
     { id: 14, name: t.imageToVector, icon: <Layers className="w-5 h-5" />, action: onImageToVector, color: 'bg-teal-600', desc: t.imageToVectorDesc },
     { id: 3, name: t.smartEdit, icon: <Wand2 className="w-5 h-5" />, action: onSmartEdit, color: 'bg-purple-600', desc: 'AI Image Edit' },
@@ -72,7 +77,7 @@ const MainPreview: React.FC<MainPreviewProps> = ({
     { id: 11, name: t.cartoonize, icon: <Smile className="w-5 h-5" />, action: onCartoonize, color: 'bg-emerald-600', desc: 'To 3D Cartoon' },
     { id: 12, name: t.restore, icon: <Sparkles className="w-5 h-5" />, action: onRestore, color: 'bg-amber-600', desc: 'Photo Repair' },
     { id: 13, name: t.generate, icon: <ZapIcon className="w-5 h-5" />, action: onGenerateImage, color: 'bg-indigo-700', desc: 'Text to Art' }
-  ], [t, onCreateLogo, onTextToSpeech, onSmartEdit, onRemoveBackground, onUpscale, onVirtualTryOn, onAddSunglasses, onChangeHairStyle, onRemoveWatermark, onColorize, onMagicEraser, onCartoonize, onRestore, onGenerateImage, onImageToVector]);
+  ], [t, onCreateLogo, onTextToCode, onQrCode, onTextToSpeech, onSmartEdit, onRemoveBackground, onUpscale, onVirtualTryOn, onAddSunglasses, onChangeHairStyle, onRemoveWatermark, onColorize, onMagicEraser, onCartoonize, onRestore, onGenerateImage, onImageToVector]);
 
   return (
     <main className="flex-1 bg-[#f8fafc] dark:bg-[#020617] flex flex-col items-center p-4 lg:p-8 overflow-y-auto custom-scrollbar w-full transition-all duration-300">

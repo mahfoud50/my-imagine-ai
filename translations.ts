@@ -180,7 +180,13 @@ export const translations = {
     hairFade: "تدريجي (Fade)",
     hairBlonde: "شعر أشقر",
     hairBald: "أصلع تماماً",
-    applyHair: "تطبيق التصفيف"
+    applyHair: "تطبيق التصفيف",
+    textToCode: "نص إلى كود",
+    textToCodeDesc: "تحويل الوصف لبرمجية",
+    qrCode: "رابط إلى QR",
+    qrCodeDesc: "إنشاء رمز QR ذكي",
+    enterCodePrompt: "ما الذي تريد برمجته؟ (مثال: واجهة تسجيل دخول بـ React)",
+    enterUrlPrompt: "أدخل الرابط المراد تحويله لـ QR"
   },
   en: {
     appName: "IMAGINE AI",
@@ -362,6 +368,12 @@ export const translations = {
     hairFade: "Fade Cut",
     hairBlonde: "Blonde Hair",
     hairBald: "Bald",
-    applyHair: "Apply Hairstyle"
+    applyHair: "Apply Hairstyle",
+    textToCode: "Text to Code",
+    textToCodeDesc: "Convert text to dev code",
+    qrCode: "URL to QR",
+    qrCodeDesc: "Smart QR Generator",
+    enterCodePrompt: "What do you want to code? (e.g. React Login UI)",
+    enterUrlPrompt: "Enter URL to convert to QR"
   }
 };
