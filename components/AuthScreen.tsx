@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Fingerprint, ShieldAlert, RefreshCcw, Timer, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, AtSign, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Fingerprint, ShieldAlert, RefreshCcw, Timer, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, AtSign, Monitor, Smartphone, Tablet, Laptop, Apple } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { Language, DeviceType } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -127,7 +127,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#0f172a] p-4 overflow-hidden">
       <div className="fixed bottom-6 left-0 w-full flex justify-center z-[350] pointer-events-none">
-        <button type="button" onClick={() => setIsAdminModalOpen(true)} className="pointer-events-auto flex items-center gap-2 px-6 py-2 rounded-full text-slate-700 hover:text-indigo-400 opacity-10 hover:opacity-100 group">
+        <button type="button" onClick={() => setIsAdminModalOpen(true)} className="pointer-events-auto flex items-center gap-2 px-6 py-2 rounded-full text-slate-700 hover:text-indigo-400 opacity-10 hover:opacity-100 group transition-all">
             <Lock className="w-3 h-3" />
             <span className="text-[10px] font-mono font-black tracking-[0.3em] uppercase">Admin Core</span>
         </button>
@@ -178,7 +178,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
                 <div className="absolute -top-20 -left-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px]"></div>
                 <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-rose-600/10 rounded-full blur-[100px]"></div>
                 
-                <h2 className="text-3xl font-black relative z-10">IMAGINE <span className="text-indigo-400">AI</span></h2>
+                <h2 className="text-3xl font-black relative z-10 tracking-tighter">IMAGINE <span className="text-indigo-400">AI</span></h2>
                 <h1 className="text-5xl font-black mt-8 leading-tight relative z-10">{isRtl ? 'حوّل كلماتك إلى فن مذهل' : 'Transform words into stunning art'}</h1>
                 <p className="mt-6 text-slate-400 font-medium relative z-10">{isRtl ? 'انضم إلى آلاف المبدعين واستخدم أقوى نماذج الذكاء الاصطناعي لتوليد الصور.' : 'Join thousands of creators and use the most powerful AI models to generate images.'}</p>
             </div>
@@ -190,7 +190,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
                     </div>
 
                     {successMsg && (
-                      <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2">
+                      <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2 mb-2">
                         <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
                         <p className="text-emerald-500 text-xs font-bold leading-tight">{successMsg}</p>
                       </div>
@@ -200,57 +200,66 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-bottom-2">
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">{t.fullName}</label>
-                          <input type="text" required placeholder={t.fullNamePlaceholder} value={name} onChange={(e) => setName(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all" />
+                          <input type="text" required placeholder={t.fullNamePlaceholder} value={name} onChange={(e) => setName(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-700" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">{t.username}</label>
-                          <input type="text" required placeholder={t.usernamePlaceholder} value={username} onChange={(e) => setUsername(e.target.value.replace(/\s+/g, '').toLowerCase())} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all" />
+                          <input type="text" required placeholder={t.usernamePlaceholder} value={username} onChange={(e) => setUsername(e.target.value.replace(/\s+/g, '').toLowerCase())} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-700" />
                         </div>
                       </div>
                     )}
 
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Email Address</label>
-                      <input type="email" required placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all" />
+                      <input type="email" required placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-700" />
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Secure Password</label>
                       <div className="relative">
-                        <input type={showPassword ? "text" : "password"} required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all" />
+                        <input type={showPassword ? "text" : "password"} required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-700" />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute ${isRtl ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-slate-500 hover:text-indigo-400 transition-colors`}>
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
                     </div>
 
-                    {/* خيارات اختيار نوع الجهاز */}
-                    <div className="space-y-2 pt-2">
-                       <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">{isRtl ? 'اختر واجهة الجهاز' : 'Choose Device UI'}</label>
-                       <div className="grid grid-cols-3 gap-2">
+                    {/* خيارات اختيار نوع الجهاز - تصميم احترافي جديد */}
+                    <div className="space-y-3 pt-3">
+                       <div className="flex items-center justify-between px-1">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'اختر واجهة الجهاز المخصصة' : 'Select Custom Device UI'}</label>
+                          <div className="h-px bg-white/5 flex-1 mx-3"></div>
+                       </div>
+                       
+                       <div className="grid grid-cols-3 gap-3">
                           <button 
                             type="button" 
                             onClick={() => setDeviceType('pc')} 
-                            className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${deviceType === 'pc' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-[#0f172a] border-white/5 text-slate-500 hover:border-indigo-500/50'}`}
+                            className={`group relative flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all duration-300 overflow-hidden ${deviceType === 'pc' ? 'bg-indigo-600 border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.3)] scale-[1.02]' : 'bg-[#0f172a]/50 border-white/5 hover:border-indigo-500/30'}`}
                           >
-                             <Monitor className="w-5 h-5 mb-1" />
-                             <span className="text-[8px] font-black uppercase">{isRtl ? 'حاسوب' : 'PC'}</span>
+                             {deviceType === 'pc' && <div className="absolute -top-2 -right-2 w-8 h-8 bg-white/20 blur-xl"></div>}
+                             <Laptop className={`w-6 h-6 mb-2 transition-transform group-hover:scale-110 ${deviceType === 'pc' ? 'text-white' : 'text-slate-500'}`} />
+                             <span className={`text-[10px] font-black tracking-tight ${deviceType === 'pc' ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>Pc</span>
                           </button>
+                          
                           <button 
                             type="button" 
                             onClick={() => setDeviceType('android')} 
-                            className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${deviceType === 'android' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-[#0f172a] border-white/5 text-slate-500 hover:border-indigo-500/50'}`}
+                            className={`group relative flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all duration-300 overflow-hidden ${deviceType === 'android' ? 'bg-emerald-600 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-[1.02]' : 'bg-[#0f172a]/50 border-white/5 hover:border-emerald-500/30'}`}
                           >
-                             <Smartphone className="w-5 h-5 mb-1" />
-                             <span className="text-[8px] font-black uppercase">{isRtl ? 'أندرويد' : 'Android'}</span>
+                             {deviceType === 'android' && <div className="absolute -top-2 -right-2 w-8 h-8 bg-white/20 blur-xl"></div>}
+                             <Smartphone className={`w-6 h-6 mb-2 transition-transform group-hover:scale-110 ${deviceType === 'android' ? 'text-white' : 'text-slate-500'}`} />
+                             <span className={`text-[10px] font-black tracking-tight ${deviceType === 'android' ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>Android</span>
                           </button>
+                          
                           <button 
                             type="button" 
                             onClick={() => setDeviceType('iphone')} 
-                            className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${deviceType === 'iphone' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-[#0f172a] border-white/5 text-slate-500 hover:border-indigo-500/50'}`}
+                            className={`group relative flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all duration-300 overflow-hidden ${deviceType === 'iphone' ? 'bg-slate-200 border-white shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-[1.02]' : 'bg-[#0f172a]/50 border-white/5 hover:border-slate-400/30'}`}
                           >
-                             <Tablet className="w-5 h-5 mb-1" />
-                             <span className="text-[8px] font-black uppercase">{isRtl ? 'آيفون' : 'iPhone'}</span>
+                             {deviceType === 'iphone' && <div className="absolute -top-2 -right-2 w-8 h-8 bg-indigo-600/20 blur-xl"></div>}
+                             <Apple className={`w-6 h-6 mb-2 transition-transform group-hover:scale-110 ${deviceType === 'iphone' ? 'text-slate-900' : 'text-slate-500'}`} />
+                             <span className={`text-[10px] font-black tracking-tight ${deviceType === 'iphone' ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-200'}`}>iPhone</span>
                           </button>
                        </div>
                     </div>
@@ -258,7 +267,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
                     {!isLogin && (
                       <div className="space-y-1 animate-in slide-in-from-bottom-2">
                         <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">{t.confirmPassword}</label>
-                        <input type="password" required placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all" />
+                        <input type="password" required placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-700" />
                       </div>
                     )}
 
@@ -269,14 +278,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
                       </div>
                     )}
 
-                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/10 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 mt-4">
+                    <button type="submit" disabled={isLoading} className="w-full py-4.5 bg-indigo-600 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 mt-6 group">
                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isLogin ? t.loginBtn : t.signupBtn)}
-                        <ArrowRight className={`w-4 h-4 ${isRtl ? 'rotate-180' : ''}`} />
+                        <ArrowRight className={`w-4 h-4 transition-transform group-hover:translate-x-1 ${isRtl ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
                     </button>
                     
-                    <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }} className="w-full text-slate-400 text-xs mt-6 font-bold text-center group">
+                    <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }} className="w-full text-slate-400 text-[11px] mt-6 font-bold text-center group">
                         {isLogin ? t.noAccount : t.haveAccount} 
-                        <span className="text-indigo-400 mx-2 group-hover:underline">{isLogin ? t.signupLink : t.loginLink}</span>
+                        <span className="text-indigo-400 mx-2 group-hover:underline transition-all">{isLogin ? t.signupLink : t.loginLink}</span>
                     </button>
                 </form>
             </div>
