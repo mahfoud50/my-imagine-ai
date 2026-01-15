@@ -16,7 +16,6 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { Fingerprint, Sparkles, History, Loader2, MessageSquare, User as UserIcon } from 'lucide-react';
 import { translations } from './translations.ts';
 
-// رقم إصدار النظام لفرض إعادة تسجيل الدخول عند التحديثات الكبرى
 const SYSTEM_VERSION = "2.1.0_DEVICE_UPDATE";
 
 function decode(base64: string) {
@@ -64,10 +63,9 @@ const safeParse = (key: string, defaultValue: any) => {
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(() => {
-    // التحقق من الإصدار قبل استعادة المستخدم
     const lastVersion = localStorage.getItem('imagine_system_version');
     if (lastVersion !== SYSTEM_VERSION) {
-      localStorage.removeItem('imagine_ai_user'); // إجبار على إعادة الدخول
+      localStorage.removeItem('imagine_ai_user');
       return null;
     }
     return safeParse('imagine_ai_user', null);
@@ -77,7 +75,6 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<HistoryItem[]>(() => safeParse('imagine_ai_history', []));
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [messages, setMessages] = useState<Message[]>(() => safeParse('imagine_ai_messages', []));
-  
   const [allUsers, setAllUsers] = useState<any[]>(() => safeParse('site_verified_users', []));
   const [bannedEmails, setBannedEmails] = useState<string[]>(() => safeParse('banned_emails', []));
   const [adminIdentity, setAdminIdentity] = useState(() => safeParse('admin_identity', { 
@@ -116,8 +113,12 @@ const App: React.FC = () => {
   const [loadingStep, setLoadingStep] = useState(0);
   const [toast, setToast] = useState<AppNotification | null>(null);
   
-  const [activeImage, setActiveImage] = useState<string | null>(() => localStorage.getItem('imagine_active_image'));
-  const [originalImage, setOriginalImage] = useState<string | null>(() => localStorage.getItem('imagine_original_image'));
+  const [activeImage, setActiveImage] = useState<string | null>(() => {
+    try { return localStorage.getItem('imagine_active_image'); } catch (e) { return null; }
+  });
+  const [originalImage, setOriginalImage] = useState<string | null>(() => {
+    try { return localStorage.getItem('imagine_original_image'); } catch (e) { return null; }
+  });
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -129,10 +130,37 @@ const App: React.FC = () => {
     prompt: '', model: 'Plus', aspectRatio: '1:1', steps: 30, uploadedImage: null
   });
 
-  // حفظ الإصدار عند التشغيل
   useEffect(() => {
     localStorage.setItem('imagine_system_version', SYSTEM_VERSION);
   }, []);
+
+  // تحسين عملية المزامنة مع التخزين المحلي لمنع انهيار التطبيق
+  useEffect(() => {
+    try {
+      localStorage.setItem('imagine_ai_user', JSON.stringify(user));
+      localStorage.setItem('imagine_ai_config', JSON.stringify(siteConfig));
+      localStorage.setItem('imagine_ai_settings', JSON.stringify(userSettings));
+      localStorage.setItem('imagine_ai_history', JSON.stringify(history));
+      localStorage.setItem('imagine_ai_messages', JSON.stringify(messages));
+      localStorage.setItem('site_verified_users', JSON.stringify(allUsers));
+      localStorage.setItem('banned_emails', JSON.stringify(bannedEmails));
+      
+      // لا نحفظ الصور الكبيرة جداً في localStorage لتجنب QuotaExceededError
+      if (activeImage && activeImage.length < 2000000) { // أقل من 2MB تقريباً
+        localStorage.setItem('imagine_active_image', activeImage);
+      } else {
+        localStorage.removeItem('imagine_active_image');
+      }
+      
+      if (originalImage && originalImage.length < 2000000) {
+        localStorage.setItem('imagine_original_image', originalImage);
+      } else {
+        localStorage.removeItem('imagine_original_image');
+      }
+    } catch (e) {
+      console.warn("LocalStorage storage limit reached. Session data may not persist fully.", e);
+    }
+  }, [user, siteConfig, userSettings, history, messages, allUsers, bannedEmails, activeImage, originalImage]);
 
   const getEffectiveApiKey = useCallback((specificKey?: string) => {
     return specificKey || siteConfig.global_api_key || siteConfig.api_key_random || userSettings.manualApiKey || process.env.API_KEY || '';
@@ -140,41 +168,19 @@ const App: React.FC = () => {
 
   const trackDataUsage = useCallback((dataUrl: string) => {
     if (!dataUrl || !user) return;
-    const base64Content = dataUrl.split(',')[1];
-    if (!base64Content) return;
-    const bytes = Math.floor(base64Content.length * 0.75);
-    setSiteConfig(prev => ({ ...prev, total_data_usage_bytes: (prev.total_data_usage_bytes || 0) + bytes }));
-    setAllUsers(prevUsers => prevUsers.map(u => {
-      if (u.email.toLowerCase() === user.email.toLowerCase()) {
-        return { ...u, dataUsage: (u.dataUsage || 0) + bytes };
-      }
-      return u;
-    }));
+    try {
+      const base64Content = dataUrl.split(',')[1];
+      if (!base64Content) return;
+      const bytes = Math.floor(base64Content.length * 0.75);
+      setSiteConfig(prev => ({ ...prev, total_data_usage_bytes: (prev.total_data_usage_bytes || 0) + bytes }));
+      setAllUsers(prevUsers => prevUsers.map(u => {
+        if (u.email.toLowerCase() === user.email.toLowerCase()) {
+          return { ...u, dataUsage: (u.dataUsage || 0) + bytes };
+        }
+        return u;
+      }));
+    } catch (e) {}
   }, [user]);
-
-  useEffect(() => {
-    document.title = siteConfig.seo_title || 'Imagine AI';
-    const styleTag = document.getElementById('admin-dynamic-css');
-    if (styleTag) styleTag.textContent = siteConfig.custom_css || '';
-  }, [siteConfig]);
-
-  useEffect(() => {
-    let interval: any;
-    if (isGenerating) {
-      interval = setInterval(() => {
-        setLoadingStep(prev => (prev + 1) % translations[language].loadingMessages.length);
-      }, 1500);
-    } else {
-      setLoadingStep(0);
-    }
-    return () => clearInterval(interval);
-  }, [isGenerating, language]);
-
-  const addNotification = useCallback((title: string, description: string, type: 'system' | 'success' | 'update' | 'message' = 'system') => {
-    const newNotif: AppNotification = { id: Date.now().toString(), title, description, time: new Date(), isRead: false, type };
-    setNotifications(prev => [newNotif, ...prev]);
-    setToast(newNotif);
-  }, []);
 
   const handleLoginSuccess = useCallback((userData: any, directToAdmin: boolean = false) => {
     setUser(userData);
@@ -183,18 +189,14 @@ const App: React.FC = () => {
     }
     if (directToAdmin && userData.isAdmin) {
       setIsAdminOpen(true);
-      addNotification(language === 'ar' ? 'تم الدخول المباشر للمدير' : 'Direct Admin Access', language === 'ar' ? 'أهلاً بك في غرفة العمليات' : 'Welcome to the core', 'success');
-    } else {
-      addNotification(language === 'ar' ? 'تم تسجيل الدخول' : 'Login Success', language === 'ar' ? `مرحباً بك، ${userData.name}` : `Welcome, ${userData.name}`, 'success');
     }
-  }, [language, addNotification]);
+  }, []);
 
   const handleGenerateSpeech = useCallback(async (text: string, voice: string) => {
     if (!text.trim()) return;
     setIsSpeechGenerating(true);
     try {
       const targetKey = getEffectiveApiKey(siteConfig.api_key_tts);
-      if (!targetKey) throw new Error("No API Key");
       const ai = new GoogleGenAI({ apiKey: targetKey });
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
@@ -208,21 +210,18 @@ const App: React.FC = () => {
       if (base64Audio) {
         trackDataUsage(`data:audio/pcm;base64,${base64Audio}`);
         const AudioCtxClass = (window as any).AudioContext || (window as any).webkitAudioContext;
-        if (!AudioCtxClass) return;
         const audioCtx = new AudioCtxClass({ sampleRate: 24000 });
         const audioBuffer = await decodeAudioData(decode(base64Audio), audioCtx, 24000, 1);
         const source = audioCtx.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioCtx.destination);
         source.start();
-        addNotification(language === 'ar' ? 'تم توليد الصوت' : 'Voice Generated', language === 'ar' ? 'يمكنك الاستماع الآن' : 'You can listen now', 'success');
       }
     } catch (err: any) {
-      addNotification('Speech Error', 'Check API Key in Settings', 'system');
     } finally {
       setIsSpeechGenerating(false);
     }
-  }, [getEffectiveApiKey, siteConfig.api_key_tts, language, addNotification, trackDataUsage]);
+  }, [getEffectiveApiKey, siteConfig.api_key_tts, trackDataUsage]);
 
   const handleGenerate = useCallback(async (customPrompt?: string, isLogo: boolean = false) => {
     const p = customPrompt || settings.prompt;
@@ -231,7 +230,6 @@ const App: React.FC = () => {
     setActiveImage(null);
     try {
       const targetKey = isLogo ? getEffectiveApiKey(siteConfig.api_key_logo) : getEffectiveApiKey(siteConfig.api_key_text_to_image);
-      if (!targetKey) throw new Error("No API Key");
       const ai = new GoogleGenAI({ apiKey: targetKey });
       const modelName = userSettings.modelStrategy === 'fast' ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview';
       const response = await ai.models.generateContent({
@@ -250,84 +248,30 @@ const App: React.FC = () => {
         setActiveImage(resultUrl);
         setOriginalImage(resultUrl);
         setHistory(prev => [{ id: Date.now().toString(), imageUrl: resultUrl, prompt: p, timestamp: new Date(), model: settings.model, type: isLogo ? 'LogoCreation' : 'Generated' }, ...prev].slice(0, 30));
-        addNotification(isLogo ? 'Logo Done' : 'Gen Done', 'Your image is ready', 'success');
       }
     } catch (e: any) { 
-      addNotification('API Error', 'Check API keys in Panel', 'system');
     } finally { setIsGenerating(false); }
-  }, [settings, siteConfig, userSettings.modelStrategy, getEffectiveApiKey, addNotification, trackDataUsage]);
+  }, [settings, siteConfig, userSettings.modelStrategy, getEffectiveApiKey, trackDataUsage]);
 
   const handleImageAction = useCallback(async (type: GenerationType, customPrompt?: string) => {
     const sourceImage = activeImage || settings.uploadedImage;
-    if (!sourceImage) {
-      addNotification(language === 'ar' ? 'تنبيه هام' : 'Important Alert', language === 'ar' ? 'يرجى رفع صورة أو توليد واحدة أولاً لكي يتمكن النظام الذكي من معالجتها.' : 'Please upload or generate an image first so the AI system can process it.', 'system');
-      return;
-    }
+    if (!sourceImage) return;
     
     setIsGenerating(true);
     let specificKey = '';
     let actionPrompt = '';
 
     switch(type) {
-      case 'Cleaned': 
-        specificKey = siteConfig.api_key_remove_bg; 
-        actionPrompt = "STRICT INSTRUCTION: Completely remove the background of this image. Keep the main subject exactly as is. Output the subject on a transparent or solid white background. DO NOT upscale, DO NOT change resolution, DO NOT alter colors. Just background removal.";
-        break;
-      case 'Upscaled': 
-        specificKey = siteConfig.api_key_upscale; 
-        actionPrompt = "STRICT INSTRUCTION: Perform 4K super-resolution upscaling. Increase the pixel count and enhance clarity, sharpness, and textures. Maintain the exact original composition and colors. ONLY upscale.";
-        break;
-      case 'WatermarkRemoved': 
-        specificKey = siteConfig.api_key_watermark; 
-        actionPrompt = "STRICT INSTRUCTION: Identify and remove any watermarks, text, or logos from the image. Use content-aware inpainting to fill the removed area naturally. Keep the rest of the image untouched.";
-        break;
-      case 'Colorized': 
-        specificKey = siteConfig.api_key_colorize; 
-        actionPrompt = "STRICT INSTRUCTION: Colorize this black and white photo. Use realistic and historically accurate colors. Keep skin tones natural and maintain original detail. DO NOT upscale.";
-        break;
-      case 'ObjectRemoved': 
-        specificKey = siteConfig.api_key_magic_eraser; 
-        actionPrompt = "STRICT INSTRUCTION: Remove unwanted objects or distractions from the background as if they were never there. Maintain the main subject's integrity. Just object erasure.";
-        break;
-      case 'Cartoonized': 
-        specificKey = siteConfig.api_key_cartoonize; 
-        actionPrompt = "STRICT INSTRUCTION: Transform this image into a high-quality 3D animated movie style (Pixar/Disney style). Keep the person's features recognizable but in a stylized cartoon format.";
-        break;
-      case 'Restored': 
-        specificKey = siteConfig.api_key_restore; 
-        actionPrompt = "STRICT INSTRUCTION: Restore this old or damaged photo. Fix cracks, scratches, and noise. Improve contrast and light. Bring back lost facial details without changing identity.";
-        break;
-      case 'VirtualTryOn': 
-        specificKey = siteConfig.api_key_virtual_try_on; 
-        actionPrompt = "STRICT INSTRUCTION: Swap the clothes of the person in the image to a modern stylish outfit. Keep the head, face, skin, and background 100% identical. Only change the clothing.";
-        break;
-      case 'AddSunglasses': 
-        specificKey = siteConfig.api_key_sunglasses; 
-        actionPrompt = "STRICT INSTRUCTION: Add stylish, realistic sunglasses to the person's face. Make sure they fit the perspective and lighting of the scene.";
-        break;
-      case 'ChangeHairStyle': 
-        specificKey = siteConfig.api_key_hair_style; 
-        actionPrompt = `STRICT INSTRUCTION: AI Hair Stylist. Change the person's hairstyle to: "${customPrompt || "a modern professional haircut"}". CRITICAL: The face, eyes, expression, and background must remain EXACTLY the same. ONLY the hair should be changed.`;
-        break;
-      case 'ImageToVector':
-        specificKey = siteConfig.global_api_key;
-        actionPrompt = "STRICT INSTRUCTION: Convert this image into a clean, flat minimalist vector illustration (flat design SVG style). Use solid colors and sharp paths. No gradients, no photo-realism.";
-        break;
-      case 'Edited':
-        specificKey = siteConfig.api_key_smart_edit;
-        actionPrompt = customPrompt || "Perform the requested edit precisely while keeping the original style.";
-        break;
-      default:
-        specificKey = siteConfig.global_api_key;
-        actionPrompt = "Improve the overall quality of this image.";
+      case 'Cleaned': specificKey = siteConfig.api_key_remove_bg; actionPrompt = "Remove background strictly."; break;
+      case 'Upscaled': specificKey = siteConfig.api_key_upscale; actionPrompt = "Upscale to 4K quality."; break;
+      case 'WatermarkRemoved': specificKey = siteConfig.api_key_watermark; actionPrompt = "Remove watermark."; break;
+      default: specificKey = siteConfig.global_api_key; actionPrompt = customPrompt || "Edit image.";
     }
 
     try {
       const targetKey = getEffectiveApiKey(specificKey);
-      if (!targetKey) throw new Error("No API Key");
       const ai = new GoogleGenAI({ apiKey: targetKey });
       const mimeType = sourceImage.split(';')[0].split(':')[1] || 'image/png';
-      
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: { parts: [{ inlineData: { data: sourceImage.split(',')[1], mimeType } }, { text: actionPrompt }] }
@@ -341,38 +285,10 @@ const App: React.FC = () => {
       if (resultUrl) {
         trackDataUsage(resultUrl);
         setActiveImage(resultUrl);
-        setHistory(prev => [{ id: Date.now().toString(), imageUrl: resultUrl, prompt: type, timestamp: new Date(), model: 'Plus', type }, ...prev].slice(0, 30));
-        addNotification(language === 'ar' ? 'تمت العملية بنجاح' : 'Success', language === 'ar' ? `تم تنفيذ [${type}] بنجاح.` : `[${type}] completed successfully.`, 'success');
       }
     } catch (error: any) { 
-      addNotification('API Error', 'Check API keys in Admin Panel', 'system'); 
     } finally { setIsGenerating(false); }
-  }, [activeImage, settings.uploadedImage, siteConfig, getEffectiveApiKey, addNotification, language, trackDataUsage]);
-
-  const handleHairStyleRequest = useCallback(() => {
-    if (!(activeImage || settings.uploadedImage)) {
-      addNotification(language === 'ar' ? 'تنبيه' : 'Alert', language === 'ar' ? 'يجب اختيار صورة أولاً لكي يتمكن النظام من معرفة ملامح الوجه وتغيير الشعر.' : 'You must select an image first so the system can recognize facial features and change hair.', 'system');
-      return;
-    }
-    setIsHairModalOpen(true);
-  }, [activeImage, settings.uploadedImage, language, addNotification]);
-
-  useEffect(() => {
-    localStorage.setItem('imagine_ai_user', JSON.stringify(user));
-    localStorage.setItem('imagine_ai_config', JSON.stringify(siteConfig));
-    localStorage.setItem('imagine_ai_settings', JSON.stringify(userSettings));
-    localStorage.setItem('imagine_ai_history', JSON.stringify(history));
-    localStorage.setItem('imagine_ai_messages', JSON.stringify(messages));
-    localStorage.setItem('site_verified_users', JSON.stringify(allUsers));
-    localStorage.setItem('banned_emails', JSON.stringify(bannedEmails));
-    
-    if (activeImage) localStorage.setItem('imagine_active_image', activeImage);
-    else localStorage.removeItem('imagine_active_image');
-    
-    if (originalImage) localStorage.setItem('imagine_original_image', originalImage);
-    else localStorage.removeItem('imagine_original_image');
-
-  }, [user, siteConfig, userSettings, history, messages, allUsers, bannedEmails, activeImage, originalImage]);
+  }, [activeImage, settings.uploadedImage, siteConfig, getEffectiveApiKey, trackDataUsage]);
 
   const authScreenMemo = useMemo(() => (
     <AuthScreen onLogin={handleLoginSuccess} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} adminIdentity={adminIdentity} />
@@ -380,48 +296,17 @@ const App: React.FC = () => {
 
   if (!user) return authScreenMemo;
 
-  // تطبيق كلاسات CSS بناءً على نوع الجهاز المختار
   const deviceClass = `device-layout-${userSettings.deviceType}`;
 
   return (
     <div className={`flex flex-col h-screen overflow-hidden ${deviceClass} ${userSettings.theme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
-      {siteConfig.global_html && <div dangerouslySetInnerHTML={{ __html: siteConfig.global_html }} />}
       <Header credits={50} user={user} language={language} siteConfig={siteConfig} notifications={notifications} onMarkAllRead={() => setNotifications(prev => prev.map(n => ({...n, isRead: true})))} onToggleLang={() => setLanguage(l => l === 'ar' ? 'en' : 'ar')} onUpgrade={() => { setAccountTab('credits'); setIsAccountOpen(true); }} onProfile={() => { setAccountTab('profile'); setIsAccountOpen(true); }} onOpenInbox={() => { setAccountTab('manager'); setIsAccountOpen(true); }} onOpenStory={() => setIsStoryOpen(true)} onLogout={() => setUser(null)} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} onAdmin={() => setIsAdminOpen(true)} />
       
       <div className="flex-1 flex overflow-hidden relative">
         <Sidebar isOpen={isSidebarOpen} settings={settings} setSettings={setSettings} onGenerate={() => handleGenerate()} onUpload={(url) => { setActiveImage(url); setSettings(s => ({...s, uploadedImage: url})); }} isGenerating={isGenerating} language={language} onClose={() => setIsSidebarOpen(false)} modelStrategy={userSettings.modelStrategy} setModelStrategy={(s) => setUserSettings(prev => ({ ...prev, modelStrategy: s }))} />
-        <MainPreview imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} loadingStep={loadingStep} prompt={settings.prompt} language={language} isSidebarOpen={isSidebarOpen} isGalleryOpen={isGalleryOpen} onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)} onRemoveBackground={() => handleImageAction('Cleaned')} onUpscale={() => handleImageAction('Upscaled')} onRemoveWatermark={() => handleImageAction('WatermarkRemoved')} onRestore={() => handleImageAction('Restored')} onColorize={() => handleImageAction('Colorized')} onCartoonize={() => handleImageAction('Cartoonized')} onMagicEraser={() => handleImageAction('ObjectRemoved')} onSmartEdit={() => { const p = prompt('Edit Prompt?'); if(p) handleImageAction('Edited', p); }} onVirtualTryOn={() => handleImageAction('VirtualTryOn')} onAddSunglasses={() => handleImageAction('AddSunglasses')} onChangeHairStyle={handleHairStyleRequest} onCreateLogo={() => { const n = prompt('Logo Name?'); if(n) handleGenerate(n, true); }} onTextToSpeech={() => setIsSpeechModalOpen(true)} onGenerateImage={() => handleGenerate()} onImageToVector={() => handleImageAction('ImageToVector')} />
+        <MainPreview imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} loadingStep={loadingStep} prompt={settings.prompt} language={language} isSidebarOpen={isSidebarOpen} isGalleryOpen={isGalleryOpen} onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)} onRemoveBackground={() => handleImageAction('Cleaned')} onUpscale={() => handleImageAction('Upscaled')} onRemoveWatermark={() => handleImageAction('WatermarkRemoved')} onRestore={() => handleImageAction('Restored')} onColorize={() => handleImageAction('Colorized')} onCartoonize={() => handleImageAction('Cartoonized')} onMagicEraser={() => handleImageAction('ObjectRemoved')} onSmartEdit={() => { const p = prompt('Edit Prompt?'); if(p) handleImageAction('Edited', p); }} onVirtualTryOn={() => handleImageAction('VirtualTryOn')} onAddSunglasses={() => handleImageAction('AddSunglasses')} onChangeHairStyle={() => setIsHairModalOpen(true)} onCreateLogo={() => { const n = prompt('Logo Name?'); if(n) handleGenerate(n, true); }} onTextToSpeech={() => setIsSpeechModalOpen(true)} onGenerateImage={() => handleGenerate()} onImageToVector={() => handleImageAction('ImageToVector')} />
         <RightPanel isOpen={isGalleryOpen} history={history} onSelect={setActiveImage} onDelete={(id) => setHistory(h => h.filter(x => x.id !== id))} language={language} onClose={() => setIsGalleryOpen(false)} />
       </div>
-
-      {/* شريط ملاحة سفلي للأجهزة المحمولة */}
-      {(userSettings.deviceType === 'android' || userSettings.deviceType === 'iphone') && (
-        <div className={`fixed bottom-0 left-0 w-full z-[100] border-t backdrop-blur-xl ${userSettings.theme === 'dark' ? 'bg-slate-900/80 border-white/5' : 'bg-white/80 border-slate-200'} ${userSettings.deviceType === 'iphone' ? 'pb-8 rounded-t-[2.5rem]' : 'pb-2 rounded-t-3xl'}`}>
-           <div className="flex justify-around items-center h-16">
-              <button onClick={() => setIsSidebarOpen(true)} className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-500 transition-colors">
-                 <Sparkles className="w-5 h-5" />
-                 <span className="text-[10px] font-bold">{language === 'ar' ? 'إنشاء' : 'Create'}</span>
-              </button>
-              <button onClick={() => setIsGalleryOpen(true)} className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-500 transition-colors">
-                 <History className="w-5 h-5" />
-                 <span className="text-[10px] font-bold">{language === 'ar' ? 'المعرض' : 'Gallery'}</span>
-              </button>
-              <div className="relative -top-6">
-                <button onClick={() => handleGenerate()} disabled={isGenerating} className="w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center active:scale-95 transition-all">
-                   {isGenerating ? <Loader2 className="w-6 h-6 animate-spin" /> : <Fingerprint className="w-6 h-6" />}
-                </button>
-              </div>
-              <button onClick={() => { setAccountTab('manager'); setIsAccountOpen(true); }} className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-500 transition-colors">
-                 <MessageSquare className="w-5 h-5" />
-                 <span className="text-[10px] font-bold">{language === 'ar' ? 'رسائلي' : 'Chat'}</span>
-              </button>
-              <button onClick={() => { setAccountTab('profile'); setIsAccountOpen(true); }} className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-500 transition-colors">
-                 <UserIcon className="w-5 h-5" />
-                 <span className="text-[10px] font-bold">{language === 'ar' ? 'حسابي' : 'Account'}</span>
-              </button>
-           </div>
-        </div>
-      )}
 
       <AccountModal isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} activeTab={accountTab} setActiveTab={setAccountTab} credits={50} user={user} language={language} userSettings={userSettings} setUserSettings={s => setUserSettings(prev => ({ ...prev, ...s }))} siteConfig={siteConfig} allMessages={messages} onSendMessage={(content) => setMessages(prev => [{ id: Date.now().toString(), senderName: user?.name, senderEmail: user?.email, content, timestamp: new Date(), isRead: false }, ...prev])} />
       {isAdminOpen && <AdminPanel config={siteConfig} setConfig={setSiteConfig} messages={messages} setMessages={setMessages} onClose={() => setIsAdminOpen(false)} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} setBannedEmails={setBannedEmails} adminIdentity={adminIdentity} setAdminIdentity={setAdminIdentity} />}
@@ -429,22 +314,6 @@ const App: React.FC = () => {
       <ToastNotification toast={toast} onClose={() => setToast(null)} language={language} />
       {isSpeechModalOpen && <SpeechModal isOpen={isSpeechModalOpen} onClose={() => setIsSpeechModalOpen(false)} onGenerate={handleGenerateSpeech} language={language} isGenerating={isSpeechGenerating} />}
       {isHairModalOpen && <HairModal isOpen={isHairModalOpen} onClose={() => setIsHairModalOpen(false)} onApply={(p) => handleImageAction('ChangeHairStyle', p)} language={language} />}
-      
-      <style>{`
-        .device-layout-iphone {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-        .device-layout-iphone .rounded-[2.5rem] { border-radius: 3.5rem; }
-        .device-layout-iphone .header { border-bottom: none; }
-        
-        .device-layout-android {
-          font-family: 'Roboto', 'Vazirmatn', sans-serif;
-        }
-        
-        @media (max-width: 1024px) {
-          .device-layout-pc .sidebar { display: none; }
-        }
-      `}</style>
     </div>
   );
 };

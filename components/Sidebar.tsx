@@ -29,11 +29,24 @@ const Sidebar: React.FC<SidebarProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // التحقق من حجم الملف (الحد الأقصى 5MB لتجنب بطء المتصفح)
+      if (file.size > 5 * 1024 * 1024) {
+        alert(language === 'ar' ? 'حجم الملف كبير جداً. يرجى اختيار صورة أقل من 5 ميجابايت.' : 'File is too large. Please select an image under 5MB.');
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        if (onUpload) onUpload(dataUrl);
-        else setSettings(prev => ({ ...prev, uploadedImage: dataUrl }));
+        try {
+          const dataUrl = event.target?.result as string;
+          if (onUpload) onUpload(dataUrl);
+          else setSettings(prev => ({ ...prev, uploadedImage: dataUrl }));
+        } catch (err) {
+          console.error("FileReader error:", err);
+        }
+      };
+      reader.onerror = () => {
+        console.error("Failed to read file");
       };
       reader.readAsDataURL(file);
     }
@@ -98,7 +111,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </section>
 
-        {/* الخطوة 1: رفع صورة مرجعية */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-emerald-500/20">1</div>
@@ -128,7 +140,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </section>
 
-        {/* الخطوة 2: نسبة الأبعاد */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-amber-500 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-amber-500/20">2</div>
@@ -152,7 +163,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </section>
 
-        {/* الخطوة 3: الوصف الإبداعي */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
