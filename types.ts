@@ -1,7 +1,7 @@
 
 export type Language = 'ar' | 'en';
 export type ModelType = 'Base' | 'Plus';
-export type GenerationType = 'Generated' | 'Edited' | 'Upscaled' | 'Cleaned' | 'WatermarkRemoved' | 'Colorized' | 'ObjectRemoved' | 'Cartoonized' | 'Restored' | 'SketchToImage' | 'VirtualTryOn' | 'Outpainted' | 'BackgroundChanged' | 'AddSunglasses' | 'LogoCreation' | 'ImageToVector';
+export type GenerationType = 'Generated' | 'Edited' | 'Upscaled' | 'Cleaned' | 'WatermarkRemoved' | 'Colorized' | 'ObjectRemoved' | 'Cartoonized' | 'Restored' | 'SketchToImage' | 'VirtualTryOn' | 'Outpainted' | 'BackgroundChanged' | 'AddSunglasses' | 'LogoCreation' | 'ImageToVector' | 'ChangeHairStyle';
 
 export type ThemeMode = 'light' | 'dark';
 export type FontFamily = 'classic' | 'modern' | 'comfort';
@@ -37,6 +37,7 @@ export interface HistoryItem {
   timestamp: Date;
   model: ModelType;
   type: GenerationType;
+  sizeBytes?: number;
 }
 
 export interface GenerationSettings {
@@ -63,7 +64,7 @@ export interface UserSettings {
   manualApiKey?: string;
 }
 
-export type AdminTab = 'SEO' | 'GLOBAL_HTML' | 'CSS' | 'JS' | 'PHP_LOGIC' | 'UX_CONFIG' | 'MESSAGES' | 'MANAGER_PROFILE' | 'USERS' | 'GLOBAL_STORY' | 'ADMIN_SECURITY' | 'API_SETTINGS';
+export type AdminTab = 'SEO' | 'GLOBAL_HTML' | 'CSS' | 'JS' | 'PHP_LOGIC' | 'UX_CONFIG' | 'MESSAGES' | 'MANAGER_PROFILE' | 'USERS' | 'GLOBAL_STORY' | 'ADMIN_SECURITY' | 'API_SETTINGS' | 'BANDWIDTH_STATS';
 
 export interface SiteConfig {
   seo_title: string;
@@ -81,6 +82,8 @@ export interface SiteConfig {
   site_logo?: string;
   site_logo_scale?: number; 
   global_api_key?: string;
+  api_key_random?: string;
+  total_data_usage_bytes?: number;
   // Smart Tools API Keys
   api_key_text_to_image?: string;
   api_key_logo?: string;
@@ -95,6 +98,7 @@ export interface SiteConfig {
   api_key_magic_eraser?: string;
   api_key_cartoonize?: string;
   api_key_restore?: string;
+  api_key_hair_style?: string;
   global_story?: {
     id: string;
     image?: string;

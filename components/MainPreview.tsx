@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Maximize2, Download, Eraser, Sparkles, History,
   Loader2, Scissors, X, Palette, Wind, Smile, Zap as ZapIcon, 
-  Wand2, Shirt, Eye, PenTool, Mic2, Layers
+  Wand2, Shirt, Eye, PenTool, Mic2, Layers, User as UserIcon
 } from 'lucide-react';
 import { Language } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -27,6 +27,7 @@ interface MainPreviewProps {
   onSmartEdit?: () => void;
   onVirtualTryOn?: () => void;
   onAddSunglasses?: () => void;
+  onChangeHairStyle?: () => void;
   onCreateLogo?: () => void;
   onTextToSpeech?: () => void;
   onToggleGallery?: () => void;
@@ -38,7 +39,7 @@ const MainPreview: React.FC<MainPreviewProps> = ({
   imageUrl, originalImageUrl, isGenerating, loadingStep = 0, prompt, language,
   isSidebarOpen, isGalleryOpen,
   onRemoveBackground, onUpscale, onRemoveWatermark, onColorize,
-  onMagicEraser, onCartoonize, onRestore, onSmartEdit, onVirtualTryOn, onAddSunglasses, onCreateLogo,
+  onMagicEraser, onCartoonize, onRestore, onSmartEdit, onVirtualTryOn, onAddSunglasses, onChangeHairStyle, onCreateLogo,
   onTextToSpeech, onToggleGallery, onGenerateImage, onImageToVector
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -60,6 +61,7 @@ const MainPreview: React.FC<MainPreviewProps> = ({
     { id: 2, name: t.textToSpeech, icon: <Mic2 className="w-5 h-5" />, action: onTextToSpeech, color: 'bg-indigo-600', desc: 'Text to Voice' },
     { id: 14, name: t.imageToVector, icon: <Layers className="w-5 h-5" />, action: onImageToVector, color: 'bg-teal-600', desc: t.imageToVectorDesc },
     { id: 3, name: t.smartEdit, icon: <Wand2 className="w-5 h-5" />, action: onSmartEdit, color: 'bg-purple-600', desc: 'AI Image Edit' },
+    { id: 15, name: t.changeHairStyle, icon: <UserIcon className="w-5 h-5" />, action: onChangeHairStyle, color: 'bg-amber-600', desc: t.hairStyleDesc },
     { id: 4, name: t.removeBg, icon: <Eraser className="w-5 h-5" />, action: onRemoveBackground, color: 'bg-rose-500', desc: 'BG Removal' },
     { id: 5, name: t.upscale, icon: <Maximize2 className="w-5 h-5" />, action: onUpscale, color: 'bg-emerald-500', desc: '4K Upscale' },
     { id: 6, name: t.virtualTryOn, icon: <Shirt className="w-5 h-5" />, action: onVirtualTryOn, color: 'bg-indigo-500', desc: 'Cloth Swap' },
@@ -70,7 +72,7 @@ const MainPreview: React.FC<MainPreviewProps> = ({
     { id: 11, name: t.cartoonize, icon: <Smile className="w-5 h-5" />, action: onCartoonize, color: 'bg-emerald-600', desc: 'To 3D Cartoon' },
     { id: 12, name: t.restore, icon: <Sparkles className="w-5 h-5" />, action: onRestore, color: 'bg-amber-600', desc: 'Photo Repair' },
     { id: 13, name: t.generate, icon: <ZapIcon className="w-5 h-5" />, action: onGenerateImage, color: 'bg-indigo-700', desc: 'Text to Art' }
-  ], [t, onCreateLogo, onTextToSpeech, onSmartEdit, onRemoveBackground, onUpscale, onVirtualTryOn, onAddSunglasses, onRemoveWatermark, onColorize, onMagicEraser, onCartoonize, onRestore, onGenerateImage, onImageToVector]);
+  ], [t, onCreateLogo, onTextToSpeech, onSmartEdit, onRemoveBackground, onUpscale, onVirtualTryOn, onAddSunglasses, onChangeHairStyle, onRemoveWatermark, onColorize, onMagicEraser, onCartoonize, onRestore, onGenerateImage, onImageToVector]);
 
   return (
     <main className="flex-1 bg-[#f8fafc] dark:bg-[#020617] flex flex-col items-center p-4 lg:p-8 overflow-y-auto custom-scrollbar w-full transition-all duration-300">

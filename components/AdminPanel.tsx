@@ -7,8 +7,10 @@ import {
   ImageIcon, Sparkles, Megaphone, Palette, Eye, EyeOff, Key,
   Upload, Fingerprint, MapPin, Calendar, ShieldCheck,
   Wand2, Eraser, Maximize2, Shirt, PenTool, Mic2, Scissors, Wind, Smile,
-  ShieldAlert, Globe, Video, Clock, MousePointer2, Lock, Reply, Trash, LayoutDashboard, BarChart3, Activity
+  ShieldAlert, Globe, Video, Clock, MousePointer2, Lock, Reply, Trash, LayoutDashboard, BarChart3, Activity, User as UserIcon,
+  Dice5, Database, Cloud
 } from 'lucide-react';
+import { translations } from '../translations.ts';
 
 interface AdminPanelProps {
   config: SiteConfig;
@@ -46,10 +48,29 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const storyFileRef = useRef<HTMLInputElement>(null);
   const logoFileRef = useRef<HTMLInputElement>(null);
 
+  const t = translations[language];
   const isRtl = language === 'ar';
+
+  const formatBytes = (bytes: number, decimals = 2) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  };
 
   const toggleKeyVisibility = (key: string) => {
     setVisibleKeys(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const generateRandomApiKey = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    let result = 'AIzaSy';
+    for (let i = 0; i < 33; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setTempConfig(prev => ({ ...prev, api_key_random: result }));
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'manager' | 'story' | 'logo') => {
@@ -67,7 +88,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleUpdateSystem = () => {
-    // إزالة setIsUpdating والتأخير لجعل الاستجابة فورية
     try {
       setConfig({...tempConfig});
       setAdminIdentity(tempAdminIdentity);
@@ -95,11 +115,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const currentTabInfo = tabs.find(t => t.id === activeTab);
 
-  const renderApiKeyInput = (label: string, configKey: keyof SiteConfig, icon: any, color: string) => (
+  const renderApiKeyInput = (label: string, configKey: keyof SiteConfig, icon: any, color: string, canRandomize: boolean = false) => (
     <div className="space-y-2 bg-slate-900/40 p-3 rounded-2xl border border-white/5 group hover:border-white/10 transition-all">
-      <div className="flex items-center gap-2 mb-1">
-        <div className={`p-1.5 rounded-lg ${color} text-white shadow-sm`}>{icon}</div>
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <div className={`p-1.5 rounded-lg ${color} text-white shadow-sm`}>{icon}</div>
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
+        </div>
+        {canRandomize && (
+          <button 
+            onClick={generateRandomApiKey}
+            title={isRtl ? "توليد مفتاح عشوائي" : "Generate Random Key"}
+            className="p-1.5 hover:bg-white/10 text-indigo-400 rounded-lg transition-all active:rotate-180 duration-500"
+          >
+            <Dice5 className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
       <div className="relative">
         <input 
@@ -152,9 +183,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                  {[
                    { label: isRtl ? 'إجمالي المستخدمين' : 'Total Users', value: allUsers.length, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-                   { label: isRtl ? 'الرسائل الواردة' : 'Inbox Messages', value: messages.length, icon: MessageSquare, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+                   { label: isRtl ? 'استهلاك البيانات' : 'Bandwidth Used', value: formatBytes(config.total_data_usage_bytes || 0), icon: Cloud, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
                    { label: isRtl ? 'المحظورين' : 'Banned Emails', value: bannedEmails.length, icon: UserX, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-                   { label: isRtl ? 'حالة النظام' : 'System Health', value: '100%', icon: Activity, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+                   { label: isRtl ? 'حالة النظام' : 'System Health', value: '100%', icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
                  ].map((stat, i) => (
                    <div key={i} className="bg-slate-900/40 p-6 rounded-[2.5rem] border border-white/5 flex flex-col justify-between">
                       <div className="flex justify-between items-start">
@@ -163,7 +194,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
                       <div className="mt-4">
                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{stat.label}</p>
-                         <h3 className="text-3xl font-black text-white mt-1">{stat.value}</h3>
+                         <h3 className="text-2xl font-black text-white mt-1">{stat.value}</h3>
                       </div>
                    </div>
                  ))}
@@ -171,16 +202,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-slate-900/40 p-8 rounded-[3rem] border border-white/5">
-                   <h3 className="text-white font-black uppercase text-sm mb-6 flex items-center gap-2"><Clock className="w-4 h-4 text-indigo-500" /> {isRtl ? 'أحدث المستخدمين' : 'Recent Users'}</h3>
+                   <h3 className="text-white font-black uppercase text-sm mb-6 flex items-center gap-2"><Users className="w-4 h-4 text-indigo-500" /> {isRtl ? 'أكثر المستخدمين استهلاكاً' : 'Top Data Consumers'}</h3>
                    <div className="space-y-4">
-                      {allUsers.slice(-5).reverse().map((u, i) => (
+                      {allUsers.sort((a,b) => (b.dataUsage||0) - (a.dataUsage||0)).slice(0, 5).map((u, i) => (
                         <div key={i} className="flex items-center gap-4 p-4 bg-slate-950/40 rounded-2xl border border-white/5">
                            <img src={`https://i.pravatar.cc/100?u=${u.email}`} className="w-10 h-10 rounded-xl" />
                            <div className="flex-1">
                               <p className="text-xs font-black text-white">{u.name}</p>
                               <p className="text-[10px] text-slate-500 font-mono">{u.email}</p>
                            </div>
-                           <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                           <div className="text-right">
+                              <p className="text-[10px] font-black text-indigo-400">{formatBytes(u.dataUsage || 0)}</p>
+                              <div className="w-16 h-1.5 bg-slate-800 rounded-full mt-1 overflow-hidden">
+                                 <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, (u.dataUsage||0) / (config.total_data_usage_bytes||1) * 100)}%` }}></div>
+                              </div>
+                           </div>
                         </div>
                       ))}
                    </div>
@@ -207,10 +243,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           {activeTab === 'API_SETTINGS' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in zoom-in-95">
                  {renderApiKeyInput('Master Key', 'global_api_key', <Shield className="w-4 h-4" />, 'bg-indigo-600')}
+                 {renderApiKeyInput(t.apiKeyRandomLabel, 'api_key_random', <Dice5 className="w-4 h-4" />, 'bg-slate-600', true)}
                  {renderApiKeyInput('Text to Image', 'api_key_text_to_image', <ImageIcon className="w-4 h-4" />, 'bg-rose-600')}
                  {renderApiKeyInput('Logo Designer', 'api_key_logo', <PenTool className="w-4 h-4" />, 'bg-blue-600')}
                  {renderApiKeyInput('Text to Speech', 'api_key_tts', <Mic2 className="w-4 h-4" />, 'bg-indigo-500')}
                  {renderApiKeyInput('Smart Editor', 'api_key_smart_edit', <Wand2 className="w-4 h-4" />, 'bg-purple-600')}
+                 {renderApiKeyInput('Hair Style Switcher', 'api_key_hair_style', <UserIcon className="w-4 h-4" />, 'bg-amber-600')}
                  {renderApiKeyInput('Remove BG', 'api_key_remove_bg', <Eraser className="w-4 h-4" />, 'bg-rose-500')}
                  {renderApiKeyInput('4K Upscale', 'api_key_upscale', <Maximize2 className="w-4 h-4" />, 'bg-emerald-500')}
                  {renderApiKeyInput('Virtual Try-On', 'api_key_virtual_try_on', <Shirt className="w-4 h-4" />, 'bg-indigo-400')}
@@ -270,6 +308,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div className="flex-1 min-w-0">
                        <h4 className="text-white font-black text-xs truncate">{u.name}</h4>
                        <p className="text-[10px] text-slate-500 truncate font-mono">{u.email}</p>
+                       <p className="text-[9px] font-black text-indigo-400 mt-1 uppercase">Used: {formatBytes(u.dataUsage || 0)}</p>
                     </div>
                     <button 
                       onClick={() => {

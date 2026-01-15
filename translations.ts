@@ -44,8 +44,11 @@ export const translations = {
     sketchToImage: "محول الرسم إلى واقع",
     virtualTryOn: "تغيير الملابس",
     addSunglasses: "إضافة نظارات شمسية",
+    changeHairStyle: "تغيير قصات الشعر",
+    hairStyleDesc: "تبديل تسريحة الشعر",
+    hairPrompt: "ما هي قصة الشعر المطلوبة؟ (مثال: شعر كيرلي طويل، قصة بوي، أشقر ناعم)",
     logoCreation: "إنشاء Logo احترافي",
-    logoPrompt: "ما هو اسم الشركة أو النشاط؟ (مثال: متجر آفاق للتقنية)",
+    logoPrompt: "ما هو اسم الشركة أو النشاط? (مثال: متجر آفاق للتقنية)",
     textToSpeech: "تحويل النص لصوت",
     ttsTitle: "تحويل النص إلى كلام ذكي",
     ttsPlaceholder: "اكتب النص الذي تريد تحويله لصوت هنا...",
@@ -153,6 +156,7 @@ export const translations = {
     apiSettingsLabel: "مركز الربط السحابي (Gemini API)",
     apiKeyPlaceholder: "الصق مفتاح API الخاص بك هنا...",
     apiKeyInfo: "يمكنك إدخال مفتاح Gemini الخاص بك يدوياً أو استخدام الربط السحابي. المفتاح اليدوي يمنحك تحكماً كاملأ واستقراراً أعلى في العمل.",
+    apiKeyRandomLabel: "مفتاح API عشوائي (احتياطي)",
     managerInfo: "حول مدير المنصة",
     managerName: "الاسم: Ahmad kharbicha",
     managerDob: "تاريخ الميلاد: 1 / 1 / 1987",
@@ -163,7 +167,12 @@ export const translations = {
     messageSent: "تم إرسال رسالتك بنجاح للمدير!",
     inbox: "صندوق الوارد (الرسائل)",
     imageToVector: "تحويل لفيكتور (SVG)",
-    imageToVectorDesc: "تحويل الصورة لرسم متجّه"
+    imageToVectorDesc: "تحويل الصورة لرسم متجّه",
+    tooManyAttempts: "محاولات كثيرة خاطئة!",
+    attemptsRemaining: "محاولات متبقية: ",
+    blockedMessage: "تم حظرك مؤقتاً لحماية النظام. يرجى المحاولة بعد: ",
+    hours: "ساعة",
+    minutes: "دقيقة"
   },
   en: {
     appName: "IMAGINE AI",
@@ -209,6 +218,9 @@ export const translations = {
     sketchToImage: "Sketch to Reality",
     virtualTryOn: "Change Clothes",
     addSunglasses: "Add Sunglasses",
+    changeHairStyle: "Change Hair Style",
+    hairStyleDesc: "Swap hairstyle",
+    hairPrompt: "What hair style do you want? (e.g., long curly hair, pixie cut, smooth blonde)",
     logoCreation: "Professional Logo Design",
     logoPrompt: "What is the company name or activity? (e.g., Tech Horizon Store)",
     textToSpeech: "Text to Speech",
@@ -318,6 +330,7 @@ export const translations = {
     apiSettingsLabel: "Cloud Integration Center (Gemini API)",
     apiKeyPlaceholder: "Paste your API key here...",
     apiKeyInfo: "You can manually enter your Gemini API key or use cloud integration. Manual keys offer full control and session stability.",
+    apiKeyRandomLabel: "Random Fallback Key",
     managerInfo: "About Platform Manager",
     managerName: "Name: Ahmad kharbicha",
     managerDob: "DOB: Jan 1, 1987",
@@ -328,6 +341,11 @@ export const translations = {
     messageSent: "Message sent successfully to manager!",
     inbox: "Inbox (Messages)",
     imageToVector: "Image to Vector (SVG)",
-    imageToVectorDesc: "Convert image to vector art"
+    imageToVectorDesc: "Convert image to vector art",
+    tooManyAttempts: "Too many failed attempts!",
+    attemptsRemaining: "Attempts remaining: ",
+    blockedMessage: "Temporary block for security. Try again in: ",
+    hours: "h",
+    minutes: "m"
   }
 };
