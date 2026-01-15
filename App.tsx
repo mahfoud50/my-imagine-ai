@@ -11,6 +11,7 @@ import AdminPanel from './components/AdminPanel.tsx';
 import StoryViewer from './components/StoryViewer.tsx';
 import ToastNotification from './components/ToastNotification.tsx';
 import SpeechModal from './components/SpeechModal.tsx';
+import HairModal from './components/HairModal.tsx';
 import { GoogleGenAI, Modality } from "@google/genai";
 import { Fingerprint } from 'lucide-react';
 import { translations } from './translations.ts';
@@ -59,6 +60,7 @@ const safeParse = (key: string, defaultValue: any) => {
 };
 
 const App: React.FC = () => {
+  // الحفاظ على حالة المستخدم وبياناته حتى بعد التحديث التلقائي
   const [user, setUser] = useState<any>(() => safeParse('imagine_ai_user', null));
   const [language, setLanguage] = useState<Language>(() => safeParse('imagine_ai_lang', 'ar'));
   const [history, setHistory] = useState<HistoryItem[]>(() => safeParse('imagine_ai_history', []));
@@ -99,10 +101,14 @@ const App: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSpeechGenerating, setIsSpeechGenerating] = useState(false);
   const [isSpeechModalOpen, setIsSpeechModalOpen] = useState(false);
+  const [isHairModalOpen, setIsHairModalOpen] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [toast, setToast] = useState<AppNotification | null>(null);
-  const [activeImage, setActiveImage] = useState<string | null>(null);
-  const [originalImage, setOriginalImage] = useState<string | null>(null);
+  
+  // استعادة حالة العمل (الصورة الحالية) لضمان عدم فقدانها عند التحديث
+  const [activeImage, setActiveImage] = useState<string | null>(() => localStorage.getItem('imagine_active_image'));
+  const [originalImage, setOriginalImage] = useState<string | null>(() => localStorage.getItem('imagine_original_image'));
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
@@ -112,6 +118,23 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<GenerationSettings>({
     prompt: '', model: 'Plus', aspectRatio: '1:1', steps: 30, uploadedImage: null
   });
+
+  // ميزة المراقبة الخارجية: استجابة التلقائية لأي تحديث في التخزين (تزامن عبر التبويبات)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'imagine_ai_config') {
+        const newConfig = JSON.parse(e.newValue || '{}');
+        setSiteConfig(newConfig);
+        // إذا كان هناك "إشارة تحديث" معينة، يمكننا طلب إعادة تحميل خفيفة هنا
+      }
+      if (e.key === 'imagine_ai_user' && !e.newValue) {
+        // إذا تم تسجيل الخروج من تبويب آخر
+        setUser(null);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const getEffectiveApiKey = useCallback((specificKey?: string) => {
     return specificKey || siteConfig.global_api_key || siteConfig.api_key_random || userSettings.manualApiKey || process.env.API_KEY || '';
@@ -244,7 +267,6 @@ const App: React.FC = () => {
     let specificKey = '';
     let actionPrompt = '';
 
-    // تحديد المفتاح والأمر المخصص لكل زر لضمان التمييز التام
     switch(type) {
       case 'Cleaned': 
         specificKey = siteConfig.api_key_remove_bg; 
@@ -331,12 +353,10 @@ const App: React.FC = () => {
       addNotification(language === 'ar' ? 'تنبيه' : 'Alert', language === 'ar' ? 'يجب اختيار صورة أولاً لكي يتمكن النظام من معرفة ملامح الوجه وتغيير الشعر.' : 'You must select an image first so the system can recognize facial features and change hair.', 'system');
       return;
     }
-    const h = prompt(translations[language].hairPrompt); 
-    if(h && h.trim().length > 0) {
-      handleImageAction('ChangeHairStyle', h); 
-    }
-  }, [activeImage, settings.uploadedImage, language, handleImageAction, addNotification]);
+    setIsHairModalOpen(true);
+  }, [activeImage, settings.uploadedImage, language, addNotification]);
 
+  // تحديث التخزين المحلي بانتظام لضمان مزامنة الجلسة وحفظ العمل
   useEffect(() => {
     localStorage.setItem('imagine_ai_user', JSON.stringify(user));
     localStorage.setItem('imagine_ai_config', JSON.stringify(siteConfig));
@@ -345,7 +365,15 @@ const App: React.FC = () => {
     localStorage.setItem('imagine_ai_messages', JSON.stringify(messages));
     localStorage.setItem('site_verified_users', JSON.stringify(allUsers));
     localStorage.setItem('banned_emails', JSON.stringify(bannedEmails));
-  }, [user, siteConfig, userSettings, history, messages, allUsers, bannedEmails]);
+    
+    // حفظ حالة الصورة الحالية لضمان استرجاعها بعد التحديث التلقائي
+    if (activeImage) localStorage.setItem('imagine_active_image', activeImage);
+    else localStorage.removeItem('imagine_active_image');
+    
+    if (originalImage) localStorage.setItem('imagine_original_image', originalImage);
+    else localStorage.removeItem('imagine_original_image');
+
+  }, [user, siteConfig, userSettings, history, messages, allUsers, bannedEmails, activeImage, originalImage]);
 
   const authScreenMemo = useMemo(() => (
     <AuthScreen onLogin={handleLoginSuccess} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} adminIdentity={adminIdentity} />
@@ -367,6 +395,7 @@ const App: React.FC = () => {
       {isStoryOpen && siteConfig.global_story?.active && <StoryViewer story={{...siteConfig.global_story, timestamp: Date.now()}} onClose={() => setIsStoryOpen(false)} language={language} siteConfig={siteConfig} />}
       <ToastNotification toast={toast} onClose={() => setToast(null)} language={language} />
       {isSpeechModalOpen && <SpeechModal isOpen={isSpeechModalOpen} onClose={() => setIsSpeechModalOpen(false)} onGenerate={handleGenerateSpeech} language={language} isGenerating={isSpeechGenerating} />}
+      {isHairModalOpen && <HairModal isOpen={isHairModalOpen} onClose={() => setIsHairModalOpen(false)} onApply={(p) => handleImageAction('ChangeHairStyle', p)} language={language} />}
       {user?.isAdmin && (
         <div className="fixed bottom-4 left-4 z-[9999]">
           <button onClick={() => setIsAdminOpen(true)} className="p-3 bg-slate-900 text-white rounded-full shadow-2xl border border-white/10 hover:scale-110 transition-transform"><Fingerprint className="w-5 h-5" /></button>

@@ -172,7 +172,15 @@ export const translations = {
     attemptsRemaining: "محاولات متبقية: ",
     blockedMessage: "تم حظرك مؤقتاً لحماية النظام. يرجى المحاولة بعد: ",
     hours: "ساعة",
-    minutes: "دقيقة"
+    minutes: "دقيقة",
+    hairStylesTitle: "اختر قصة الشعر",
+    hairLong: "شعر طويل",
+    hairShort: "شعر قصير",
+    hairCurly: "شعر كيرلي",
+    hairFade: "تدريجي (Fade)",
+    hairBlonde: "شعر أشقر",
+    hairBald: "أصلع تماماً",
+    applyHair: "تطبيق التصفيف"
   },
   en: {
     appName: "IMAGINE AI",
@@ -346,6 +354,14 @@ export const translations = {
     attemptsRemaining: "Attempts remaining: ",
     blockedMessage: "Temporary block for security. Try again in: ",
     hours: "h",
-    minutes: "m"
+    minutes: "m",
+    hairStylesTitle: "Choose Hairstyle",
+    hairLong: "Long Hair",
+    hairShort: "Short Hair",
+    hairCurly: "Curly Hair",
+    hairFade: "Fade Cut",
+    hairBlonde: "Blonde Hair",
+    hairBald: "Bald",
+    applyHair: "Apply Hairstyle"
   }
 };
