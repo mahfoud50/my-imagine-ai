@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Fingerprint, ShieldAlert, RefreshCcw, Timer, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, AtSign } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Fingerprint, ShieldAlert, RefreshCcw, Timer, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, AtSign, Monitor, Smartphone, Tablet } from 'lucide-react';
 import emailjs from '@emailjs/browser';
-import { Language } from '../types.ts';
+import { Language, DeviceType } from '../types.ts';
 import { translations } from '../translations.ts';
 import AdminLogin from './AdminLogin.tsx';
 
@@ -24,6 +24,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
+  const [deviceType, setDeviceType] = useState<DeviceType>('pc');
   const [enteredOtp, setEnteredOtp] = useState('');
   const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -64,6 +65,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
     setIsLoading(true);
 
     if (bannedEmails.includes(email.toLowerCase().trim()) && email.toLowerCase() !== adminIdentity.email.toLowerCase()) {
@@ -73,13 +75,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
     }
 
     if (isLogin && email.toLowerCase() === adminIdentity.email.toLowerCase() && password === adminIdentity.password) {
-        onLogin({ email, name: 'Mahfoud', username: 'admin', isAdmin: true }, false);
+        onLogin({ email, name: 'Mahfoud', username: 'admin', isAdmin: true, deviceType }, false);
         return;
     }
 
     if (isLogin) {
         const found = allUsers.find((u: any) => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password);
-        if (found) onLogin({ ...found, isAdmin: false }, false);
+        if (found) onLogin({ ...found, isAdmin: false, deviceType }, false);
         else setError(language === 'ar' ? 'بيانات الدخول غير صحيحة.' : 'Invalid credentials.');
         setIsLoading(false);
         return;
@@ -107,9 +109,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
   const handleVerifyOtp = (e: React.FormEvent) => {
     e.preventDefault();
     if (enteredOtp === generatedOtp) {
-      const newUser = { email, name: name || 'User', username: username.trim().toLowerCase(), password, isAdmin: false };
+      const newUser = { email, name: name || 'User', username: username.trim().toLowerCase(), password, isAdmin: false, dataUsage: 0 };
       setAllUsers([...allUsers, newUser]);
-      onLogin(newUser, false);
+      
+      setSuccessMsg(language === 'ar' ? 'تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول الآن.' : 'Account created successfully! Please login now.');
+      setIsVerifyingOtp(false);
+      setIsLogin(true);
+      setPassword(''); 
+      setEnteredOtp('');
     } else {
       setError(language === 'ar' ? 'رمز التحقق غير صحيح.' : 'Invalid OTP.');
     }
@@ -127,42 +134,149 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
       </div>
 
       {isVerifyingOtp ? (
-        <div className="w-full max-w-md p-10 bg-white dark:bg-slate-900 rounded-[2.5rem] text-center shadow-2xl border dark:border-white/5">
+        <div className="w-full max-w-md p-10 bg-white dark:bg-slate-900 rounded-[2.5rem] text-center shadow-2xl border dark:border-white/5 animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <ShieldCheck className="w-8 h-8 text-indigo-600" />
+            </div>
             <h2 className="text-2xl font-black mb-2 text-slate-900 dark:text-white">{t.enterOtp}</h2>
+            <p className="text-[11px] text-slate-500 mb-8">{language === 'ar' ? 'أدخل الرمز المرسل إلى بريدك لتأكيد الهوية' : 'Enter the code sent to your email to verify identity'}</p>
             <form onSubmit={handleVerifyOtp} className="space-y-6">
-                <input type="text" maxLength={6} value={enteredOtp} onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g,''))} className="w-full py-5 bg-slate-50 dark:bg-slate-800 border rounded-2xl text-center text-3xl font-black dark:text-white" placeholder="000000" />
-                <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-xl">{t.completeSignup}</button>
-                {error && <p className="text-rose-500 text-xs font-bold">{error}</p>}
+                <input 
+                  type="text" 
+                  maxLength={6} 
+                  value={enteredOtp} 
+                  onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g,''))} 
+                  className="w-full py-5 bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-2xl text-center text-4xl font-black dark:text-white outline-none focus:border-indigo-500 transition-all" 
+                  placeholder="000000" 
+                />
+                <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition-all active:scale-95">
+                  {t.completeSignup}
+                </button>
+                {error && <p className="text-rose-500 text-xs font-bold animate-pulse">{error}</p>}
+                
+                <div className="pt-4">
+                  {resendTimer > 0 ? (
+                    <p className="text-[10px] font-bold text-slate-400">
+                      {language === 'ar' ? 'يمكنك إعادة الإرسال بعد: ' : 'Resend available in: '}
+                      <span className="text-indigo-500">{resendTimer}s</span>
+                    </p>
+                  ) : (
+                    <button 
+                      type="button" 
+                      onClick={() => sendOtpEmail(email, name)}
+                      className="text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:underline"
+                    >
+                      {language === 'ar' ? 'إعادة إرسال الرمز' : 'Resend Code'}
+                    </button>
+                  )}
+                </div>
             </form>
         </div>
       ) : (
-        <div className="w-full max-w-5xl flex bg-[#1e293b] rounded-[3rem] shadow-2xl overflow-hidden border border-white/5 z-10">
-            <div className="hidden lg:flex w-5/12 bg-[#0f172a] p-16 flex-col justify-center text-white">
-                <h2 className="text-3xl font-black">IMAGINE <span className="text-indigo-400">AI</span></h2>
-                <h1 className="text-5xl font-black mt-8">{isRtl ? 'حوّل كلماتك إلى فن مذهل' : 'Transform words into stunning art'}</h1>
+        <div className="w-full max-w-5xl flex bg-[#1e293b] rounded-[3rem] shadow-2xl overflow-hidden border border-white/5 z-10 animate-in fade-in duration-500">
+            <div className="hidden lg:flex w-5/12 bg-[#0f172a] p-16 flex-col justify-center text-white relative overflow-hidden">
+                <div className="absolute -top-20 -left-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px]"></div>
+                <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-rose-600/10 rounded-full blur-[100px]"></div>
+                
+                <h2 className="text-3xl font-black relative z-10">IMAGINE <span className="text-indigo-400">AI</span></h2>
+                <h1 className="text-5xl font-black mt-8 leading-tight relative z-10">{isRtl ? 'حوّل كلماتك إلى فن مذهل' : 'Transform words into stunning art'}</h1>
+                <p className="mt-6 text-slate-400 font-medium relative z-10">{isRtl ? 'انضم إلى آلاف المبدعين واستخدم أقوى نماذج الذكاء الاصطناعي لتوليد الصور.' : 'Join thousands of creators and use the most powerful AI models to generate images.'}</p>
             </div>
-            <div className="w-full lg:w-7/12 p-8 md:p-12 flex flex-col justify-center bg-slate-900/50">
-                <form onSubmit={handleAuthSubmit} className="space-y-4 max-w-md mx-auto w-full">
-                    <h2 className="text-3xl font-black text-white text-center">{isLogin ? t.creatorsLogin : t.startSailing}</h2>
-                    {!isLogin && (
-                      <div className="grid grid-cols-1 gap-4">
-                        <input type="text" required placeholder={t.fullNamePlaceholder} value={name} onChange={(e) => setName(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500" />
-                        <input type="text" required placeholder={t.usernamePlaceholder} value={username} onChange={(e) => setUsername(e.target.value.replace(/\s+/g, '').toLowerCase())} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500" />
+            <div className="w-full lg:w-7/12 p-8 md:p-12 flex flex-col justify-center bg-slate-900/50 relative">
+                <form onSubmit={handleAuthSubmit} className="space-y-4 max-w-md mx-auto w-full relative z-10">
+                    <div className="text-center mb-8">
+                      <h2 className="text-3xl font-black text-white">{isLogin ? t.creatorsLogin : t.startSailing}</h2>
+                      <p className="text-slate-500 text-xs mt-2 font-bold uppercase tracking-widest">{isLogin ? (isRtl ? 'أهلاً بك مجدداً في مختبرك' : 'Welcome back to your lab') : (isRtl ? 'أنشئ حسابك المجاني اليوم' : 'Create your free account today')}</p>
+                    </div>
+
+                    {successMsg && (
+                      <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2">
+                        <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                        <p className="text-emerald-500 text-xs font-bold leading-tight">{successMsg}</p>
                       </div>
                     )}
-                    <input type="email" required placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500" />
-                    <div className="relative">
-                      <input type={showPassword ? "text" : "password"} required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500" />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+
+                    {!isLogin && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-bottom-2">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">{t.fullName}</label>
+                          <input type="text" required placeholder={t.fullNamePlaceholder} value={name} onChange={(e) => setName(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">{t.username}</label>
+                          <input type="text" required placeholder={t.usernamePlaceholder} value={username} onChange={(e) => setUsername(e.target.value.replace(/\s+/g, '').toLowerCase())} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all" />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Email Address</label>
+                      <input type="email" required placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all" />
                     </div>
-                    {!isLogin && <input type="password" required placeholder={t.confirmPassword} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500" />}
-                    {error && <p className="text-rose-400 text-[10px] font-bold text-center">{error}</p>}
-                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black flex items-center justify-center gap-3">
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Secure Password</label>
+                      <div className="relative">
+                        <input type={showPassword ? "text" : "password"} required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all" />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute ${isRtl ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-slate-500 hover:text-indigo-400 transition-colors`}>
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* خيارات اختيار نوع الجهاز */}
+                    <div className="space-y-2 pt-2">
+                       <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">{isRtl ? 'اختر واجهة الجهاز' : 'Choose Device UI'}</label>
+                       <div className="grid grid-cols-3 gap-2">
+                          <button 
+                            type="button" 
+                            onClick={() => setDeviceType('pc')} 
+                            className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${deviceType === 'pc' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-[#0f172a] border-white/5 text-slate-500 hover:border-indigo-500/50'}`}
+                          >
+                             <Monitor className="w-5 h-5 mb-1" />
+                             <span className="text-[8px] font-black uppercase">{isRtl ? 'حاسوب' : 'PC'}</span>
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => setDeviceType('android')} 
+                            className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${deviceType === 'android' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-[#0f172a] border-white/5 text-slate-500 hover:border-indigo-500/50'}`}
+                          >
+                             <Smartphone className="w-5 h-5 mb-1" />
+                             <span className="text-[8px] font-black uppercase">{isRtl ? 'أندرويد' : 'Android'}</span>
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => setDeviceType('iphone')} 
+                            className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${deviceType === 'iphone' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-[#0f172a] border-white/5 text-slate-500 hover:border-indigo-500/50'}`}
+                          >
+                             <Tablet className="w-5 h-5 mb-1" />
+                             <span className="text-[8px] font-black uppercase">{isRtl ? 'آيفون' : 'iPhone'}</span>
+                          </button>
+                       </div>
+                    </div>
+
+                    {!isLogin && (
+                      <div className="space-y-1 animate-in slide-in-from-bottom-2">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">{t.confirmPassword}</label>
+                        <input type="password" required placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all" />
+                      </div>
+                    )}
+
+                    {error && (
+                      <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 animate-in shake">
+                        <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0" />
+                        <p className="text-rose-500 text-[10px] font-bold">{error}</p>
+                      </div>
+                    )}
+
+                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/10 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 mt-4">
                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isLogin ? t.loginBtn : t.signupBtn)}
                         <ArrowRight className={`w-4 h-4 ${isRtl ? 'rotate-180' : ''}`} />
                     </button>
-                    <button type="button" onClick={() => setIsLogin(!isLogin)} className="w-full text-slate-400 text-xs mt-4 font-bold text-center">
-                        {isLogin ? t.noAccount : t.haveAccount} <span className="text-indigo-400 mx-2">{isLogin ? t.signupLink : t.loginLink}</span>
+                    
+                    <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }} className="w-full text-slate-400 text-xs mt-6 font-bold text-center group">
+                        {isLogin ? t.noAccount : t.haveAccount} 
+                        <span className="text-indigo-400 mx-2 group-hover:underline">{isLogin ? t.signupLink : t.loginLink}</span>
                     </button>
                 </form>
             </div>

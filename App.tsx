@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { ModelType, HistoryItem, GenerationSettings, SiteConfig, GenerationType, Language, UserSettings, Message, AppNotification, ModelStrategy } from './types.ts';
+import { ModelType, HistoryItem, GenerationSettings, SiteConfig, GenerationType, Language, UserSettings, Message, AppNotification, ModelStrategy, DeviceType } from './types.ts';
 import Sidebar from './components/Sidebar.tsx';
 import MainPreview from './components/MainPreview.tsx';
 import RightPanel from './components/RightPanel.tsx';
@@ -13,7 +13,8 @@ import ToastNotification from './components/ToastNotification.tsx';
 import SpeechModal from './components/SpeechModal.tsx';
 import HairModal from './components/HairModal.tsx';
 import { GoogleGenAI, Modality } from "@google/genai";
-import { Fingerprint } from 'lucide-react';
+// Fix: Import missing icons and alias User to UserIcon for mobile navigation
+import { Fingerprint, Sparkles, History, Loader2, MessageSquare, User as UserIcon } from 'lucide-react';
 import { translations } from './translations.ts';
 
 function decode(base64: string) {
@@ -60,7 +61,6 @@ const safeParse = (key: string, defaultValue: any) => {
 };
 
 const App: React.FC = () => {
-  // الحفاظ على حالة المستخدم وبياناته حتى بعد التحديث التلقائي
   const [user, setUser] = useState<any>(() => safeParse('imagine_ai_user', null));
   const [language, setLanguage] = useState<Language>(() => safeParse('imagine_ai_lang', 'ar'));
   const [history, setHistory] = useState<HistoryItem[]>(() => safeParse('imagine_ai_history', []));
@@ -95,7 +95,7 @@ const App: React.FC = () => {
   const [userSettings, setUserSettings] = useState<UserSettings>(() => safeParse('imagine_ai_settings', {
     theme: 'dark', language: 'ar', fontFamily: 'modern', fontSize: 'medium', notificationSounds: true,
     autoSaveSession: true, imageQuality: 'high', modelStrategy: 'accurate', showTooltips: true,
-    contentProtection: false, privacyMode: false, advancedMode: false
+    contentProtection: false, privacyMode: false, advancedMode: false, deviceType: 'pc'
   }));
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -105,7 +105,6 @@ const App: React.FC = () => {
   const [loadingStep, setLoadingStep] = useState(0);
   const [toast, setToast] = useState<AppNotification | null>(null);
   
-  // استعادة حالة العمل (الصورة الحالية) لضمان عدم فقدانها عند التحديث
   const [activeImage, setActiveImage] = useState<string | null>(() => localStorage.getItem('imagine_active_image'));
   const [originalImage, setOriginalImage] = useState<string | null>(() => localStorage.getItem('imagine_original_image'));
   
@@ -119,16 +118,13 @@ const App: React.FC = () => {
     prompt: '', model: 'Plus', aspectRatio: '1:1', steps: 30, uploadedImage: null
   });
 
-  // ميزة المراقبة الخارجية: استجابة التلقائية لأي تحديث في التخزين (تزامن عبر التبويبات)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'imagine_ai_config') {
         const newConfig = JSON.parse(e.newValue || '{}');
         setSiteConfig(newConfig);
-        // إذا كان هناك "إشارة تحديث" معينة، يمكننا طلب إعادة تحميل خفيفة هنا
       }
       if (e.key === 'imagine_ai_user' && !e.newValue) {
-        // إذا تم تسجيل الخروج من تبويب آخر
         setUser(null);
       }
     };
@@ -180,6 +176,9 @@ const App: React.FC = () => {
 
   const handleLoginSuccess = useCallback((userData: any, directToAdmin: boolean = false) => {
     setUser(userData);
+    if (userData.deviceType) {
+      setUserSettings(prev => ({ ...prev, deviceType: userData.deviceType }));
+    }
     if (directToAdmin && userData.isAdmin) {
       setIsAdminOpen(true);
       addNotification(language === 'ar' ? 'تم الدخول المباشر للمدير' : 'Direct Admin Access', language === 'ar' ? 'أهلاً بك في غرفة العمليات' : 'Welcome to the core', 'success');
@@ -356,7 +355,6 @@ const App: React.FC = () => {
     setIsHairModalOpen(true);
   }, [activeImage, settings.uploadedImage, language, addNotification]);
 
-  // تحديث التخزين المحلي بانتظام لضمان مزامنة الجلسة وحفظ العمل
   useEffect(() => {
     localStorage.setItem('imagine_ai_user', JSON.stringify(user));
     localStorage.setItem('imagine_ai_config', JSON.stringify(siteConfig));
@@ -366,7 +364,6 @@ const App: React.FC = () => {
     localStorage.setItem('site_verified_users', JSON.stringify(allUsers));
     localStorage.setItem('banned_emails', JSON.stringify(bannedEmails));
     
-    // حفظ حالة الصورة الحالية لضمان استرجاعها بعد التحديث التلقائي
     if (activeImage) localStorage.setItem('imagine_active_image', activeImage);
     else localStorage.removeItem('imagine_active_image');
     
@@ -381,26 +378,72 @@ const App: React.FC = () => {
 
   if (!user) return authScreenMemo;
 
+  // تطبيق كلاسات CSS بناءً على نوع الجهاز المختار
+  const deviceClass = `device-layout-${userSettings.deviceType}`;
+
   return (
-    <div className={`flex flex-col h-screen overflow-hidden ${userSettings.theme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
+    <div className={`flex flex-col h-screen overflow-hidden ${deviceClass} ${userSettings.theme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
       {siteConfig.global_html && <div dangerouslySetInnerHTML={{ __html: siteConfig.global_html }} />}
       <Header credits={50} user={user} language={language} siteConfig={siteConfig} notifications={notifications} onMarkAllRead={() => setNotifications(prev => prev.map(n => ({...n, isRead: true})))} onToggleLang={() => setLanguage(l => l === 'ar' ? 'en' : 'ar')} onUpgrade={() => { setAccountTab('credits'); setIsAccountOpen(true); }} onProfile={() => { setAccountTab('profile'); setIsAccountOpen(true); }} onOpenInbox={() => { setAccountTab('manager'); setIsAccountOpen(true); }} onOpenStory={() => setIsStoryOpen(true)} onLogout={() => setUser(null)} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} onAdmin={() => setIsAdminOpen(true)} />
-      <div className="flex flex-1 overflow-hidden relative">
+      
+      <div className="flex-1 flex overflow-hidden relative">
         <Sidebar isOpen={isSidebarOpen} settings={settings} setSettings={setSettings} onGenerate={() => handleGenerate()} onUpload={(url) => { setActiveImage(url); setSettings(s => ({...s, uploadedImage: url})); }} isGenerating={isGenerating} language={language} onClose={() => setIsSidebarOpen(false)} modelStrategy={userSettings.modelStrategy} setModelStrategy={(s) => setUserSettings(prev => ({ ...prev, modelStrategy: s }))} />
         <MainPreview imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} loadingStep={loadingStep} prompt={settings.prompt} language={language} isSidebarOpen={isSidebarOpen} isGalleryOpen={isGalleryOpen} onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)} onRemoveBackground={() => handleImageAction('Cleaned')} onUpscale={() => handleImageAction('Upscaled')} onRemoveWatermark={() => handleImageAction('WatermarkRemoved')} onRestore={() => handleImageAction('Restored')} onColorize={() => handleImageAction('Colorized')} onCartoonize={() => handleImageAction('Cartoonized')} onMagicEraser={() => handleImageAction('ObjectRemoved')} onSmartEdit={() => { const p = prompt('Edit Prompt?'); if(p) handleImageAction('Edited', p); }} onVirtualTryOn={() => handleImageAction('VirtualTryOn')} onAddSunglasses={() => handleImageAction('AddSunglasses')} onChangeHairStyle={handleHairStyleRequest} onCreateLogo={() => { const n = prompt('Logo Name?'); if(n) handleGenerate(n, true); }} onTextToSpeech={() => setIsSpeechModalOpen(true)} onGenerateImage={() => handleGenerate()} onImageToVector={() => handleImageAction('ImageToVector')} />
         <RightPanel isOpen={isGalleryOpen} history={history} onSelect={setActiveImage} onDelete={(id) => setHistory(h => h.filter(x => x.id !== id))} language={language} onClose={() => setIsGalleryOpen(false)} />
       </div>
+
+      {/* شريط ملاحة سفلي للأجهزة المحمولة */}
+      {(userSettings.deviceType === 'android' || userSettings.deviceType === 'iphone') && (
+        <div className={`fixed bottom-0 left-0 w-full z-[100] border-t backdrop-blur-xl ${userSettings.theme === 'dark' ? 'bg-slate-900/80 border-white/5' : 'bg-white/80 border-slate-200'} ${userSettings.deviceType === 'iphone' ? 'pb-8 rounded-t-[2.5rem]' : 'pb-2 rounded-t-3xl'}`}>
+           <div className="flex justify-around items-center h-16">
+              <button onClick={() => setIsSidebarOpen(true)} className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-500 transition-colors">
+                 <Sparkles className="w-5 h-5" />
+                 <span className="text-[10px] font-bold">{language === 'ar' ? 'إنشاء' : 'Create'}</span>
+              </button>
+              <button onClick={() => setIsGalleryOpen(true)} className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-500 transition-colors">
+                 {/* Fix: Use History icon instead of HistoryItem type */}
+                 <History className="w-5 h-5" />
+                 <span className="text-[10px] font-bold">{language === 'ar' ? 'المعرض' : 'Gallery'}</span>
+              </button>
+              <div className="relative -top-6">
+                <button onClick={() => handleGenerate()} disabled={isGenerating} className="w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center active:scale-95 transition-all">
+                   {isGenerating ? <Loader2 className="w-6 h-6 animate-spin" /> : <Fingerprint className="w-6 h-6" />}
+                </button>
+              </div>
+              <button onClick={() => { setAccountTab('manager'); setIsAccountOpen(true); }} className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-500 transition-colors">
+                 <MessageSquare className="w-5 h-5" />
+                 <span className="text-[10px] font-bold">{language === 'ar' ? 'رسائلي' : 'Chat'}</span>
+              </button>
+              <button onClick={() => { setAccountTab('profile'); setIsAccountOpen(true); }} className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-500 transition-colors">
+                 <UserIcon className="w-5 h-5" />
+                 <span className="text-[10px] font-bold">{language === 'ar' ? 'حسابي' : 'Account'}</span>
+              </button>
+           </div>
+        </div>
+      )}
+
       <AccountModal isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} activeTab={accountTab} setActiveTab={setAccountTab} credits={50} user={user} language={language} userSettings={userSettings} setUserSettings={s => setUserSettings(prev => ({ ...prev, ...s }))} siteConfig={siteConfig} allMessages={messages} onSendMessage={(content) => setMessages(prev => [{ id: Date.now().toString(), senderName: user?.name, senderEmail: user?.email, content, timestamp: new Date(), isRead: false }, ...prev])} />
       {isAdminOpen && <AdminPanel config={siteConfig} setConfig={setSiteConfig} messages={messages} setMessages={setMessages} onClose={() => setIsAdminOpen(false)} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} setBannedEmails={setBannedEmails} adminIdentity={adminIdentity} setAdminIdentity={setAdminIdentity} />}
       {isStoryOpen && siteConfig.global_story?.active && <StoryViewer story={{...siteConfig.global_story, timestamp: Date.now()}} onClose={() => setIsStoryOpen(false)} language={language} siteConfig={siteConfig} />}
       <ToastNotification toast={toast} onClose={() => setToast(null)} language={language} />
       {isSpeechModalOpen && <SpeechModal isOpen={isSpeechModalOpen} onClose={() => setIsSpeechModalOpen(false)} onGenerate={handleGenerateSpeech} language={language} isGenerating={isSpeechGenerating} />}
       {isHairModalOpen && <HairModal isOpen={isHairModalOpen} onClose={() => setIsHairModalOpen(false)} onApply={(p) => handleImageAction('ChangeHairStyle', p)} language={language} />}
-      {user?.isAdmin && (
-        <div className="fixed bottom-4 left-4 z-[9999]">
-          <button onClick={() => setIsAdminOpen(true)} className="p-3 bg-slate-900 text-white rounded-full shadow-2xl border border-white/10 hover:scale-110 transition-transform"><Fingerprint className="w-5 h-5" /></button>
-        </div>
-      )}
+      
+      <style>{`
+        .device-layout-iphone {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .device-layout-iphone .rounded-[2.5rem] { border-radius: 3.5rem; }
+        .device-layout-iphone .header { border-bottom: none; }
+        
+        .device-layout-android {
+          font-family: 'Roboto', 'Vazirmatn', sans-serif;
+        }
+        
+        @media (max-width: 1024px) {
+          .device-layout-pc .sidebar { display: none; }
+        }
+      `}</style>
     </div>
   );
 };

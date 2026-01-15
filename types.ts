@@ -8,6 +8,7 @@ export type FontFamily = 'classic' | 'modern' | 'comfort';
 export type FontSize = 'small' | 'medium' | 'large';
 export type ImageQuality = 'high' | 'medium' | 'low';
 export type ModelStrategy = 'fast' | 'accurate' | 'artistic';
+export type DeviceType = 'pc' | 'android' | 'iphone';
 
 export interface AppNotification {
   id: string;
@@ -62,6 +63,7 @@ export interface UserSettings {
   privacyMode: boolean;
   advancedMode: boolean;
   manualApiKey?: string;
+  deviceType: DeviceType;
 }
 
 export type AdminTab = 'SEO' | 'GLOBAL_HTML' | 'CSS' | 'JS' | 'PHP_LOGIC' | 'UX_CONFIG' | 'MESSAGES' | 'MANAGER_PROFILE' | 'USERS' | 'GLOBAL_STORY' | 'ADMIN_SECURITY' | 'API_SETTINGS' | 'BANDWIDTH_STATS';
@@ -84,7 +86,6 @@ export interface SiteConfig {
   global_api_key?: string;
   api_key_random?: string;
   total_data_usage_bytes?: number;
-  // Smart Tools API Keys
   api_key_text_to_image?: string;
   api_key_logo?: string;
   api_key_tts?: string;
