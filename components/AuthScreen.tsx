@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Fingerprint, ShieldAlert, RefreshCcw, Timer, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, AtSign, Monitor, Smartphone, Tablet, Laptop, Apple } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Fingerprint, ShieldAlert, RefreshCcw, Timer, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, AtSign, Monitor, Smartphone, Laptop, Apple } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { Language, DeviceType } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -224,42 +224,42 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
                       </div>
                     </div>
 
-                    {/* خيارات اختيار نوع الجهاز - تصميم احترافي جديد */}
-                    <div className="space-y-3 pt-3">
+                    {/* خيارات اختيار نوع الجهاز - تصميم فائق الأناقة */}
+                    <div className="space-y-4 pt-4">
                        <div className="flex items-center justify-between px-1">
-                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{isRtl ? 'اختر واجهة الجهاز المخصصة' : 'Select Custom Device UI'}</label>
-                          <div className="h-px bg-white/5 flex-1 mx-3"></div>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{isRtl ? 'اختر واجهة الجهاز' : 'Choose Device Interface'}</label>
+                          <div className="h-px bg-indigo-500/20 flex-1 ml-4"></div>
                        </div>
                        
                        <div className="grid grid-cols-3 gap-3">
                           <button 
                             type="button" 
                             onClick={() => setDeviceType('pc')} 
-                            className={`group relative flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all duration-300 overflow-hidden ${deviceType === 'pc' ? 'bg-indigo-600 border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.3)] scale-[1.02]' : 'bg-[#0f172a]/50 border-white/5 hover:border-indigo-500/30'}`}
+                            className={`group relative flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 overflow-hidden ${deviceType === 'pc' ? 'bg-indigo-600 border-indigo-500 shadow-[0_0_25px_rgba(79,70,229,0.4)] scale-105' : 'bg-[#0f172a]/50 border-white/5 hover:border-indigo-500/30'}`}
                           >
-                             {deviceType === 'pc' && <div className="absolute -top-2 -right-2 w-8 h-8 bg-white/20 blur-xl"></div>}
-                             <Laptop className={`w-6 h-6 mb-2 transition-transform group-hover:scale-110 ${deviceType === 'pc' ? 'text-white' : 'text-slate-500'}`} />
-                             <span className={`text-[10px] font-black tracking-tight ${deviceType === 'pc' ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>Pc</span>
+                             {deviceType === 'pc' && <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>}
+                             <Laptop className={`w-7 h-7 mb-2 transition-all ${deviceType === 'pc' ? 'text-white scale-110 drop-shadow-lg' : 'text-slate-500 group-hover:text-indigo-400'}`} />
+                             <span className={`text-[11px] font-black tracking-tight ${deviceType === 'pc' ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>Pc</span>
                           </button>
                           
                           <button 
                             type="button" 
                             onClick={() => setDeviceType('android')} 
-                            className={`group relative flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all duration-300 overflow-hidden ${deviceType === 'android' ? 'bg-emerald-600 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-[1.02]' : 'bg-[#0f172a]/50 border-white/5 hover:border-emerald-500/30'}`}
+                            className={`group relative flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 overflow-hidden ${deviceType === 'android' ? 'bg-emerald-600 border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.4)] scale-105' : 'bg-[#0f172a]/50 border-white/5 hover:border-emerald-500/30'}`}
                           >
-                             {deviceType === 'android' && <div className="absolute -top-2 -right-2 w-8 h-8 bg-white/20 blur-xl"></div>}
-                             <Smartphone className={`w-6 h-6 mb-2 transition-transform group-hover:scale-110 ${deviceType === 'android' ? 'text-white' : 'text-slate-500'}`} />
-                             <span className={`text-[10px] font-black tracking-tight ${deviceType === 'android' ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>Android</span>
+                             {deviceType === 'android' && <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>}
+                             <Smartphone className={`w-7 h-7 mb-2 transition-all ${deviceType === 'android' ? 'text-white scale-110 drop-shadow-lg' : 'text-slate-500 group-hover:text-emerald-400'}`} />
+                             <span className={`text-[11px] font-black tracking-tight ${deviceType === 'android' ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>Android</span>
                           </button>
                           
                           <button 
                             type="button" 
                             onClick={() => setDeviceType('iphone')} 
-                            className={`group relative flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all duration-300 overflow-hidden ${deviceType === 'iphone' ? 'bg-slate-200 border-white shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-[1.02]' : 'bg-[#0f172a]/50 border-white/5 hover:border-slate-400/30'}`}
+                            className={`group relative flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 overflow-hidden ${deviceType === 'iphone' ? 'bg-white border-slate-100 shadow-[0_0_25px_rgba(255,255,255,0.2)] scale-105' : 'bg-[#0f172a]/50 border-white/5 hover:border-slate-400/30'}`}
                           >
-                             {deviceType === 'iphone' && <div className="absolute -top-2 -right-2 w-8 h-8 bg-indigo-600/20 blur-xl"></div>}
-                             <Apple className={`w-6 h-6 mb-2 transition-transform group-hover:scale-110 ${deviceType === 'iphone' ? 'text-slate-900' : 'text-slate-500'}`} />
-                             <span className={`text-[10px] font-black tracking-tight ${deviceType === 'iphone' ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-200'}`}>iPhone</span>
+                             {deviceType === 'iphone' && <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent"></div>}
+                             <Apple className={`w-7 h-7 mb-2 transition-all ${deviceType === 'iphone' ? 'text-slate-900 scale-110 drop-shadow-md' : 'text-slate-500 group-hover:text-white'}`} />
+                             <span className={`text-[11px] font-black tracking-tight ${deviceType === 'iphone' ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-200'}`}>iPhone</span>
                           </button>
                        </div>
                     </div>
@@ -278,14 +278,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
                       </div>
                     )}
 
-                    <button type="submit" disabled={isLoading} className="w-full py-4.5 bg-indigo-600 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 mt-6 group">
+                    <button type="submit" disabled={isLoading} className="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black flex items-center justify-center gap-3 shadow-2xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 mt-6 group">
                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isLogin ? t.loginBtn : t.signupBtn)}
-                        <ArrowRight className={`w-4 h-4 transition-transform group-hover:translate-x-1 ${isRtl ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
+                        <ArrowRight className={`w-5 h-5 transition-transform group-hover:translate-x-1 ${isRtl ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
                     </button>
                     
-                    <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }} className="w-full text-slate-400 text-[11px] mt-6 font-bold text-center group">
+                    <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }} className="w-full text-slate-400 text-xs mt-8 font-bold text-center group">
                         {isLogin ? t.noAccount : t.haveAccount} 
-                        <span className="text-indigo-400 mx-2 group-hover:underline transition-all">{isLogin ? t.signupLink : t.loginLink}</span>
+                        <span className="text-indigo-400 mx-2 group-hover:underline transition-all underline-offset-4">{isLogin ? t.signupLink : t.loginLink}</span>
                     </button>
                 </form>
             </div>

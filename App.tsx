@@ -13,9 +13,11 @@ import ToastNotification from './components/ToastNotification.tsx';
 import SpeechModal from './components/SpeechModal.tsx';
 import HairModal from './components/HairModal.tsx';
 import { GoogleGenAI, Modality } from "@google/genai";
-// Fix: Import missing icons and alias User to UserIcon for mobile navigation
 import { Fingerprint, Sparkles, History, Loader2, MessageSquare, User as UserIcon } from 'lucide-react';
 import { translations } from './translations.ts';
+
+// رقم إصدار النظام لفرض إعادة تسجيل الدخول عند التحديثات الكبرى
+const SYSTEM_VERSION = "2.1.0_DEVICE_UPDATE";
 
 function decode(base64: string) {
   try {
@@ -61,7 +63,16 @@ const safeParse = (key: string, defaultValue: any) => {
 };
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<any>(() => safeParse('imagine_ai_user', null));
+  const [user, setUser] = useState<any>(() => {
+    // التحقق من الإصدار قبل استعادة المستخدم
+    const lastVersion = localStorage.getItem('imagine_system_version');
+    if (lastVersion !== SYSTEM_VERSION) {
+      localStorage.removeItem('imagine_ai_user'); // إجبار على إعادة الدخول
+      return null;
+    }
+    return safeParse('imagine_ai_user', null);
+  });
+
   const [language, setLanguage] = useState<Language>(() => safeParse('imagine_ai_lang', 'ar'));
   const [history, setHistory] = useState<HistoryItem[]>(() => safeParse('imagine_ai_history', []));
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -118,18 +129,9 @@ const App: React.FC = () => {
     prompt: '', model: 'Plus', aspectRatio: '1:1', steps: 30, uploadedImage: null
   });
 
+  // حفظ الإصدار عند التشغيل
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'imagine_ai_config') {
-        const newConfig = JSON.parse(e.newValue || '{}');
-        setSiteConfig(newConfig);
-      }
-      if (e.key === 'imagine_ai_user' && !e.newValue) {
-        setUser(null);
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    localStorage.setItem('imagine_system_version', SYSTEM_VERSION);
   }, []);
 
   const getEffectiveApiKey = useCallback((specificKey?: string) => {
@@ -401,7 +403,6 @@ const App: React.FC = () => {
                  <span className="text-[10px] font-bold">{language === 'ar' ? 'إنشاء' : 'Create'}</span>
               </button>
               <button onClick={() => setIsGalleryOpen(true)} className="flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-500 transition-colors">
-                 {/* Fix: Use History icon instead of HistoryItem type */}
                  <History className="w-5 h-5" />
                  <span className="text-[10px] font-bold">{language === 'ar' ? 'المعرض' : 'Gallery'}</span>
               </button>
