@@ -10,7 +10,8 @@ import {
   ShieldAlert, Globe, Video, Clock, MousePointer2, Lock, Reply, Trash, 
   LayoutDashboard, BarChart3, Activity, User as UserIcon,
   Dice5, Database, Cloud, ChevronRight, ChevronLeft, QrCode, Layers, ScanFace,
-  CheckCircle2, AlertTriangle, ShieldX, Zap, Server, Search as SearchIcon, Mail, Link, Type
+  CheckCircle2, AlertTriangle, ShieldX, Zap, Server, Search as SearchIcon, Mail, Link, Type, 
+  Trash2 as TrashIcon, Ghost, MoveDiagonal
 } from 'lucide-react';
 import { translations } from '../translations.ts';
 
@@ -43,6 +44,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const managerFileRef = useRef<HTMLInputElement>(null);
   const storyFileRef = useRef<HTMLInputElement>(null);
+  const logoFileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -114,6 +116,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           value={(tempConfig as any)[configKey] || ''} 
           onChange={e => setTempConfig({...tempConfig, [configKey]: e.target.value})}
           className={`w-full p-3 bg-slate-950 border border-white/10 rounded-xl text-white font-mono text-[11px] outline-none focus:border-indigo-500 transition-all ${isRtl ? 'text-right' : 'text-left'}`}
+          placeholder="AIzaSy..."
         />
         <button onClick={() => toggleKeyVisibility(configKey)} className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-indigo-400 transition-colors`}>
           {visibleKeys[configKey] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -126,7 +129,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     { label: isRtl ? 'إجمالي البيانات' : 'Total Data', value: (tempConfig.total_data_usage_bytes ? (tempConfig.total_data_usage_bytes / (1024*1024)).toFixed(2) : '0') + ' MB', icon: Database, color: 'text-indigo-500' },
     { label: isRtl ? 'المستخدمين' : 'Total Users', value: allUsers.length, icon: Users, color: 'text-emerald-500' },
     { label: isRtl ? 'الرسائل' : 'Messages', value: messages.length, icon: MessageSquare, color: 'text-amber-500' },
-    { label: isRtl ? 'الأدوات النشطة' : 'Active Tools', value: '18/18', icon: Zap, color: 'text-rose-500' },
+    { label: isRtl ? 'الأدوات النشطة' : 'Active Tools', value: '20/20', icon: Zap, color: 'text-rose-500' },
   ];
 
   return (
@@ -174,7 +177,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {stats.map((s, i) => (
                   <div key={i} className="bg-slate-900/50 p-6 rounded-[2rem] border border-white/5 flex items-center gap-5">
-                    <div className={`w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center ${s.color}`}><s.icon className="w-8 h-8" /></div>
+                    <div className={`w-14 h-14 rounded-2xl bg-white/5 items-center justify-center flex ${s.color}`}><s.icon className="w-8 h-8" /></div>
                     <div>
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{s.label}</p>
                       <h3 className="text-2xl font-black text-white">{s.value}</h3>
@@ -207,17 +210,45 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           )}
 
           {activeTab === 'API_SETTINGS' && (
-            <div className="space-y-8 animate-in fade-in">
+            <div className="space-y-12 animate-in fade-in">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {renderApiKeyInput('Main Generation Key', 'api_key_text_to_image', <Sparkles className="w-4 h-4"/>, 'bg-indigo-600')}
-                {renderApiKeyInput('Logo Designer Key', 'api_key_logo', <PenTool className="w-4 h-4"/>, 'bg-blue-600')}
-                {renderApiKeyInput('Smart Edit Key', 'api_key_smart_edit', <Wand2 className="w-4 h-4"/>, 'bg-purple-600')}
-                {renderApiKeyInput('Background Removal', 'api_key_remove_bg', <Eraser className="w-4 h-4"/>, 'bg-rose-600')}
-                {renderApiKeyInput('4K Upscaling', 'api_key_upscale', <Maximize2 className="w-4 h-4"/>, 'bg-emerald-600')}
+                {/* Fallback Keys */}
+                <div className="col-span-full mb-4">
+                  <h3 className="text-white font-black uppercase text-xs tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <Cloud className="w-4 h-4 text-indigo-400" /> {isRtl ? 'المفاتيح الاحتياطية' : 'FALLBACK KEYS'}
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {renderApiKeyInput(isRtl ? 'المفتاح العالمي (Global)' : 'Global API Key', 'global_api_key', <Globe className="w-4 h-4"/>, 'bg-indigo-600')}
+                    {renderApiKeyInput(isRtl ? 'المفتاح العشوائي (Random Fallback)' : 'Random API Key', 'api_key_random', <Dice5 className="w-4 h-4"/>, 'bg-slate-600')}
+                  </div>
+                </div>
+
+                <div className="col-span-full h-px bg-white/5 my-4"></div>
+
+                {/* Specific Tool Keys */}
+                <div className="col-span-full">
+                  <h3 className="text-white font-black uppercase text-xs tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-500" /> {isRtl ? 'مفاتيح الأدوات المخصصة' : 'SPECIFIC TOOL KEYS'}
+                  </h3>
+                </div>
+
+                {renderApiKeyInput('Main Image Gen', 'api_key_text_to_image', <Sparkles className="w-4 h-4"/>, 'bg-indigo-600')}
+                {renderApiKeyInput('Logo Designer', 'api_key_logo', <PenTool className="w-4 h-4"/>, 'bg-blue-600')}
+                {renderApiKeyInput('Smart Editor', 'api_key_smart_edit', <Wand2 className="w-4 h-4"/>, 'bg-purple-600')}
+                {renderApiKeyInput('Remove Background', 'api_key_remove_bg', <Eraser className="w-4 h-4"/>, 'bg-rose-600')}
+                {renderApiKeyInput('4K Upscaler', 'api_key_upscale', <Maximize2 className="w-4 h-4"/>, 'bg-emerald-600')}
                 {renderApiKeyInput('Text to Speech', 'api_key_tts', <Mic2 className="w-4 h-4"/>, 'bg-amber-600')}
                 {renderApiKeyInput('Text to Code', 'api_key_text_to_code', <Code className="w-4 h-4"/>, 'bg-cyan-600')}
-                {renderApiKeyInput('QR Code Key', 'api_key_qr_code', <QrCode className="w-4 h-4"/>, 'bg-indigo-800')}
+                {renderApiKeyInput('QR Generator', 'api_key_qr_code', <QrCode className="w-4 h-4"/>, 'bg-indigo-800')}
                 {renderApiKeyInput('Image to Vector', 'api_key_image_to_vector', <Layers className="w-4 h-4"/>, 'bg-teal-600')}
+                {renderApiKeyInput('Virtual Try-On', 'api_key_virtual_try_on', <Shirt className="w-4 h-4"/>, 'bg-pink-600')}
+                {renderApiKeyInput('Add Sunglasses', 'api_key_sunglasses', <Eye className="w-4 h-4"/>, 'bg-orange-500')}
+                {renderApiKeyInput('Remove Watermark', <Scissors className="w-4 h-4"/> as any, 'api_key_watermark' as any, 'bg-slate-500')}
+                {renderApiKeyInput('Colorizer', 'api_key_colorize', <Palette className="w-4 h-4"/>, 'bg-indigo-400')}
+                {renderApiKeyInput('Magic Eraser', 'api_key_magic_eraser', <Wind className="w-4 h-4"/>, 'bg-rose-700')}
+                {renderApiKeyInput('Cartoonizer', 'api_key_cartoonize', <Smile className="w-4 h-4"/>, 'bg-emerald-700')}
+                {renderApiKeyInput('Restore Photo', 'api_key_restore', <RefreshCw className="w-4 h-4"/>, 'bg-amber-700')}
+                {renderApiKeyInput('Change HairStyle', 'api_key_hair_style', <UserIcon className="w-4 h-4"/>, 'bg-fuchsia-600')}
               </div>
             </div>
           )}
@@ -326,7 +357,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           )}
 
           {activeTab === 'UX_CONFIG' && (
-            <div className="max-w-xl space-y-8 animate-in fade-in">
+            <div className="max-w-2xl space-y-8 animate-in fade-in">
                <div className="bg-slate-900/40 p-10 rounded-[3rem] border border-white/5 space-y-8">
                   <div className="flex items-center gap-4">
                      <div className="w-14 h-14 bg-emerald-600/20 text-emerald-400 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-600/10">
@@ -335,7 +366,77 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                      <h3 className="text-white font-black uppercase text-sm tracking-widest">User Experience (UX)</h3>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-8">
+                     {/* Logo Editing Section */}
+                     <div className="bg-slate-950/40 p-6 rounded-[2rem] border border-white/5 space-y-4">
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-2">
+                          <ImageIcon className="w-4 h-4 text-indigo-400" /> {isRtl ? 'تعديل شعار الموقع (Logo Identity)' : 'Site Logo Identity'}
+                        </label>
+                        
+                        <div className="flex flex-col md:flex-row gap-6 items-center">
+                           <div className="w-32 h-32 bg-slate-900 border border-white/10 rounded-2xl flex items-center justify-center p-4 relative group shrink-0">
+                              {tempConfig.site_logo ? (
+                                <img 
+                                  src={tempConfig.site_logo} 
+                                  className="max-w-full max-h-full object-contain" 
+                                  style={{ transform: `scale(${tempConfig.site_logo_scale || 1})` }} 
+                                />
+                              ) : (
+                                <ImageIcon className="w-10 h-10 text-slate-700" />
+                              )}
+                              <button 
+                                onClick={() => logoFileRef.current?.click()}
+                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-white rounded-2xl"
+                              >
+                                <Camera className="w-6 h-6" />
+                              </button>
+                              <input 
+                                type="file" 
+                                ref={logoFileRef} 
+                                className="hidden" 
+                                accept="image/*" 
+                                onChange={e => {
+                                  const file = e.target.files?.[0];
+                                  if(file) {
+                                    const reader = new FileReader();
+                                    reader.onload = ev => setTempConfig({...tempConfig, site_logo: ev.target?.result as string});
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                           </div>
+
+                           <div className="flex-1 w-full space-y-4">
+                              <div className="space-y-1">
+                                <label className="text-[9px] text-slate-500 font-black uppercase">{isRtl ? 'رابط الشعار المباشر' : 'Direct Logo URL'}</label>
+                                <input 
+                                  value={tempConfig.site_logo || ''} 
+                                  onChange={e => setTempConfig({...tempConfig, site_logo: e.target.value})} 
+                                  className="w-full p-3 bg-slate-950 border border-white/10 rounded-xl text-white text-[10px] outline-none focus:border-indigo-500" 
+                                  placeholder="https://..." 
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex justify-between items-center mb-1">
+                                  <label className="text-[9px] text-slate-500 font-black uppercase flex items-center gap-1">
+                                    <MoveDiagonal className="w-3 h-3" /> {isRtl ? 'حجم الشعار' : 'Logo Scale'}
+                                  </label>
+                                  <span className="text-[10px] font-black text-indigo-400">{(tempConfig.site_logo_scale || 1).toFixed(1)}x</span>
+                                </div>
+                                <input 
+                                  type="range" 
+                                  min="0.5" 
+                                  max="2.5" 
+                                  step="0.1" 
+                                  value={tempConfig.site_logo_scale || 1} 
+                                  onChange={e => setTempConfig({...tempConfig, site_logo_scale: parseFloat(e.target.value)})} 
+                                  className="w-full accent-indigo-500" 
+                                />
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+
                      <div className="space-y-2">
                         <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-2">Accent Color</label>
                         <div className="flex items-center gap-4">
@@ -352,13 +453,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                         <div className="space-y-2">
                            <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-2">Border Radius (rem)</label>
                            <input value={tempConfig.ux_border_radius} onChange={e => setTempConfig({...tempConfig, ux_border_radius: e.target.value})} className="w-full p-4 bg-slate-950 border border-white/10 rounded-2xl text-white text-xs" placeholder="2rem" />
-                        </div>
-                     </div>
-
-                     <div className="space-y-2 pt-4">
-                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Global Site Logo (DataURL or URL)</label>
-                        <div className="flex gap-4">
-                           <input value={tempConfig.site_logo} onChange={e => setTempConfig({...tempConfig, site_logo: e.target.value})} className="flex-1 p-4 bg-slate-950 border border-white/10 rounded-2xl text-white text-xs" placeholder="https://..." />
                         </div>
                      </div>
                   </div>

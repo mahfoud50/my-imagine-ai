@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, memo } from 'react';
-import { User, Settings as SettingsIcon, Bell, Key, LogOut, ChevronUp, ChevronDown, CheckCircle, Clock, Sparkles, X, Languages, Menu, Zap, MessageSquare, Shield } from 'lucide-react';
+import { User, Settings as SettingsIcon, Bell, Key, LogOut, ChevronUp, ChevronDown, CheckCircle, Clock, Sparkles, X, Languages, Menu, Zap, MessageSquare, Shield, ChevronDown as CaretIcon } from 'lucide-react';
 import { Language, AppNotification, SiteConfig } from '../types.ts';
 import { translations } from '../translations.ts';
 
@@ -177,12 +177,26 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-1 md:gap-3 relative" ref={dropdownRef}>
-          {/* Profile Section with Avatar and Username Toggle */}
+          {/* Profile Section - Enhanced and Always Visible */}
           <div 
             onClick={handleAvatarClick}
-            className={`flex items-center gap-2 md:gap-3 p-1 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group ${isProfileOpen ? 'bg-white/10' : ''}`}
+            className={`flex items-center gap-2 md:gap-3 px-2 py-1.5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all group ${isProfileOpen ? 'bg-white/15' : ''} border border-transparent hover:border-white/10`}
           >
-            <div className={`relative p-0.5 rounded-full ${isStoryActive ? 'bg-rose-600 shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'bg-transparent'}`}>
+            {/* Toggle Arrow (^) - Now clearly visible as requested */}
+            <div className={`p-1 rounded-lg text-slate-400 group-hover:text-indigo-400 transition-all transform ${isProfileOpen ? 'rotate-180 text-[#00d2ff]' : ''}`}>
+               <CaretIcon className="w-3.5 h-3.5 md:w-4 md:h-4 stroke-[3]" />
+            </div>
+
+            <div className="flex flex-col text-right">
+              <span className="text-[10px] md:text-[11px] font-black text-white truncate max-w-[70px] md:max-w-[120px]">
+                {user?.username ? `@${user.username}` : user?.name}
+              </span>
+              <span className="text-[8px] md:text-[9px] font-black text-[#00d2ff] flex items-center justify-end gap-1">
+                 {credits} <Zap className="w-2 h-2 fill-current" />
+              </span>
+            </div>
+
+            <div className={`relative p-0.5 rounded-full ${isStoryActive ? 'bg-rose-600 shadow-[0_0_12px_rgba(225,29,72,0.6)] animate-pulse' : 'bg-transparent'}`}>
               <div className="rounded-full bg-[#0f172a] p-0.5">
                 <img 
                   src={user?.profilePic || `https://i.pravatar.cc/150?u=${user?.name}`} 
@@ -190,20 +204,6 @@ const Header: React.FC<HeaderProps> = ({
                   alt="Avatar"
                 />
               </div>
-            </div>
-
-            <div className="hidden sm:flex flex-col profile-name">
-              <span className="text-[10px] md:text-[11px] font-black text-white truncate max-w-[80px]">
-                {user?.username ? `@${user.username}` : user?.name}
-              </span>
-              <span className="text-[8px] md:text-[9px] font-black text-[#00d2ff] flex items-center gap-1">
-                <Zap className="w-2 h-2 fill-current" /> {credits} {t.points}
-              </span>
-            </div>
-
-            {/* The ^ Toggle Button */}
-            <div className={`p-1 rounded-lg text-slate-400 group-hover:text-white transition-all ${isProfileOpen ? 'rotate-180 text-indigo-400' : ''}`}>
-               <ChevronUp className="w-4 h-4" />
             </div>
           </div>
 
