@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Fingerprint, ShieldAlert, RefreshCcw, Timer, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, AtSign, Monitor, Smartphone, Laptop, Apple } from 'lucide-react';
 import emailjs from '@emailjs/browser';
-import { Language, DeviceType } from '../types.ts';
+import { Language, DeviceType, SiteConfig } from '../types.ts';
 import { translations } from '../translations.ts';
 import AdminLogin from './AdminLogin.tsx';
 
@@ -13,9 +13,10 @@ interface AuthScreenProps {
   setAllUsers: (users: any[]) => void;
   bannedEmails: string[];
   adminIdentity: any;
+  siteConfig?: SiteConfig;
 }
 
-const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, setAllUsers, bannedEmails, adminIdentity }) => {
+const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, setAllUsers, bannedEmails, adminIdentity, siteConfig }) => {
   const t = translations[language];
   const [isLogin, setIsLogin] = useState(true);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
@@ -75,7 +76,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
     }
 
     if (isLogin && email.toLowerCase() === adminIdentity.email.toLowerCase() && password === adminIdentity.password) {
-        onLogin({ email, name: 'Mahfoud', username: 'admin', isAdmin: true, deviceType }, false);
+        onLogin({ email, name: 'Mahfoud', username: 'admin', isAdmin: true, deviceType }, true);
         return;
     }
 
@@ -126,15 +127,20 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#0f172a] p-4 overflow-hidden">
-      <div className="fixed bottom-6 left-0 w-full flex justify-center z-[350] pointer-events-none">
-        <button type="button" onClick={() => setIsAdminModalOpen(true)} className="pointer-events-auto flex items-center gap-2 px-6 py-2 rounded-full text-slate-700 hover:text-indigo-400 opacity-10 hover:opacity-100 group transition-all">
-            <Lock className="w-3 h-3" />
-            <span className="text-[10px] font-mono font-black tracking-[0.3em] uppercase">Admin Core</span>
+      
+      <div className="fixed bottom-8 left-0 w-full flex justify-center z-[400] pointer-events-none">
+        <button 
+          type="button" 
+          onClick={() => setIsAdminModalOpen(true)} 
+          className="pointer-events-auto flex flex-col items-center gap-2 px-10 py-4 rounded-full text-indigo-400 opacity-20 hover:opacity-100 group transition-all duration-700 bg-white/5 backdrop-blur-sm border border-white/5 hover:bg-white/10"
+        >
+            <Fingerprint className="w-6 h-6 animate-pulse group-hover:scale-125 transition-transform text-indigo-500" />
+            <span className="text-[7px] font-mono font-black tracking-[0.5em] uppercase opacity-0 group-hover:opacity-100 transition-opacity text-white">GOD MODE ACCESS</span>
         </button>
       </div>
 
       {isVerifyingOtp ? (
-        <div className="w-full max-w-md p-10 bg-white dark:bg-slate-900 rounded-[2.5rem] text-center shadow-2xl border dark:border-white/5 animate-in zoom-in-95 duration-300">
+        <div className="w-full max-md p-10 bg-white dark:bg-slate-900 rounded-[2.5rem] text-center shadow-2xl border dark:border-white/5 animate-in zoom-in-95 duration-300">
             <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <ShieldCheck className="w-8 h-8 text-indigo-600" />
             </div>
@@ -224,7 +230,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
                       </div>
                     </div>
 
-                    {/* خيارات اختيار نوع الجهاز - تصميم فائق الأناقة */}
                     <div className="space-y-4 pt-4">
                        <div className="flex items-center justify-between px-1">
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{isRtl ? 'اختر واجهة الجهاز' : 'Choose Device Interface'}</label>
@@ -291,7 +296,15 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
             </div>
         </div>
       )}
-      <AdminLogin isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} onLogin={onLogin} language={language} adminIdentity={adminIdentity} />
+      
+      <AdminLogin 
+        isOpen={isAdminModalOpen} 
+        onClose={() => setIsAdminModalOpen(false)} 
+        onLogin={onLogin} 
+        language={language} 
+        adminIdentity={adminIdentity} 
+        siteConfig={siteConfig}
+      />
     </div>
   );
 };

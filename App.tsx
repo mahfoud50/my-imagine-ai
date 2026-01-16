@@ -15,10 +15,10 @@ import HairModal from './components/HairModal.tsx';
 import QrModal from './components/QrModal.tsx';
 import CodeModal from './components/CodeModal.tsx';
 import { GoogleGenAI, Modality } from "@google/genai";
-import { Fingerprint, Sparkles, History, Loader2, MessageSquare, User as UserIcon } from 'lucide-react';
+import { Fingerprint, Sparkles, History, Loader2, MessageSquare, User as UserIcon, X } from 'lucide-react';
 import { translations } from './translations.ts';
 
-const SYSTEM_VERSION = "2.1.0_DEVICE_UPDATE";
+const SYSTEM_VERSION = "2.2.0_FACE_ID_UPDATE";
 
 function decode(base64: string) {
   try {
@@ -96,7 +96,8 @@ const App: React.FC = () => {
       api_key_remove_bg: '', api_key_upscale: '', api_key_virtual_try_on: '',
       api_key_sunglasses: '', api_key_watermark: '', api_key_colorize: '',
       api_key_magic_eraser: '', api_key_cartoonize: '', api_key_restore: '',
-      api_key_hair_style: '',
+      api_key_hair_style: '', api_key_text_to_code: '', api_key_qr_code: '', api_key_image_to_vector: '',
+      face_id_enabled: false, admin_face_ref: '',
       global_story: { id: 'default', message: 'Welcome to Imagine AI!', active: false, image: '' },
       ...saved
     };
@@ -188,7 +189,11 @@ const App: React.FC = () => {
     setIsGenerating(true);
     setActiveImage(null);
     try {
-      const targetKey = isLogo ? getEffectiveApiKey(siteConfig.api_key_logo) : getEffectiveApiKey(siteConfig.api_key_text_to_image);
+      let targetKey = getEffectiveApiKey(siteConfig.api_key_text_to_image);
+      if (isLogo) targetKey = getEffectiveApiKey(siteConfig.api_key_logo);
+      else if (overrideType === 'TextToCode') targetKey = getEffectiveApiKey(siteConfig.api_key_text_to_code);
+      else if (overrideType === 'QrCode') targetKey = getEffectiveApiKey(siteConfig.api_key_qr_code);
+
       const ai = new GoogleGenAI({ apiKey: targetKey });
       const modelName = userSettings.modelStrategy === 'fast' ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview';
       
@@ -232,7 +237,15 @@ const App: React.FC = () => {
       case 'Cleaned': specificKey = siteConfig.api_key_remove_bg; actionPrompt = "Remove background strictly."; break;
       case 'Upscaled': specificKey = siteConfig.api_key_upscale; actionPrompt = "Upscale to 4K quality."; break;
       case 'WatermarkRemoved': specificKey = siteConfig.api_key_watermark; actionPrompt = "Remove watermark."; break;
-      default: specificKey = siteConfig.global_api_key; actionPrompt = customPrompt || "Edit image.";
+      case 'Colorized': specificKey = siteConfig.api_key_colorize; actionPrompt = "Colorize this old photo."; break;
+      case 'Cartoonized': specificKey = siteConfig.api_key_cartoonize; actionPrompt = "Convert to 3D Disney Pixar style cartoon."; break;
+      case 'Restored': specificKey = siteConfig.api_key_restore; actionPrompt = "Restore this old photo, fix scratches and noise."; break;
+      case 'ChangeHairStyle': specificKey = siteConfig.api_key_hair_style; actionPrompt = customPrompt || "Change hair style."; break;
+      case 'ImageToVector': specificKey = siteConfig.api_key_image_to_vector; actionPrompt = "Convert to vector SVG style illustration."; break;
+      case 'VirtualTryOn': specificKey = siteConfig.api_key_virtual_try_on; actionPrompt = "Change clothes for the person in image."; break;
+      case 'AddSunglasses': specificKey = siteConfig.api_key_sunglasses; actionPrompt = "Add cool sunglasses to the person."; break;
+      case 'ObjectRemoved': specificKey = siteConfig.api_key_magic_eraser; actionPrompt = "Remove the main object cleanly."; break;
+      default: specificKey = siteConfig.api_key_smart_edit || siteConfig.global_api_key; actionPrompt = customPrompt || "Edit image.";
     }
 
     try {
@@ -298,9 +311,16 @@ const App: React.FC = () => {
     }
   }, [getEffectiveApiKey, siteConfig.api_key_tts]);
 
+  const handleLogin = useCallback((userData: any, directToAdmin: boolean = false) => {
+    setUser(userData);
+    if (directToAdmin) {
+      setIsAdminOpen(true);
+    }
+  }, []);
+
   const authScreenMemo = useMemo(() => (
-    <AuthScreen onLogin={(userData) => setUser(userData)} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} adminIdentity={adminIdentity} />
-  ), [language, allUsers, setAllUsers, bannedEmails, adminIdentity]);
+    <AuthScreen onLogin={handleLogin} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} adminIdentity={adminIdentity} siteConfig={siteConfig} />
+  ), [language, allUsers, setAllUsers, bannedEmails, adminIdentity, handleLogin, siteConfig]);
 
   if (!user) return authScreenMemo;
 
@@ -308,13 +328,41 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex flex-col h-screen overflow-hidden ${deviceClass} ${userSettings.theme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
-      <Header credits={50} user={user} language={language} siteConfig={siteConfig} notifications={notifications} onMarkAllRead={() => setNotifications(prev => prev.map(n => ({...n, isRead: true})))} onToggleLang={() => setLanguage(l => l === 'ar' ? 'en' : 'ar')} onUpgrade={() => { setAccountTab('credits'); setIsAccountOpen(true); }} onProfile={() => { setAccountTab('profile'); setIsAccountOpen(true); }} onOpenInbox={() => { setAccountTab('manager'); setIsAccountOpen(true); }} onOpenStory={() => setIsStoryOpen(true)} onLogout={() => setUser(null)} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} onAdmin={() => setIsAdminOpen(true)} />
+      <Header 
+        credits={50} 
+        user={user} 
+        language={language} 
+        siteConfig={siteConfig} 
+        notifications={notifications} 
+        onMarkAllRead={() => setNotifications(prev => prev.map(n => ({...n, isRead: true})))} 
+        onToggleLang={() => setLanguage(l => l === 'ar' ? 'en' : 'ar')} 
+        onUpgrade={() => { setAccountTab('credits'); setIsAccountOpen(true); }} 
+        onProfile={() => { setAccountTab('profile'); setIsAccountOpen(true); }} 
+        onOpenInbox={() => { setAccountTab('manager'); setIsAccountOpen(true); }} 
+        onOpenStory={() => setIsStoryOpen(true)} 
+        onLogout={() => setUser(null)} 
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+        onAdmin={() => setIsAdminOpen(true)}
+        onSettings={() => { setAccountTab('settings'); setIsAccountOpen(true); }}
+      />
       
       <div className="flex-1 flex overflow-hidden relative">
         <Sidebar isOpen={isSidebarOpen} settings={settings} setSettings={setSettings} onGenerate={() => handleGenerate()} onUpload={(url) => { setActiveImage(url); setSettings(s => ({...s, uploadedImage: url})); }} isGenerating={isGenerating} language={language} onClose={() => setIsSidebarOpen(false)} modelStrategy={userSettings.modelStrategy} setModelStrategy={(s) => setUserSettings(prev => ({ ...prev, modelStrategy: s }))} />
-        <MainPreview imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} loadingStep={loadingStep} prompt={settings.prompt} language={language} isSidebarOpen={isSidebarOpen} isGalleryOpen={isGalleryOpen} onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)} onRemoveBackground={() => handleImageAction('Cleaned')} onUpscale={() => handleImageAction('Upscaled')} onRemoveWatermark={() => handleImageAction('WatermarkRemoved')} onRestore={() => handleImageAction('Restored')} onColorize={() => handleImageAction('Colorized')} onCartoonize={() => handleImageAction('Cartoonized')} onMagicEraser={() => handleImageAction('ObjectRemoved')} onSmartEdit={() => { const p = prompt(translations[language].promptPlaceholder); if(p) handleImageAction('Edited', p); }} onVirtualTryOn={() => handleImageAction('VirtualTryOn')} onAddSunglasses={() => handleImageAction('AddSunglasses')} onChangeHairStyle={() => setIsHairModalOpen(true)} onCreateLogo={() => { const n = prompt(translations[language].logoPrompt); if(n) handleGenerate(n, true); }} onTextToSpeech={() => setIsSpeechModalOpen(true)} onGenerateImage={() => handleGenerate()} onImageToVector={() => handleImageAction('ImageToVector')} onTextToCode={() => setIsCodeModalOpen(true)} onQrCode={() => setIsQrModalOpen(true)} />
+        <MainPreview imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} loadingStep={loadingStep} prompt={settings.prompt} language={language} isSidebarOpen={isSidebarOpen} isGalleryOpen={isGalleryOpen} onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)} onRemoveBackground={() => handleImageAction('Cleaned')} onUpscale={() => handleImageAction('Upscaled')} onRemoveWatermark={() => handleImageAction('WatermarkRemoved')} onRestore={() => handleImageAction('Restored')} onColorize={() => handleImageAction('Colorized')} onCartoonize={() => handleImageAction('Cartoonized')} onMagicEraser={() => handleImageAction('ObjectRemoved')} onSmartEdit={() => { const p = prompt(translations[language].promptPlaceholder); if(p) handleImageAction('Edited', p); }} onVirtualTryOn={() => handleImageAction('VirtualTryOn')} onAddSunglasses={() => handleImageAction('AddSunglasses')} onChangeHairStyle={() => setIsHairModalOpen(true)} onCreateLogo={() => { const n = prompt(translations[language].logoPrompt); if(n) handleGenerate(n, true); }} onTextToSpeech={() => setIsSpeechModalOpen(true)} onGenerateImage={() => handleGenerate()} onImageToVector={() => handleImageAction('ImageToVector')} onTextToCode={() => setIsCodeModalOpen(true)} onQrCode={() => setIsQrModalOpen(true)} onCancelGeneration={() => setIsGenerating(false)} />
         <RightPanel isOpen={isGalleryOpen} history={history} onSelect={setActiveImage} onDelete={(id) => setHistory(h => h.filter(x => x.id !== id))} language={language} onClose={() => setIsGalleryOpen(false)} />
       </div>
+
+      {user?.isAdmin && (
+        <div className={`fixed bottom-4 ${language === 'ar' ? 'left-4' : 'right-4'} z-[3000]`}>
+          <button 
+            onClick={() => setIsAdminOpen(!isAdminOpen)}
+            className={`p-3 rounded-2xl backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-500 group ${isAdminOpen ? 'bg-rose-600 text-white border-rose-400 rotate-90 scale-90' : 'bg-indigo-600/40 text-indigo-200 hover:bg-indigo-600 hover:text-white'}`}
+            title={isAdminOpen ? (language === 'ar' ? 'العودة للمنصة' : 'Back to Platform') : (language === 'ar' ? 'لوحة التحكم' : 'Admin Panel')}
+          >
+            {isAdminOpen ? <X className="w-5 h-5" /> : <Fingerprint className="w-5 h-5 animate-pulse group-hover:scale-110" />}
+          </button>
+        </div>
+      )}
 
       <AccountModal isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} activeTab={accountTab} setActiveTab={setAccountTab} credits={50} user={user} language={language} userSettings={userSettings} setUserSettings={s => setUserSettings(prev => ({ ...prev, ...s }))} siteConfig={siteConfig} allMessages={messages} onSendMessage={(content) => setMessages(prev => [{ id: Date.now().toString(), senderName: user?.name, senderEmail: user?.email, content, timestamp: new Date(), isRead: false }, ...prev])} />
       {isAdminOpen && <AdminPanel config={siteConfig} setConfig={setSiteConfig} messages={messages} setMessages={setMessages} onClose={() => setIsAdminOpen(false)} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} setBannedEmails={setBannedEmails} adminIdentity={adminIdentity} setAdminIdentity={setAdminIdentity} />}

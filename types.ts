@@ -100,6 +100,11 @@ export interface SiteConfig {
   api_key_cartoonize?: string;
   api_key_restore?: string;
   api_key_hair_style?: string;
+  api_key_text_to_code?: string;
+  api_key_qr_code?: string;
+  api_key_image_to_vector?: string;
+  face_id_enabled?: boolean;
+  admin_face_ref?: string;
   global_story?: {
     id: string;
     image?: string;

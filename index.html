@@ -3,7 +3,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Imagine AI - مختبر الإبداع الذكي</title>
     <meta name="description" content="The ultimate generative art platform.">
     
@@ -57,6 +57,7 @@
         font-family: 'Inter', 'Vazirmatn', sans-serif; 
         overflow: hidden; 
         height: 100vh;
+        width: 100vw;
         transition: background-color 0.3s ease;
       }
 
@@ -66,43 +67,55 @@
 
       #root { 
         height: 100%; 
+        width: 100%;
         display: flex; 
         flex-direction: column; 
       }
 
-      .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+      /* Phone Specific Fixes */
+      .device-layout-android header, .device-layout-iphone header {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+      }
+
+      .device-layout-android .profile-name, .device-layout-iphone .profile-name {
+        display: none !important;
+      }
+
+      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb { 
         background: rgba(100, 116, 139, 0.2); 
         border-radius: 10px; 
       }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
-        background: rgba(100, 116, 139, 0.4); 
-      }
 
       @keyframes float {
         0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
+        50% { transform: translateY(-5px); }
         100% { transform: translateY(0px); }
       }
 
       .floating-item {
-        animation: float 6s ease-in-out infinite;
+        animation: float 4s ease-in-out infinite;
       }
 
       .image-fade-in {
-        animation: fadeIn 0.5s ease-out forwards;
+        animation: fadeIn 0.4s ease-out forwards;
       }
 
       @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.98); }
+        from { opacity: 0; transform: scale(0.95); }
         to { opacity: 1; transform: scale(1); }
+      }
+
+      /* Fix for iOS momentum scrolling */
+      .custom-scrollbar {
+        -webkit-overflow-scrolling: touch;
       }
     </style>
 </head>
 <body class="antialiased">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
-    <script id="admin-dynamic-js"></script>
 </body>
 </html>

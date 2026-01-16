@@ -146,7 +146,6 @@ const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   const handleSaveProfile = () => {
-    // إزالة التأخير الاصطناعي 800ms
     if (onUpdateProfile) onUpdateProfile({ name, username, profilePic });
     setSuccess(true);
     setTimeout(() => setSuccess(false), 2000);
@@ -183,10 +182,18 @@ const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-900 w-full max-w-3xl h-[700px] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300 border dark:border-white/5" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose}>
+      <div className="bg-white dark:bg-slate-900 w-full max-w-3xl h-[650px] md:h-[700px] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-300 border dark:border-white/5 relative" onClick={(e) => e.stopPropagation()}>
         
-        <aside className="w-full md:w-56 bg-slate-50 dark:bg-slate-800/50 border-r border-slate-200 dark:border-white/5 p-6 flex flex-row md:flex-col gap-1 overflow-x-auto shrink-0">
+        {/* Fixed Close Button - Important Request */}
+        <button 
+          onClick={onClose} 
+          className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-2 bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white rounded-2xl hover:bg-rose-500 hover:text-white transition-all z-[120] shadow-lg`}
+        >
+          <X className="w-5 h-5 md:w-6 md:h-6" />
+        </button>
+
+        <aside className="w-full md:w-56 bg-slate-50 dark:bg-slate-800/50 border-r border-slate-200 dark:border-white/5 p-6 flex flex-row md:flex-col gap-1 overflow-x-auto shrink-0 z-10">
           <div className="hidden md:block mb-6">
             <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter">{t.myAccount}</h2>
           </div>
@@ -209,9 +216,7 @@ const AccountModal: React.FC<AccountModalProps> = ({
           </nav>
         </aside>
 
-        <main className="flex-1 p-6 md:p-10 overflow-y-auto custom-scrollbar relative">
-          <button onClick={onClose} className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 text-slate-400 hover:text-rose-500 transition-all`}><X className="w-6 h-6" /></button>
-
+        <main className="flex-1 p-6 md:p-10 pt-16 md:pt-10 overflow-y-auto custom-scrollbar relative bg-white dark:bg-slate-900">
           {activeTab === 'profile' && (
             <div className="space-y-8 animate-in fade-in duration-500">
               <div className="flex flex-col items-center md:items-start gap-6">
@@ -349,51 +354,26 @@ const AccountModal: React.FC<AccountModalProps> = ({
                  <h4 className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-2">
                    <MessageSquare className="w-4 h-4 text-indigo-500" /> {t.inbox}
                  </h4>
-                 <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
-                    <ShieldCheck className="w-3 h-3 text-emerald-500" /> {isRtl ? 'تواصل مشفر ومباشر' : 'Encrypted Direct Messaging'}
-                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 py-4 px-1 min-h-[150px]">
                 {userMessages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center opacity-40 space-y-3 py-10">
-                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-3xl flex items-center justify-center">
-                      <ShieldQuestion className="w-8 h-8 text-slate-400" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em]">{isRtl ? 'لا توجد مراسلات سابقة' : 'No previous messages'}</p>
-                      <p className="text-[9px] font-bold mt-1 text-slate-400">{isRtl ? 'رسالتك تذهب مباشرة لمدير المنصة' : 'Your messages go directly to the platform manager'}</p>
-                    </div>
+                    <ShieldQuestion className="w-8 h-8 text-slate-400" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em]">{isRtl ? 'لا توجد مراسلات' : 'No messages'}</p>
                   </div>
                 ) : (
                   userMessages.map(msg => (
-                    <div key={msg.id} className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+                    <div key={msg.id} className="space-y-3">
                       <div className={`flex flex-col ${isRtl ? 'items-start' : 'items-end'}`}>
                         <div className="max-w-[85%] p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl border dark:border-white/5">
                           <p className={`text-[11px] font-bold text-slate-800 dark:text-slate-200 ${isRtl ? 'text-right' : 'text-left'}`}>{msg.content}</p>
-                          <div className={`flex items-center gap-1 mt-1 text-[8px] text-slate-400 font-mono ${isRtl ? 'justify-end' : 'justify-start'}`}>
-                            <Clock className="w-2.5 h-2.5" />
-                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </div>
                         </div>
                       </div>
-
                       {msg.reply && (
                         <div className={`flex flex-col ${isRtl ? 'items-end' : 'items-start'}`}>
-                          <div className="max-w-[85%] p-4 bg-indigo-600 text-white rounded-2xl shadow-lg relative overflow-hidden group">
-                            <div className="absolute -top-1 -right-1 opacity-10 group-hover:rotate-12 transition-transform">
-                               <ShieldCheck className="w-12 h-12" />
-                            </div>
-                            <div className="flex items-center gap-2 mb-1">
-                               <CheckCircle className="w-3 h-3 text-emerald-300" />
-                               <span className="text-[9px] font-black uppercase tracking-wider">{isRtl ? 'رد الإدارة' : 'Official Reply'}</span>
-                            </div>
-                            <p className={`text-[11px] font-black leading-relaxed ${isRtl ? 'text-right' : 'text-left'}`}>{msg.reply}</p>
-                            {msg.replyTimestamp && (
-                              <p className={`text-[8px] opacity-60 mt-1 font-mono ${isRtl ? 'text-left' : 'text-right'}`}>
-                                {new Date(msg.replyTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                            )}
+                          <div className="max-w-[85%] p-4 bg-indigo-600 text-white rounded-2xl shadow-lg">
+                            <p className={`text-[11px] font-black ${isRtl ? 'text-right' : 'text-left'}`}>{msg.reply}</p>
                           </div>
                         </div>
                       )}
@@ -407,10 +387,10 @@ const AccountModal: React.FC<AccountModalProps> = ({
                     <textarea 
                       value={message} onChange={e => setMessage(e.target.value)}
                       placeholder={t.messagePlaceholder}
-                      className="w-full h-24 p-4 bg-slate-50 dark:bg-slate-800 border border-indigo-500/10 rounded-2xl outline-none text-[11px] dark:text-white resize-none focus:border-indigo-500 transition-all shadow-inner"
+                      className="w-full h-20 p-4 bg-slate-50 dark:bg-slate-800 border border-indigo-500/10 rounded-2xl outline-none text-[11px] dark:text-white resize-none"
                     />
-                    <button onClick={handleSend} disabled={!message.trim()} className="absolute bottom-3 left-3 md:left-auto md:right-3 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] flex items-center gap-2 shadow-xl hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95">
-                       <Send className="w-3.5 h-3.5" /> {t.sendMessage}
+                    <button onClick={handleSend} disabled={!message.trim()} className="absolute bottom-3 left-3 px-4 py-2 bg-indigo-600 text-white rounded-xl font-black text-[10px] flex items-center gap-2 shadow-xl">
+                       <Send className="w-3 h-3" /> {t.sendMessage}
                     </button>
                  </div>
               </div>
@@ -433,39 +413,15 @@ const AccountModal: React.FC<AccountModalProps> = ({
                   <Type className="w-4 h-4 text-indigo-500" /> {t.fontFamilyLabel}
                 </h4>
                 <div className="grid grid-cols-3 gap-2">
-                   {[
-                     { id: 'classic', label: t.fontClassic },
-                     { id: 'modern', label: t.fontModern },
-                     { id: 'comfort', label: t.fontComfort }
-                   ].map(font => (
+                   {['classic', 'modern', 'comfort'].map(font => (
                      <button 
-                      key={font.id}
-                      onClick={() => setUserSettings({ fontFamily: font.id as FontFamily })}
-                      className={`p-3 rounded-xl border text-[10px] font-black transition-all ${userSettings.fontFamily === font.id ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:border-indigo-500/30'}`}
+                      key={font}
+                      onClick={() => setUserSettings({ fontFamily: font as FontFamily })}
+                      className={`p-3 rounded-xl border text-[10px] font-black transition-all ${userSettings.fontFamily === font ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:border-indigo-500/30'}`}
                      >
-                       {font.label}
+                       {font.toUpperCase()}
                      </button>
                    ))}
-                </div>
-
-                <div className="mt-6">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">{t.fontSizeLabel}</label>
-                  <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800 p-2 rounded-2xl border dark:border-white/5">
-                    {[
-                      { id: 'small', label: t.sizeSmall, icon: <AlignLeft className="w-3 h-3" /> },
-                      { id: 'medium', label: t.sizeMedium, icon: <AlignLeft className="w-4 h-4" /> },
-                      { id: 'large', label: t.sizeLarge, icon: <AlignLeft className="w-5 h-5" /> }
-                    ].map(size => (
-                      <button 
-                        key={size.id}
-                        onClick={() => setUserSettings({ fontSize: size.id as FontSize })}
-                        className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all ${userSettings.fontSize === size.id ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
-                      >
-                        {size.icon}
-                        <span className="text-[8px] font-black uppercase mt-1">{size.label}</span>
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </section>
 
@@ -474,26 +430,9 @@ const AccountModal: React.FC<AccountModalProps> = ({
                   <Activity className="w-4 h-4 text-emerald-500" /> {t.systemBehavior}
                 </h4>
                 <div className="grid grid-cols-1 gap-3">
-                  <SettingToggle label={t.tooltips} subLabel={isRtl ? 'توضيح مهام الأدوات عند التمرير' : 'Explain tool tasks on hover'} value={userSettings.showTooltips} onToggle={() => setUserSettings({ showTooltips: !userSettings.showTooltips })} icon={HelpCircle} color="text-indigo-400" />
-                  <SettingToggle label={t.autoSave} subLabel={isRtl ? 'حفظ الجلسة تلقائياً وحماية بياناتك' : 'Auto-save session and protect data'} value={userSettings.autoSaveSession} onToggle={() => setUserSettings({ autoSaveSession: !userSettings.autoSaveSession })} icon={Database} color="text-emerald-500" />
-                  <SettingToggle label={t.notifSounds} subLabel={t.on} value={userSettings.notificationSounds} onToggle={() => setUserSettings({ notificationSounds: !userSettings.notificationSounds })} icon={Volume2} color="text-indigo-500" />
+                  <SettingToggle label={t.tooltips} subLabel={isRtl ? 'توضيح مهام الأدوات' : 'Explain tool tasks'} value={userSettings.showTooltips} onToggle={() => setUserSettings({ showTooltips: !userSettings.showTooltips })} icon={HelpCircle} color="text-indigo-400" />
+                  <SettingToggle label={t.autoSave} subLabel={isRtl ? 'حفظ الجلسة تلقائياً' : 'Auto-save session'} value={userSettings.autoSaveSession} onToggle={() => setUserSettings({ autoSaveSession: !userSettings.autoSaveSession })} icon={Database} color="text-emerald-500" />
                 </div>
-              </section>
-
-              <section className="space-y-4 pt-4 border-t dark:border-white/5">
-                <h4 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-rose-500" /> {t.securityPrivacy}
-                </h4>
-                <div className="grid grid-cols-1 gap-3">
-                  <SettingToggle label={t.contentProtect} subLabel={isRtl ? 'تعطيل النسخ والقائمة اليمنى' : 'Disable copy and right-click menu'} value={userSettings.contentProtection} onToggle={() => setUserSettings({ contentProtection: !userSettings.contentProtection })} icon={Lock} color="text-amber-500" />
-                  <SettingToggle label={t.privacyMode} subLabel={isRtl ? 'حذف كافة بيانات الجلسة عند الخروج' : 'Delete all session data on logout'} value={userSettings.privacyMode} onToggle={() => setUserSettings({ privacyMode: !userSettings.privacyMode })} icon={EyeOff} color="text-rose-500" />
-                </div>
-              </section>
-
-              <section className="pt-6 border-t dark:border-white/5">
-                 <button className="w-full p-4 bg-rose-500/5 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/10 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all">
-                    <Trash2 className="w-4 h-4" /> {t.deleteAccount}
-                 </button>
               </section>
             </div>
           )}
