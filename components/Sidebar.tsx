@@ -82,7 +82,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     `}>
       <div className="flex items-center justify-between p-6 border-b dark:border-white/5 shrink-0">
         <div className="flex items-center gap-2">
-           <div className="p-1.5 bg-indigo-600 rounded-lg">
+           <div className="p-1.5 bg-sky-500 rounded-lg">
             <Zap className="w-4 h-4 text-white fill-current" />
            </div>
            <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-widest text-xs">{isRtl ? 'إعدادات الإبداع' : 'CREATIVE STUDIO'}</h3>
@@ -98,13 +98,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-2xl border dark:border-white/5">
              <button 
                 onClick={() => setModelStrategy('fast')}
-                className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2 ${modelStrategy === 'fast' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'}`}
+                className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2 ${modelStrategy === 'fast' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'}`}
              >
                 <Rocket className="w-3 h-3" /> {t.stratFast}
              </button>
              <button 
                 onClick={() => setModelStrategy('accurate')}
-                className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2 ${modelStrategy === 'accurate' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'}`}
+                className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2 ${modelStrategy === 'accurate' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'}`}
              >
                 <Sparkles className="w-3 h-3" /> {t.stratAccurate}
              </button>
@@ -116,7 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="w-8 h-8 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg shadow-emerald-500/20">1</div>
             <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{t.uploadRef}</h3>
           </div>
-          <div className="relative border-2 border-dashed border-slate-200 dark:border-white/10 rounded-2xl p-2 hover:border-indigo-500 transition-all cursor-pointer bg-slate-50/50 dark:bg-slate-800/30 group">
+          <div className="relative border-2 border-dashed border-slate-200 dark:border-white/10 rounded-2xl p-2 hover:border-sky-500 transition-all cursor-pointer bg-slate-50/50 dark:bg-slate-800/30 group">
             {settings.uploadedImage ? (
               <div className="relative aspect-video rounded-xl overflow-hidden">
                 <img src={settings.uploadedImage} className="w-full h-full object-cover" alt="Ref" />
@@ -133,7 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             ) : (
               <label className="flex flex-col items-center justify-center py-8 cursor-pointer">
                 <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
-                <Upload className="w-8 h-8 text-slate-300 group-hover:text-indigo-500 transition-colors mb-2" />
+                <Upload className="w-8 h-8 text-slate-300 group-hover:text-sky-500 transition-colors mb-2" />
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isRtl ? 'تغيير الملابس/تعديل صورة' : 'IMAGE-TO-IMAGE'}</span>
               </label>
             )}
@@ -152,8 +152,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => setSettings(prev => ({ ...prev, aspectRatio: ratio.value }))}
                 className={`p-2 flex flex-col items-center gap-1 rounded-xl border transition-all ${
                   settings.aspectRatio === ratio.value 
-                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
-                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-white/5 text-slate-400 hover:border-indigo-500/50'
+                  ? 'bg-sky-500 border-sky-500 text-white shadow-lg' 
+                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-white/5 text-slate-400 hover:border-sky-500/50'
                 }`}
               >
                 <Layout className="w-4 h-4" />
@@ -171,7 +171,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
           <textarea
-            className={`w-full h-32 lg:h-40 p-5 text-sm bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none resize-none dark:text-white font-medium transition-all ${isRtl ? 'text-right' : 'text-left'}`}
+            className={`w-full h-32 lg:h-40 p-5 text-sm bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none resize-none dark:text-white font-medium transition-all ${isRtl ? 'text-right' : 'text-left'}`}
             placeholder={t.promptPlaceholder}
             value={settings.prompt}
             onKeyDown={handleKeyDown}
@@ -184,7 +184,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <button 
           onClick={onGenerate} 
           disabled={isGenerating || !settings.prompt.trim()} 
-          className={`w-full py-5 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 ${isGenerating || !settings.prompt.trim() ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-indigo-600 to-rose-600 text-white hover:shadow-indigo-500/25'}`}
+          className={`w-full py-5 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 ${isGenerating || !settings.prompt.trim() ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-sky-400 to-sky-600 text-white hover:shadow-sky-500/25'}`}
         >
           {isGenerating ? <LoaderIcon className="w-5 h-5 animate-spin" /> : (modelStrategy === 'fast' ? <Rocket className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />)}
           {isGenerating ? t.generating : (modelStrategy === 'fast' ? `${t.generate} (Turbo)` : t.generate)}

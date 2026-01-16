@@ -17,28 +17,13 @@
         theme: {
           extend: {
             colors: {
-              primary: '#6366f1',
-              accent: '#00d2ff',
+              primary: '#00d2ff',
+              accent: '#0ea5e9',
             }
           }
         }
       }
     </script>
-    <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.475.0",
-    "@google/genai": "https://esm.sh/@google/genai@1.35.0",
-    "@emailjs/browser": "https://esm.sh/@emailjs/browser@4.4.1",
-    "@imgly/background-removal": "https://esm.sh/@imgly/background-removal@1.5.5",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
-  }
-}
-</script>
     
     <style id="admin-dynamic-css"></style>
     
@@ -46,8 +31,8 @@
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Vazirmatn:wght@400;700;900&display=swap');
       
       :root {
-        --primary: #6366f1;
-        --accent: #00d2ff;
+        --primary: #00d2ff;
+        --accent: #0ea5e9;
       }
 
       body { 
@@ -85,7 +70,7 @@
       .custom-scrollbar::-webkit-scrollbar { width: 4px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb { 
-        background: rgba(100, 116, 139, 0.2); 
+        background: rgba(14, 165, 233, 0.2); 
         border-radius: 10px; 
       }
 
@@ -113,6 +98,18 @@
         -webkit-overflow-scrolling: touch;
       }
     </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@emailjs/browser": "https://esm.sh/@emailjs/browser@^4.4.1"
+  }
+}
+</script>
 </head>
 <body class="antialiased">
     <div id="root"></div>

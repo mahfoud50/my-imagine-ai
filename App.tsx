@@ -99,7 +99,7 @@ const App: React.FC = () => {
       seo_keywords: 'AI, Generative Art, Gemini',
       global_html: '', custom_css: '', custom_js: '', php_logic: '',
       https_force: true,
-      ux_blur_intensity: '20px', ux_accent_color: '#6366f1', ux_border_radius: '2rem',
+      ux_blur_intensity: '20px', ux_accent_color: '#00d2ff', ux_border_radius: '2rem',
       manager_name: 'Ahmad kharbicha', manager_dob: 'Jan 1, 1987', manager_location: 'SAHTEREANN',
       manager_pic: 'https://i.pravatar.cc/150?u=manager', 
       site_logo_scale: 6.5, 
@@ -501,11 +501,11 @@ const App: React.FC = () => {
           onUpscale={() => { setConfirmTool({type: 'Upscaled', name: translations[language].upscale, icon: <Maximize2 className="w-5 h-5"/>, color: 'bg-emerald-500'}); setIsConfirmModalOpen(true); }} 
           onRemoveWatermark={() => { setConfirmTool({type: 'WatermarkRemoved', name: translations[language].removeWatermark, icon: <Scissors className="w-5 h-5"/>, color: 'bg-orange-500'}); setIsConfirmModalOpen(true); }} 
           onRestore={() => { setConfirmTool({type: 'Restored', name: translations[language].restore, icon: <Sparkles className="w-5 h-5"/>, color: 'bg-amber-600'}); setIsConfirmModalOpen(true); }} 
-          onColorize={() => { setConfirmTool({type: 'Colorized', name: translations[language].colorize, icon: <Palette className="w-5 h-5"/>, color: 'bg-indigo-500'}); setIsConfirmModalOpen(true); }} 
+          onColorize={() => { setConfirmTool({type: 'Colorized', name: translations[language].colorize, icon: <Palette className="w-5 h-5"/>, color: 'bg-sky-500'}); setIsConfirmModalOpen(true); }} 
           onCartoonize={() => { setConfirmTool({type: 'Cartoonized', name: translations[language].cartoonize, icon: <Smile className="w-5 h-5"/>, color: 'bg-emerald-600'}); setIsConfirmModalOpen(true); }} 
           onMagicEraser={() => { setConfirmTool({type: 'ObjectRemoved', name: translations[language].magicEraser, icon: <Wind className="w-5 h-5"/>, color: 'bg-rose-600'}); setIsConfirmModalOpen(true); }} 
           onSmartEdit={() => setIsEditModalOpen(true)} 
-          onVirtualTryOn={() => { setConfirmTool({type: 'VirtualTryOn', name: translations[language].virtualTryOn, icon: <Shirt className="w-5 h-5"/>, color: 'bg-indigo-500'}); setIsConfirmModalOpen(true); }} 
+          onVirtualTryOn={() => { setConfirmTool({type: 'VirtualTryOn', name: translations[language].virtualTryOn, icon: <Shirt className="w-5 h-5"/>, color: 'bg-sky-500'}); setIsConfirmModalOpen(true); }} 
           onAddSunglasses={() => { setConfirmTool({type: 'AddSunglasses', name: translations[language].addSunglasses, icon: <Eye className="w-5 h-5"/>, color: 'bg-amber-500'}); setIsConfirmModalOpen(true); }} 
           onChangeHairStyle={() => setIsHairModalOpen(true)} 
           onCreateLogo={() => setIsLogoModalOpen(true)} 
@@ -531,7 +531,7 @@ const App: React.FC = () => {
         <div className={`fixed bottom-4 ${language === 'ar' ? 'left-4' : 'right-4'} z-[3000]`}>
           <button 
             onClick={() => setIsAdminOpen(!isAdminOpen)}
-            className={`p-3 rounded-2xl backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-500 group ${isAdminOpen ? 'bg-rose-600 text-white border-rose-400 rotate-90 scale-90' : 'bg-indigo-600/40 text-indigo-200 hover:bg-indigo-600 hover:text-white'}`}
+            className={`p-3 rounded-2xl backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-500 group ${isAdminOpen ? 'bg-rose-600 text-white border-rose-400 rotate-90 scale-90' : 'bg-sky-600/40 text-sky-200 hover:bg-sky-600 hover:text-white'}`}
             title={isAdminOpen ? (language === 'ar' ? 'العودة للمنصة' : 'Back to Platform') : (language === 'ar' ? 'لوحة التحكم' : 'Admin Panel')}
           >
             {isAdminOpen ? <X className="w-5 h-5" /> : <Fingerprint className="w-5 h-5 animate-pulse group-hover:scale-110" />}
