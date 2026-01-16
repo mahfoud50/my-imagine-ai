@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, memo } from 'react';
-import { User, Settings as SettingsIcon, Bell, Key, LogOut, ChevronDown, CheckCircle, Clock, Sparkles, X, Languages, Menu, Zap, MessageSquare, Shield } from 'lucide-react';
+import { User, Settings as SettingsIcon, Bell, Key, LogOut, ChevronUp, ChevronDown, CheckCircle, Clock, Sparkles, X, Languages, Menu, Zap, MessageSquare, Shield } from 'lucide-react';
 import { Language, AppNotification, SiteConfig } from '../types.ts';
 import { translations } from '../translations.ts';
 
@@ -37,16 +37,6 @@ const Header: React.FC<HeaderProps> = ({
 
   const hasUnread = notifications.some(n => !n.isRead);
   
-  const checkHasNewStory = () => {
-    if (!siteConfig?.global_story?.active) return false;
-    try {
-      const seenStories = JSON.parse(localStorage.getItem('seen_stories') || '[]');
-      return !seenStories.includes(siteConfig.global_story.id);
-    } catch (e) {
-      return true;
-    }
-  };
-
   const isStoryActive = siteConfig?.global_story?.active;
 
   useEffect(() => {
@@ -187,22 +177,34 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-1 md:gap-3 relative" ref={dropdownRef}>
+          {/* Profile Section with Avatar and Username Toggle */}
           <div 
             onClick={handleAvatarClick}
-            className={`relative p-0.5 rounded-full cursor-pointer shrink-0 ${isStoryActive ? 'bg-rose-600' : ''}`}
+            className={`flex items-center gap-2 md:gap-3 p-1 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group ${isProfileOpen ? 'bg-white/10' : ''}`}
           >
-            <div className="rounded-full bg-[#0f172a] p-0.5">
-              <img 
-                src={user?.profilePic || `https://i.pravatar.cc/150?u=${user?.name}`} 
-                className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-[#00d2ff] object-cover" 
-                alt="Avatar"
-              />
+            <div className={`relative p-0.5 rounded-full ${isStoryActive ? 'bg-rose-600 shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'bg-transparent'}`}>
+              <div className="rounded-full bg-[#0f172a] p-0.5">
+                <img 
+                  src={user?.profilePic || `https://i.pravatar.cc/150?u=${user?.name}`} 
+                  className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-indigo-500/30 group-hover:border-[#00d2ff] object-cover transition-all" 
+                  alt="Avatar"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="hidden lg:flex flex-col profile-name">
-            <span className="text-[11px] font-bold text-slate-200 truncate max-w-[80px]">{user?.name}</span>
-            <span className="text-[9px] font-black text-[#00d2ff]">{credits} {t.points}</span>
+            <div className="hidden sm:flex flex-col profile-name">
+              <span className="text-[10px] md:text-[11px] font-black text-white truncate max-w-[80px]">
+                {user?.username ? `@${user.username}` : user?.name}
+              </span>
+              <span className="text-[8px] md:text-[9px] font-black text-[#00d2ff] flex items-center gap-1">
+                <Zap className="w-2 h-2 fill-current" /> {credits} {t.points}
+              </span>
+            </div>
+
+            {/* The ^ Toggle Button */}
+            <div className={`p-1 rounded-lg text-slate-400 group-hover:text-white transition-all ${isProfileOpen ? 'rotate-180 text-indigo-400' : ''}`}>
+               <ChevronUp className="w-4 h-4" />
+            </div>
           </div>
 
           {isProfileOpen && (
@@ -210,6 +212,7 @@ const Header: React.FC<HeaderProps> = ({
               <div className="p-3 md:p-4 bg-slate-800/30 border-b border-white/5">
                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{language === 'ar' ? 'حسابك' : 'Account'}</p>
                  <p className="text-[11px] font-bold text-white truncate">{user?.name}</p>
+                 <p className="text-[9px] text-indigo-400 font-mono mt-0.5">@{user?.username}</p>
               </div>
               <div className="p-1.5 space-y-0.5">
                 {user?.isAdmin && (

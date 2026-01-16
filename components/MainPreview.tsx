@@ -4,7 +4,7 @@ import {
   Maximize2, Download, Eraser, Sparkles, History,
   Loader2, Scissors, X, Palette, Wind, Smile, Zap as ZapIcon, 
   Wand2, Shirt, Eye, PenTool, Mic2, Layers, User as UserIcon,
-  Terminal, QrCode, AlertCircle
+  Terminal, QrCode, AlertCircle, Scan
 } from 'lucide-react';
 import { Language } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -36,7 +36,8 @@ interface MainPreviewProps {
   onImageToVector?: () => void;
   onTextToCode?: () => void;
   onQrCode?: () => void;
-  onCancelGeneration?: () => void; // إضافة ميزة إلغاء التحميل
+  onDecodeQr?: () => void;
+  onCancelGeneration?: () => void; 
 }
 
 const MainPreview: React.FC<MainPreviewProps> = ({ 
@@ -44,7 +45,7 @@ const MainPreview: React.FC<MainPreviewProps> = ({
   isSidebarOpen, isGalleryOpen,
   onRemoveBackground, onUpscale, onRemoveWatermark, onColorize,
   onMagicEraser, onCartoonize, onRestore, onSmartEdit, onVirtualTryOn, onAddSunglasses, onChangeHairStyle, onCreateLogo,
-  onTextToSpeech, onToggleGallery, onGenerateImage, onImageToVector, onTextToCode, onQrCode, onCancelGeneration
+  onTextToSpeech, onToggleGallery, onGenerateImage, onImageToVector, onTextToCode, onQrCode, onDecodeQr, onCancelGeneration
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const t = translations[language];
@@ -62,6 +63,7 @@ const MainPreview: React.FC<MainPreviewProps> = ({
 
   const smartTools = useMemo(() => [
     { id: 1, name: t.logoCreation, icon: <PenTool className="w-5 h-5" />, action: onCreateLogo, color: 'bg-blue-600', desc: 'Create AI Logo' },
+    { id: 18, name: t.qrDecoder, icon: <Scan className="w-5 h-5" />, action: onDecodeQr, color: 'bg-indigo-600', desc: t.qrDecoderDesc },
     { id: 16, name: t.textToCode, icon: <Terminal className="w-5 h-5" />, action: onTextToCode, color: 'bg-amber-600', desc: t.textToCodeDesc },
     { id: 17, name: t.qrCode, icon: <QrCode className="w-5 h-5" />, action: onQrCode, color: 'bg-indigo-700', desc: t.qrCodeDesc },
     { id: 2, name: t.textToSpeech, icon: <Mic2 className="w-5 h-5" />, action: onTextToSpeech, color: 'bg-indigo-600', desc: 'Text to Voice' },
@@ -78,7 +80,7 @@ const MainPreview: React.FC<MainPreviewProps> = ({
     { id: 11, name: t.cartoonize, icon: <Smile className="w-5 h-5" />, action: onCartoonize, color: 'bg-emerald-600', desc: 'To 3D Cartoon' },
     { id: 12, name: t.restore, icon: <Sparkles className="w-5 h-5" />, action: onRestore, color: 'bg-amber-600', desc: 'Photo Repair' },
     { id: 13, name: t.generate, icon: <ZapIcon className="w-5 h-5" />, action: onGenerateImage, color: 'bg-indigo-700', desc: 'Text to Art' }
-  ], [t, onCreateLogo, onTextToCode, onQrCode, onTextToSpeech, onSmartEdit, onRemoveBackground, onUpscale, onVirtualTryOn, onAddSunglasses, onChangeHairStyle, onRemoveWatermark, onColorize, onMagicEraser, onCartoonize, onRestore, onGenerateImage, onImageToVector]);
+  ], [t, onCreateLogo, onDecodeQr, onTextToCode, onQrCode, onTextToSpeech, onSmartEdit, onRemoveBackground, onUpscale, onVirtualTryOn, onAddSunglasses, onChangeHairStyle, onRemoveWatermark, onColorize, onMagicEraser, onCartoonize, onRestore, onGenerateImage, onImageToVector]);
 
   return (
     <main className="flex-1 bg-[#f8fafc] dark:bg-[#020617] flex flex-col items-center p-4 lg:p-8 overflow-y-auto custom-scrollbar w-full transition-all duration-300">
@@ -119,12 +121,10 @@ const MainPreview: React.FC<MainPreviewProps> = ({
             </div>
           ) : null}
 
-          {/* New Custom Processing Modal (The "Small Page" Requested) */}
           {isGenerating && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xl animate-in fade-in duration-500">
                <div className="bg-white dark:bg-slate-900 p-8 md:p-12 rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.5)] border dark:border-white/10 max-w-sm w-full mx-4 text-center animate-in zoom-in-95 duration-300 transform scale-100 relative">
                   
-                  {/* Close Button added here */}
                   <button 
                     onClick={onCancelGeneration}
                     className="absolute top-6 right-6 p-2 bg-slate-100 dark:bg-white/5 hover:bg-rose-500 hover:text-white rounded-xl transition-all z-10"

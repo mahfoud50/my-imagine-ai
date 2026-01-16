@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Lock, X, ShieldCheck, Eye, EyeOff, Fingerprint, ShieldAlert, Timer, ScanFace, Shield, CheckCircle2, Loader2, Zap, RefreshCw, UserCheck } from 'lucide-react';
+import { Lock, X, ShieldCheck, Eye, EyeOff, Fingerprint, ShieldAlert, Timer, ScanFace, Shield, CheckCircle2, Loader2, Zap, RefreshCw, UserCheck, Terminal, AlertTriangle } from 'lucide-react';
 import { Language, SiteConfig } from '../types.ts';
 import { translations } from '../translations.ts';
 
@@ -18,10 +18,13 @@ interface SecurityState {
   blockUntil: number | null;
 }
 
+const DEFAULT_DEV_CODE = "F40T76";
+
 const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, language, adminIdentity, siteConfig }) => {
   const t = translations[language];
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [devCode, setDevCode] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isFaceScanning, setIsFaceScanning] = useState(false);
@@ -35,6 +38,9 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
   const videoRef = useRef<HTMLVideoElement>(null);
   const isRtl = language === 'ar';
   const isBlocked = security.blockUntil && security.blockUntil > Date.now();
+
+  // الحصول على كود المطورين الفعلي من الإعدادات أو الافتراضي
+  const activeDevCode = siteConfig?.dev_access_code || DEFAULT_DEV_CODE;
 
   useEffect(() => {
     let interval: any;
@@ -61,6 +67,12 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
 
     if (isBlocked) {
       setError(`${t.blockedMessage} ${timeRemaining}`);
+      return;
+    }
+
+    // التحقق من كود المطورين أولاً
+    if (devCode.trim().toUpperCase() === activeDevCode.toUpperCase()) {
+      handleSuccessLogin();
       return;
     }
 
@@ -98,8 +110,11 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
   };
 
   const startFaceScan = async () => {
-    if (!siteConfig?.admin_face_ref) {
-      setError(isRtl ? 'Face ID غير مسجل في النظام. يرجى الدخول بكلمة المرور أولاً لتفعيله.' : 'Face ID not registered. Login with password first to enroll.');
+    // التحقق مما إذا كان الوجه مسجلاً فعلاً
+    if (!siteConfig?.admin_face_ref || !siteConfig?.face_id_enabled) {
+      setError(isRtl 
+        ? 'بصمة الوجه غير مسجلة. يرجى الدخول بكلمة المرور وتفعيلها من "الأمان" أولاً.' 
+        : 'Face ID not registered. Please login with password and enable it in "Security" first.');
       return;
     }
     
@@ -108,7 +123,9 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
     setScanStatus('opening');
     
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } } 
+      });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
@@ -116,18 +133,18 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
           setScanStatus('scanning');
           
           // Simulation of Biometric Recognition
-          setTimeout(() => setScanStatus('analyzing'), 2500);
+          setTimeout(() => setScanStatus('analyzing'), 2000);
           setTimeout(() => {
             setScanStatus('success');
             setTimeout(() => {
               stream.getTracks().forEach(t => t.stop());
               handleSuccessLogin();
-            }, 1200);
-          }, 5000);
+            }, 1000);
+          }, 4500);
         };
       }
     } catch (e) {
-      setError(isRtl ? "يتطلب Face ID الوصول للكاميرا" : "Face ID requires camera access");
+      setError(isRtl ? "يتطلب Face ID الوصول للكاميرا. يرجى تفعيل الصلاحية." : "Face ID requires camera access. Please enable it.");
       setIsFaceScanning(false);
       setScanStatus('idle');
     }
@@ -147,7 +164,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
 
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-950/98 backdrop-blur-3xl" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3rem] p-10 border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden relative" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-slate-900 w-full max-sm rounded-[3rem] p-10 border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden relative" onClick={(e) => e.stopPropagation()}>
         
         {isBlocked && (
           <div className="absolute inset-0 bg-rose-600/10 backdrop-blur-xl z-[100] flex flex-col items-center justify-center p-8 text-center animate-in fade-in">
@@ -163,21 +180,19 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
 
         {isFaceScanning ? (
            <div className="flex flex-col items-center gap-6 animate-in fade-in">
-              <div className="relative w-52 h-52 rounded-full overflow-hidden border-4 border-indigo-500/30 shadow-[0_0_30px_rgba(79,70,229,0.2)]">
+              <div className="relative w-56 h-56 rounded-full overflow-hidden border-4 border-indigo-500/30 shadow-[0_0_50px_rgba(79,70,229,0.3)]">
                  <video ref={videoRef} className={`w-full h-full object-cover grayscale brightness-125 ${scanStatus === 'success' ? 'opacity-20' : 'opacity-100'}`} playsInline />
                  
-                 {/* Biometric UI Overlays */}
                  <div className="absolute inset-0 bg-indigo-500/10 pointer-events-none"></div>
                  {scanStatus === 'scanning' && (
-                    <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500/50 animate-[loginScan_2s_infinite] shadow-[0_0_15px_indigo] z-10"></div>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500 shadow-[0_0_20px_indigo] z-10 animate-[biometricScan_2s_infinite]"></div>
                  )}
                  
-                 {/* Grid Overlay */}
                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(0,0,0,0.4)_100%)]"></div>
                  
                  {scanStatus === 'analyzing' && (
                     <div className="absolute inset-0 flex items-center justify-center z-20">
-                       <RefreshCw className="w-12 h-12 text-indigo-400 animate-spin opacity-50" />
+                       <RefreshCw className="w-12 h-12 text-indigo-400 animate-spin" />
                     </div>
                  )}
 
@@ -199,9 +214,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
                        {scanStatus === 'analyzing' && 'COMPUTING_IDENTITY_SCORE [0.99]'}
                        {scanStatus === 'success' && 'WELCOME_MASTER_ADMIN'}
                     </p>
-                    <div className="w-32 h-1 bg-slate-800 rounded-full overflow-hidden">
-                       <div className={`h-full bg-indigo-500 transition-all duration-[5000ms] ${scanStatus === 'scanning' ? 'w-full' : 'w-0'}`} />
-                    </div>
                  </div>
               </div>
 
@@ -216,39 +228,64 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
                  <div className="w-14 h-14 bg-indigo-600/10 rounded-2xl flex items-center justify-center text-indigo-500 shadow-xl shadow-indigo-500/5">
                     <Shield className="w-8 h-8" />
                  </div>
-                 {siteConfig?.face_id_enabled && (
-                    <button 
-                      onClick={startFaceScan}
-                      className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all group active:scale-90"
-                    >
-                       <ScanFace className="w-8 h-8 group-hover:scale-110 transition-transform" />
-                    </button>
-                 )}
+                 {/* Face ID Button - Always Show to encourage enrollment */}
+                 <button 
+                    onClick={startFaceScan}
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all group active:scale-90 shadow-2xl ${siteConfig?.face_id_enabled ? 'bg-indigo-600 text-white shadow-indigo-600/30' : 'bg-slate-800 text-slate-500 opacity-60'}`}
+                    title={siteConfig?.face_id_enabled ? "Face ID Login" : "Face ID Not Enrolled"}
+                 >
+                    <ScanFace className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                 </button>
               </div>
               <button onClick={onClose} className="p-2 text-slate-400 hover:text-rose-500 transition-all"><X className="w-6 h-6" /></button>
             </div>
 
-            <div className="mb-6 text-center md:text-right">
+            <div className={`mb-6 ${isRtl ? 'text-right' : 'text-left'}`}>
                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">{isRtl ? 'نظام الحماية الفائق' : 'GOD-MODE SECURITY'}</h2>
                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{isRtl ? 'يرجى تأكيد الهوية للمتابعة' : 'IDENTITY VERIFICATION REQUIRED'}</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Developer Code Input - Uses config or Default */}
               <div className="space-y-1">
-                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Access Email</label>
+                <label className={`text-[9px] font-black text-amber-500 uppercase tracking-widest px-1 flex items-center gap-1 ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <Terminal className="w-3 h-3" /> {t.developerCode}
+                </label>
+                <input 
+                  type="text" 
+                  value={devCode} 
+                  onChange={(e) => setDevCode(e.target.value.toUpperCase())} 
+                  className={`w-full p-4 bg-amber-500/5 dark:bg-amber-500/10 border ${devCode.toUpperCase() === activeDevCode.toUpperCase() ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'border-amber-500/20'} rounded-2xl dark:text-amber-400 text-xs outline-none focus:border-amber-500 transition-all font-mono tracking-widest ${isRtl ? 'text-right' : 'text-left'}`} 
+                  placeholder={t.devCodePlaceholder} 
+                  disabled={isBlocked}
+                />
+                {devCode.toUpperCase() === activeDevCode.toUpperCase() && (
+                  <div className={`flex items-center gap-1 mt-1 px-1 ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}>
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    <p className="text-[8px] font-black text-emerald-500 uppercase animate-pulse">{t.devCodeSuccess}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative py-2 flex items-center justify-center">
+                 <div className="h-px bg-slate-200 dark:bg-white/5 w-full absolute"></div>
+                 <span className="relative bg-white dark:bg-slate-900 px-4 text-[8px] font-black text-slate-400 uppercase tracking-widest">IDENTITY METHOD</span>
+              </div>
+
+              <div className="space-y-1">
+                <label className={`text-[9px] font-black text-slate-500 uppercase tracking-widest px-1 block ${isRtl ? 'text-right' : 'text-left'}`}>Access Email</label>
                 <input 
                   type="email" 
                   value={email} 
                   onChange={(e) => setEmail(e.target.value)} 
                   className={`w-full p-4 bg-slate-50 dark:bg-slate-800 border border-white/5 rounded-2xl dark:text-white text-xs outline-none focus:border-indigo-500 transition-all ${isRtl ? 'text-right' : 'text-left'}`} 
                   placeholder="admin@imagine.ai" 
-                  required 
                   disabled={isBlocked}
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Pass-Phrase</label>
+                <label className={`text-[9px] font-black text-slate-500 uppercase tracking-widest px-1 block ${isRtl ? 'text-right' : 'text-left'}`}>Pass-Phrase</label>
                 <div className="relative">
                   <input 
                     type={showPassword ? "text" : "password"} 
@@ -256,7 +293,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
                     onChange={(e) => setPassword(e.target.value)} 
                     className={`w-full p-4 bg-slate-50 dark:bg-slate-800 border border-white/5 rounded-2xl dark:text-white text-xs outline-none focus:border-indigo-500 transition-all ${isRtl ? 'text-right' : 'text-left'}`} 
                     placeholder="••••••••" 
-                    required 
                     disabled={isBlocked}
                   />
                   <button 
@@ -283,25 +319,16 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin, langu
               >
                 {t.activateGodModeBtn} <ShieldCheck className="w-4 h-4" />
               </button>
-              
-              {!isBlocked && security.attempts > 0 && (
-                <p className="text-center text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse">
-                  {t.attemptsRemaining}{3 - security.attempts}
-                </p>
-              )}
             </form>
           </>
         )}
       </div>
       <style>{`
-        @keyframes loginScan {
+        @keyframes biometricScan {
           0% { top: 0%; opacity: 0; }
           10% { opacity: 1; }
           90% { opacity: 1; }
           100% { top: 100%; opacity: 0; }
-        }
-        .animate-spin-slow {
-          animation: spin 6s linear infinite;
         }
       `}</style>
     </div>

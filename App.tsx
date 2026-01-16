@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { ModelType, HistoryItem, GenerationSettings, SiteConfig, GenerationType, Language, UserSettings, Message, AppNotification, ModelStrategy, DeviceType } from './types.ts';
+import { ModelType, HistoryItem, GenerationSettings, SiteConfig, GenerationType, Language, UserSettings, Message, AppNotification, ModelStrategy, DeviceType, SYSTEM_VERSION } from './types.ts';
 import Sidebar from './components/Sidebar.tsx';
 import MainPreview from './components/MainPreview.tsx';
 import RightPanel from './components/RightPanel.tsx';
@@ -13,13 +13,13 @@ import ToastNotification from './components/ToastNotification.tsx';
 import SpeechModal from './components/SpeechModal.tsx';
 import HairModal from './components/HairModal.tsx';
 import QrModal from './components/QrModal.tsx';
+import QrDecoderModal from './components/QrDecoderModal.tsx';
 import CodeModal from './components/CodeModal.tsx';
 import { GoogleGenAI, Modality } from "@google/genai";
 import { Fingerprint, Sparkles, History, Loader2, MessageSquare, User as UserIcon, X } from 'lucide-react';
 import { translations } from './translations.ts';
 
-const SYSTEM_VERSION = "2.2.0_FACE_ID_UPDATE";
-
+// Helper for decoding base64 audio
 function decode(base64: string) {
   try {
     const binaryString = atob(base64);
@@ -34,6 +34,7 @@ function decode(base64: string) {
   }
 }
 
+// Helper for decoding raw PCM audio data
 async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
@@ -87,17 +88,23 @@ const App: React.FC = () => {
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => {
     const saved = safeParse('imagine_ai_config', {});
     return {
-      seo_title: 'Imagine AI', seo_desc: 'Professional AI Art',
-      global_html: '', custom_css: '', custom_js: '', ux_blur_intensity: '20px', ux_accent_color: '#6366f1',
+      seo_title: 'Imagine AI', 
+      seo_desc: 'Professional AI Art', 
+      seo_keywords: 'AI, Generative Art, Gemini',
+      global_html: '', custom_css: '', custom_js: '', php_logic: '',
+      https_force: true,
+      ux_blur_intensity: '20px', ux_accent_color: '#6366f1', ux_border_radius: '2rem',
       manager_name: 'Ahmad kharbicha', manager_dob: 'Jan 1, 1987', manager_location: 'SAHTEREANN',
-      manager_pic: 'https://i.pravatar.cc/150?u=manager', site_logo_scale: 1.0, 
+      manager_pic: 'https://i.pravatar.cc/150?u=manager', 
+      site_logo_scale: 1.0, 
       global_api_key: '', api_key_random: '', total_data_usage_bytes: 0,
+      smtp_host: 'smtp.gmail.com', smtp_port: '587', smtp_user: '', smtp_pass: '',
       api_key_text_to_image: '', api_key_logo: '', api_key_tts: '', api_key_smart_edit: '',
       api_key_remove_bg: '', api_key_upscale: '', api_key_virtual_try_on: '',
       api_key_sunglasses: '', api_key_watermark: '', api_key_colorize: '',
       api_key_magic_eraser: '', api_key_cartoonize: '', api_key_restore: '',
       api_key_hair_style: '', api_key_text_to_code: '', api_key_qr_code: '', api_key_image_to_vector: '',
-      face_id_enabled: false, admin_face_ref: '',
+      face_id_enabled: false, admin_face_ref: '', dev_access_code: 'F40T76',
       global_story: { id: 'default', message: 'Welcome to Imagine AI!', active: false, image: '' },
       ...saved
     };
@@ -114,6 +121,7 @@ const App: React.FC = () => {
   const [isSpeechModalOpen, setIsSpeechModalOpen] = useState(false);
   const [isHairModalOpen, setIsHairModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isQrDecoderModalOpen, setIsQrDecoderModalOpen] = useState(false);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [toast, setToast] = useState<AppNotification | null>(null);
@@ -135,6 +143,36 @@ const App: React.FC = () => {
     prompt: '', model: 'Plus', aspectRatio: '1:1', steps: 30, uploadedImage: null
   });
 
+  // Inject Dynamic CSS and Config
+  useEffect(() => {
+    const styleTag = document.getElementById('admin-dynamic-css') as HTMLStyleElement;
+    if (styleTag) {
+      styleTag.textContent = `
+        :root {
+          --primary: ${siteConfig.ux_accent_color};
+          --ux-blur: ${siteConfig.ux_blur_intensity};
+          --ux-radius: ${siteConfig.ux_border_radius};
+        }
+        ${siteConfig.custom_css}
+      `;
+    }
+    
+    // SEO Update
+    document.title = siteConfig.seo_title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', siteConfig.seo_desc);
+    
+    // JS Injection (careful)
+    if (siteConfig.custom_js) {
+      try {
+        const script = document.createElement('script');
+        script.textContent = siteConfig.custom_js;
+        document.body.appendChild(script);
+        return () => { document.body.removeChild(script); };
+      } catch (e) {}
+    }
+  }, [siteConfig]);
+
   useEffect(() => {
     localStorage.setItem('imagine_system_version', SYSTEM_VERSION);
   }, []);
@@ -148,6 +186,7 @@ const App: React.FC = () => {
       localStorage.setItem('imagine_ai_messages', JSON.stringify(messages));
       localStorage.setItem('site_verified_users', JSON.stringify(allUsers));
       localStorage.setItem('banned_emails', JSON.stringify(bannedEmails));
+      localStorage.setItem('admin_identity', JSON.stringify(adminIdentity));
       
       if (activeImage && activeImage.length < 2000000) {
         localStorage.setItem('imagine_active_image', activeImage);
@@ -161,11 +200,11 @@ const App: React.FC = () => {
         localStorage.removeItem('imagine_original_image');
       }
     } catch (e) {}
-  }, [user, siteConfig, userSettings, history, messages, allUsers, bannedEmails, activeImage, originalImage]);
+  }, [user, siteConfig, userSettings, history, messages, allUsers, bannedEmails, activeImage, originalImage, adminIdentity]);
 
   const getEffectiveApiKey = useCallback((specificKey?: string) => {
     return specificKey || siteConfig.global_api_key || siteConfig.api_key_random || userSettings.manualApiKey || process.env.API_KEY || '';
-  }, [siteConfig.global_api_key, siteConfig.api_key_random, userSettings.manualApiKey]);
+  }, [siteConfig.global_api_key, siteConfig.api_key_random, userSettings.manualApiKey, siteConfig.api_key_text_to_image]);
 
   const trackDataUsage = useCallback((dataUrl: string) => {
     if (!dataUrl || !user) return;
@@ -187,7 +226,13 @@ const App: React.FC = () => {
     const p = customPrompt || settings.prompt;
     if (!p.trim()) return;
     setIsGenerating(true);
+    setLoadingStep(0);
     setActiveImage(null);
+    
+    const interval = setInterval(() => {
+      setLoadingStep(prev => (prev + 1) % translations[language].loadingMessages.length);
+    }, 2000);
+
     try {
       let targetKey = getEffectiveApiKey(siteConfig.api_key_text_to_image);
       if (isLogo) targetKey = getEffectiveApiKey(siteConfig.api_key_logo);
@@ -197,7 +242,7 @@ const App: React.FC = () => {
       const ai = new GoogleGenAI({ apiKey: targetKey });
       const modelName = userSettings.modelStrategy === 'fast' ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview';
       
-      let finalPrompt = isLogo ? `Professional minimalist logo for: ${p}, 4k.` : p;
+      let finalPrompt = isLogo ? `Professional minimalist logo for: ${p}, 4k, vector style.` : p;
       if (overrideType === 'TextToCode') {
         finalPrompt = `Beautiful syntax-highlighted code snippet image for: ${p}. Visual Studio Code style, dark theme, professional developer aesthetics.`;
       } else if (overrideType === 'QrCode') {
@@ -207,44 +252,61 @@ const App: React.FC = () => {
       const response = await ai.models.generateContent({
         model: modelName,
         contents: { parts: [{ text: finalPrompt }] },
-        config: { imageConfig: { aspectRatio: "1:1", imageSize: "1K" } }
+        config: { imageConfig: { aspectRatio: settings.aspectRatio as any || "1:1", imageSize: "1K" } }
       });
+
       let resultUrl = '';
       if (response.candidates?.[0]?.content?.parts) {
         for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData) { resultUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`; break; }
+          if (part.inlineData) { 
+            resultUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`; 
+            break; 
+          }
         }
       }
+
       if (resultUrl) {
         trackDataUsage(resultUrl);
         setActiveImage(resultUrl);
         setOriginalImage(resultUrl);
-        setHistory(prev => [{ id: Date.now().toString(), imageUrl: resultUrl, prompt: p, timestamp: new Date(), model: settings.model, type: overrideType || (isLogo ? 'LogoCreation' : 'Generated') }, ...prev].slice(0, 30));
+        setHistory(prev => [{ 
+          id: Date.now().toString(), 
+          imageUrl: resultUrl, 
+          prompt: p, 
+          timestamp: new Date(), 
+          model: settings.model, 
+          type: overrideType || (isLogo ? 'LogoCreation' : 'Generated') 
+        }, ...prev].slice(0, 30));
       }
-    } catch (e: any) { 
-    } finally { setIsGenerating(false); }
-  }, [settings, siteConfig, userSettings.modelStrategy, getEffectiveApiKey, trackDataUsage]);
+    } catch (e: any) {
+      console.error("Generation Error", e);
+    } finally {
+      clearInterval(interval);
+      setIsGenerating(false);
+    }
+  }, [settings, siteConfig, userSettings.modelStrategy, getEffectiveApiKey, trackDataUsage, language]);
 
   const handleImageAction = useCallback(async (type: GenerationType, customPrompt?: string) => {
     const sourceImage = activeImage || settings.uploadedImage;
     if (!sourceImage && type !== 'TextToCode' && type !== 'QrCode') return;
     
     setIsGenerating(true);
+    setLoadingStep(0);
     let specificKey = '';
     let actionPrompt = '';
 
     switch(type) {
-      case 'Cleaned': specificKey = siteConfig.api_key_remove_bg; actionPrompt = "Remove background strictly."; break;
-      case 'Upscaled': specificKey = siteConfig.api_key_upscale; actionPrompt = "Upscale to 4K quality."; break;
-      case 'WatermarkRemoved': specificKey = siteConfig.api_key_watermark; actionPrompt = "Remove watermark."; break;
-      case 'Colorized': specificKey = siteConfig.api_key_colorize; actionPrompt = "Colorize this old photo."; break;
-      case 'Cartoonized': specificKey = siteConfig.api_key_cartoonize; actionPrompt = "Convert to 3D Disney Pixar style cartoon."; break;
-      case 'Restored': specificKey = siteConfig.api_key_restore; actionPrompt = "Restore this old photo, fix scratches and noise."; break;
-      case 'ChangeHairStyle': specificKey = siteConfig.api_key_hair_style; actionPrompt = customPrompt || "Change hair style."; break;
-      case 'ImageToVector': specificKey = siteConfig.api_key_image_to_vector; actionPrompt = "Convert to vector SVG style illustration."; break;
-      case 'VirtualTryOn': specificKey = siteConfig.api_key_virtual_try_on; actionPrompt = "Change clothes for the person in image."; break;
-      case 'AddSunglasses': specificKey = siteConfig.api_key_sunglasses; actionPrompt = "Add cool sunglasses to the person."; break;
-      case 'ObjectRemoved': specificKey = siteConfig.api_key_magic_eraser; actionPrompt = "Remove the main object cleanly."; break;
+      case 'Cleaned': specificKey = siteConfig.api_key_remove_bg; actionPrompt = "Remove background strictly, keep only main subject."; break;
+      case 'Upscaled': specificKey = siteConfig.api_key_upscale; actionPrompt = "Upscale to 4K quality, enhance details and clarity."; break;
+      case 'WatermarkRemoved': specificKey = siteConfig.api_key_watermark; actionPrompt = "Identify and remove watermarks or text from the image cleanly."; break;
+      case 'Colorized': specificKey = siteConfig.api_key_colorize; actionPrompt = "Colorize this old black and white photo with natural, realistic colors."; break;
+      case 'Cartoonized': specificKey = siteConfig.api_key_cartoonize; actionPrompt = "Convert this person/scene into a 3D Disney Pixar style cartoon illustration."; break;
+      case 'Restored': specificKey = siteConfig.api_key_restore; actionPrompt = "Restore this old photo, fix scratches, remove noise, and sharpen facial features."; break;
+      case 'ChangeHairStyle': specificKey = siteConfig.api_key_hair_style; actionPrompt = `Change hair style of the person in the image to: ${customPrompt || "modern stylish cut"}.`; break;
+      case 'ImageToVector': specificKey = siteConfig.api_key_image_to_vector; actionPrompt = "Convert this image into a clean vector SVG style illustration."; break;
+      case 'VirtualTryOn': specificKey = siteConfig.api_key_virtual_try_on; actionPrompt = "Change the clothes for the person in image, keep pose identical."; break;
+      case 'AddSunglasses': specificKey = siteConfig.api_key_sunglasses; actionPrompt = "Add realistic cool sunglasses to the person in the image."; break;
+      case 'ObjectRemoved': specificKey = siteConfig.api_key_magic_eraser; actionPrompt = "Remove the main object from the scene and fill the area realistically."; break;
       default: specificKey = siteConfig.api_key_smart_edit || siteConfig.global_api_key; actionPrompt = customPrompt || "Edit image.";
     }
 
@@ -252,23 +314,44 @@ const App: React.FC = () => {
       const targetKey = getEffectiveApiKey(specificKey);
       const ai = new GoogleGenAI({ apiKey: targetKey });
       const mimeType = sourceImage?.split(';')[0].split(':')[1] || 'image/png';
+      
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: { parts: [{ inlineData: { data: sourceImage?.split(',')[1] || '', mimeType } }, { text: actionPrompt }] }
+        contents: { 
+          parts: [
+            { inlineData: { data: sourceImage?.split(',')[1] || '', mimeType } }, 
+            { text: actionPrompt }
+          ] 
+        }
       });
+
       let resultUrl = '';
       if (response.candidates?.[0]?.content?.parts) {
         for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData) { resultUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`; break; }
+          if (part.inlineData) { 
+            resultUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`; 
+            break; 
+          }
         }
       }
       if (resultUrl) {
         trackDataUsage(resultUrl);
         setActiveImage(resultUrl);
+        setHistory(prev => [{ 
+          id: Date.now().toString(), 
+          imageUrl: resultUrl, 
+          prompt: actionPrompt, 
+          timestamp: new Date(), 
+          model: settings.model, 
+          type: type 
+        }, ...prev].slice(0, 30));
       }
-    } catch (error: any) { 
-    } finally { setIsGenerating(false); }
-  }, [activeImage, settings.uploadedImage, siteConfig, getEffectiveApiKey, trackDataUsage]);
+    } catch (error: any) {
+      console.error("Image Action Error", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [activeImage, settings.uploadedImage, siteConfig, getEffectiveApiKey, trackDataUsage, settings.model]);
 
   const handleGenerateSpeech = useCallback(async (text: string, voice: string) => {
     if (!text.trim()) return;
@@ -311,6 +394,25 @@ const App: React.FC = () => {
     }
   }, [getEffectiveApiKey, siteConfig.api_key_tts]);
 
+  const handleDecodeQr = useCallback(async (imageData: string) => {
+    const targetKey = getEffectiveApiKey(siteConfig.api_key_qr_code);
+    const ai = new GoogleGenAI({ apiKey: targetKey });
+    const mimeType = imageData.split(';')[0].split(':')[1] || 'image/png';
+    const base64 = imageData.split(',')[1];
+    
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: { 
+        parts: [
+          { inlineData: { data: base64, mimeType } },
+          { text: "Read and decode this QR code. Return only the URL or plain text content found within the code. Do not add any explanation or preamble." }
+        ] 
+      }
+    });
+    
+    return response.text || (language === 'ar' ? "لم يتم العثور على محتوى" : "No content found");
+  }, [siteConfig, getEffectiveApiKey, language]);
+
   const handleLogin = useCallback((userData: any, directToAdmin: boolean = false) => {
     setUser(userData);
     if (directToAdmin) {
@@ -319,7 +421,15 @@ const App: React.FC = () => {
   }, []);
 
   const authScreenMemo = useMemo(() => (
-    <AuthScreen onLogin={handleLogin} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} adminIdentity={adminIdentity} siteConfig={siteConfig} />
+    <AuthScreen 
+      onLogin={handleLogin} 
+      language={language} 
+      allUsers={allUsers} 
+      setAllUsers={setAllUsers} 
+      bannedEmails={bannedEmails} 
+      adminIdentity={adminIdentity} 
+      siteConfig={siteConfig} 
+    />
   ), [language, allUsers, setAllUsers, bannedEmails, adminIdentity, handleLogin, siteConfig]);
 
   if (!user) return authScreenMemo;
@@ -347,9 +457,56 @@ const App: React.FC = () => {
       />
       
       <div className="flex-1 flex overflow-hidden relative">
-        <Sidebar isOpen={isSidebarOpen} settings={settings} setSettings={setSettings} onGenerate={() => handleGenerate()} onUpload={(url) => { setActiveImage(url); setSettings(s => ({...s, uploadedImage: url})); }} isGenerating={isGenerating} language={language} onClose={() => setIsSidebarOpen(false)} modelStrategy={userSettings.modelStrategy} setModelStrategy={(s) => setUserSettings(prev => ({ ...prev, modelStrategy: s }))} />
-        <MainPreview imageUrl={activeImage} originalImageUrl={originalImage} isGenerating={isGenerating} loadingStep={loadingStep} prompt={settings.prompt} language={language} isSidebarOpen={isSidebarOpen} isGalleryOpen={isGalleryOpen} onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)} onRemoveBackground={() => handleImageAction('Cleaned')} onUpscale={() => handleImageAction('Upscaled')} onRemoveWatermark={() => handleImageAction('WatermarkRemoved')} onRestore={() => handleImageAction('Restored')} onColorize={() => handleImageAction('Colorized')} onCartoonize={() => handleImageAction('Cartoonized')} onMagicEraser={() => handleImageAction('ObjectRemoved')} onSmartEdit={() => { const p = prompt(translations[language].promptPlaceholder); if(p) handleImageAction('Edited', p); }} onVirtualTryOn={() => handleImageAction('VirtualTryOn')} onAddSunglasses={() => handleImageAction('AddSunglasses')} onChangeHairStyle={() => setIsHairModalOpen(true)} onCreateLogo={() => { const n = prompt(translations[language].logoPrompt); if(n) handleGenerate(n, true); }} onTextToSpeech={() => setIsSpeechModalOpen(true)} onGenerateImage={() => handleGenerate()} onImageToVector={() => handleImageAction('ImageToVector')} onTextToCode={() => setIsCodeModalOpen(true)} onQrCode={() => setIsQrModalOpen(true)} onCancelGeneration={() => setIsGenerating(false)} />
-        <RightPanel isOpen={isGalleryOpen} history={history} onSelect={setActiveImage} onDelete={(id) => setHistory(h => h.filter(x => x.id !== id))} language={language} onClose={() => setIsGalleryOpen(false)} />
+        <Sidebar 
+          isOpen={isSidebarOpen} 
+          settings={settings} 
+          setSettings={setSettings} 
+          onGenerate={() => handleGenerate()} 
+          onUpload={(url) => { setActiveImage(url); setSettings(s => ({...s, uploadedImage: url})); }} 
+          isGenerating={isGenerating} 
+          language={language} 
+          onClose={() => setIsSidebarOpen(false)} 
+          modelStrategy={userSettings.modelStrategy} 
+          setModelStrategy={(s) => setUserSettings(prev => ({ ...prev, modelStrategy: s }))} 
+        />
+        <MainPreview 
+          imageUrl={activeImage} 
+          originalImageUrl={originalImage} 
+          isGenerating={isGenerating} 
+          loadingStep={loadingStep} 
+          prompt={settings.prompt} 
+          language={language} 
+          isSidebarOpen={isSidebarOpen} 
+          isGalleryOpen={isGalleryOpen} 
+          onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)} 
+          onRemoveBackground={() => handleImageAction('Cleaned')} 
+          onUpscale={() => handleImageAction('Upscaled')} 
+          onRemoveWatermark={() => handleImageAction('WatermarkRemoved')} 
+          onRestore={() => handleImageAction('Restored')} 
+          onColorize={() => handleImageAction('Colorized')} 
+          onCartoonize={() => handleImageAction('Cartoonized')} 
+          onMagicEraser={() => handleImageAction('ObjectRemoved')} 
+          onSmartEdit={() => { const p = prompt(translations[language].promptPlaceholder); if(p) handleImageAction('Edited', p); }} 
+          onVirtualTryOn={() => handleImageAction('VirtualTryOn')} 
+          onAddSunglasses={() => handleImageAction('AddSunglasses')} 
+          onChangeHairStyle={() => setIsHairModalOpen(true)} 
+          onCreateLogo={() => { const n = prompt(translations[language].logoPrompt); if(n) handleGenerate(n, true); }} 
+          onTextToSpeech={() => setIsSpeechModalOpen(true)} 
+          onGenerateImage={() => handleGenerate()} 
+          onImageToVector={() => handleImageAction('ImageToVector')} 
+          onTextToCode={() => setIsCodeModalOpen(true)} 
+          onQrCode={() => setIsQrModalOpen(true)} 
+          onDecodeQr={() => setIsQrDecoderModalOpen(true)}
+          onCancelGeneration={() => setIsGenerating(false)} 
+        />
+        <RightPanel 
+          isOpen={isGalleryOpen} 
+          history={history} 
+          onSelect={setActiveImage} 
+          onDelete={(id) => setHistory(h => h.filter(x => x.id !== id))} 
+          language={language} 
+          onClose={() => setIsGalleryOpen(false)} 
+        />
       </div>
 
       {user?.isAdmin && (
@@ -364,14 +521,91 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <AccountModal isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} activeTab={accountTab} setActiveTab={setAccountTab} credits={50} user={user} language={language} userSettings={userSettings} setUserSettings={s => setUserSettings(prev => ({ ...prev, ...s }))} siteConfig={siteConfig} allMessages={messages} onSendMessage={(content) => setMessages(prev => [{ id: Date.now().toString(), senderName: user?.name, senderEmail: user?.email, content, timestamp: new Date(), isRead: false }, ...prev])} />
-      {isAdminOpen && <AdminPanel config={siteConfig} setConfig={setSiteConfig} messages={messages} setMessages={setMessages} onClose={() => setIsAdminOpen(false)} language={language} allUsers={allUsers} setAllUsers={setAllUsers} bannedEmails={bannedEmails} setBannedEmails={setBannedEmails} adminIdentity={adminIdentity} setAdminIdentity={setAdminIdentity} />}
-      {isStoryOpen && siteConfig.global_story?.active && <StoryViewer story={{...siteConfig.global_story, timestamp: Date.now()}} onClose={() => setIsStoryOpen(false)} language={language} siteConfig={siteConfig} />}
+      <AccountModal 
+        isOpen={isAccountOpen} 
+        onClose={() => setIsAccountOpen(false)} 
+        activeTab={accountTab} 
+        setActiveTab={setAccountTab} 
+        credits={50} 
+        user={user} 
+        language={language} 
+        userSettings={userSettings} 
+        setUserSettings={s => setUserSettings(prev => ({ ...prev, ...s }))} 
+        siteConfig={siteConfig} 
+        allMessages={messages} 
+        onSendMessage={(content) => setMessages(prev => [{ id: Date.now().toString(), senderName: user?.name, senderEmail: user?.email, content, timestamp: new Date(), isRead: false }, ...prev])} 
+      />
+      
+      {isAdminOpen && (
+        <AdminPanel 
+          config={siteConfig} 
+          setConfig={setSiteConfig} 
+          messages={messages} 
+          setMessages={setMessages} 
+          onClose={() => setIsAdminOpen(false)} 
+          language={language} 
+          allUsers={allUsers} 
+          setAllUsers={setAllUsers} 
+          bannedEmails={bannedEmails} 
+          setBannedEmails={setBannedEmails} 
+          adminIdentity={adminIdentity} 
+          setAdminIdentity={setAdminIdentity} 
+        />
+      )}
+      
+      {isStoryOpen && siteConfig.global_story?.active && (
+        <StoryViewer 
+          story={{...siteConfig.global_story, timestamp: Date.now()}} 
+          onClose={() => setIsStoryOpen(false)} 
+          language={language} 
+          siteConfig={siteConfig} 
+          onSendMessage={(content) => setMessages(prev => [{ id: Date.now().toString(), senderName: user?.name, senderEmail: user?.email, content, timestamp: new Date(), isRead: false }, ...prev])} 
+        />
+      )}
+      
       <ToastNotification toast={toast} onClose={() => setToast(null)} language={language} />
-      {isSpeechModalOpen && <SpeechModal isOpen={isSpeechModalOpen} onClose={() => setIsSpeechModalOpen(false)} onGenerate={handleGenerateSpeech} language={language} isGenerating={isSpeechGenerating} />}
-      {isHairModalOpen && <HairModal isOpen={isHairModalOpen} onClose={() => setIsHairModalOpen(false)} onApply={(p) => handleImageAction('ChangeHairStyle', p)} language={language} />}
-      <QrModal isOpen={isQrModalOpen} onClose={() => setIsQrModalOpen(false)} onGenerate={(url) => handleGenerate(url, false, 'QrCode')} language={language} isGenerating={isGenerating} />
-      <CodeModal isOpen={isCodeModalOpen} onClose={() => setIsCodeModalOpen(false)} onGenerate={(p) => handleGenerate(p, false, 'TextToCode')} language={language} isGenerating={isGenerating} />
+      
+      {isSpeechModalOpen && (
+        <SpeechModal 
+          isOpen={isSpeechModalOpen} 
+          onClose={() => setIsSpeechModalOpen(false)} 
+          onGenerate={handleGenerateSpeech} 
+          language={language} 
+          isGenerating={isSpeechGenerating} 
+        />
+      )}
+      
+      {isHairModalOpen && (
+        <HairModal 
+          isOpen={isHairModalOpen} 
+          onClose={() => setIsHairModalOpen(false)} 
+          onApply={(p) => handleImageAction('ChangeHairStyle', p)} 
+          language={language} 
+        />
+      )}
+      
+      <QrModal 
+        isOpen={isQrModalOpen} 
+        onClose={() => setIsQrModalOpen(false)} 
+        onGenerate={(url) => handleGenerate(url, false, 'QrCode')} 
+        language={language} 
+        isGenerating={isGenerating} 
+      />
+      
+      <QrDecoderModal 
+        isOpen={isQrDecoderModalOpen} 
+        onClose={() => setIsQrDecoderModalOpen(false)} 
+        onDecode={handleDecodeQr} 
+        language={language} 
+      />
+      
+      <CodeModal 
+        isOpen={isCodeModalOpen} 
+        onClose={() => setIsCodeModalOpen(false)} 
+        onGenerate={(p) => handleGenerate(p, false, 'TextToCode')} 
+        language={language} 
+        isGenerating={isGenerating} 
+      />
     </div>
   );
 };

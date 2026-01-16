@@ -185,8 +185,15 @@ export const translations = {
     textToCodeDesc: "تحويل الوصف لبرمجية",
     qrCode: "رابط إلى QR",
     qrCodeDesc: "إنشاء رمز QR ذكي",
+    qrDecoder: "فك شفرة QR",
+    qrDecoderDesc: "قراءة الروابط من الصور",
+    qrDecoderTitle: "ماسح الأكواد الذكي",
+    qrDecoderPlaceholder: "ارفع صورة الـ QR كود هنا لتحليلها...",
     enterCodePrompt: "ما الذي تريد برمجته؟ (مثال: واجهة تسجيل دخول بـ React)",
-    enterUrlPrompt: "أدخل الرابط المراد تحويله لـ QR"
+    enterUrlPrompt: "أدخل الرابط المراد تحويله لـ QR",
+    developerCode: "كود وصول المطورين",
+    devCodePlaceholder: "أدخل الكود السري (Master Key)",
+    devCodeSuccess: "تم التعرف على هوية المطور"
   },
   en: {
     appName: "IMAGINE AI",
@@ -373,7 +380,14 @@ export const translations = {
     textToCodeDesc: "Convert text to dev code",
     qrCode: "URL to QR",
     qrCodeDesc: "Smart QR Generator",
-    enterCodePrompt: "What do you want to code? (e.g. React Login UI)",
-    enterUrlPrompt: "Enter URL to convert to QR"
+    qrDecoder: "QR Decoder",
+    qrDecoderDesc: "Read links from images",
+    qrDecoderTitle: "Smart Code Scanner",
+    qrDecoderPlaceholder: "Upload QR image here to analyze...",
+    enterCodePrompt: "What do you want to code? (e.g. React Logic UI)",
+    enterUrlPrompt: "Enter URL to convert to QR",
+    developerCode: "Developer Access Code",
+    devCodePlaceholder: "Enter secret Master Key",
+    devCodeSuccess: "Developer Identity Confirmed"
   }
 };

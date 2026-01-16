@@ -1,7 +1,10 @@
 
+// System-wide version constant
+export const SYSTEM_VERSION = "2.2.1_STABLE_ADMIN";
+
 export type Language = 'ar' | 'en';
 export type ModelType = 'Base' | 'Plus';
-export type GenerationType = 'Generated' | 'Edited' | 'Upscaled' | 'Cleaned' | 'WatermarkRemoved' | 'Colorized' | 'ObjectRemoved' | 'Cartoonized' | 'Restored' | 'SketchToImage' | 'VirtualTryOn' | 'Outpainted' | 'BackgroundChanged' | 'AddSunglasses' | 'LogoCreation' | 'ImageToVector' | 'ChangeHairStyle' | 'TextToCode' | 'QrCode';
+export type GenerationType = 'Generated' | 'Edited' | 'Upscaled' | 'Cleaned' | 'WatermarkRemoved' | 'Colorized' | 'ObjectRemoved' | 'Cartoonized' | 'Restored' | 'SketchToImage' | 'VirtualTryOn' | 'Outpainted' | 'BackgroundChanged' | 'AddSunglasses' | 'LogoCreation' | 'ImageToVector' | 'ChangeHairStyle' | 'TextToCode' | 'QrCode' | 'QrDecoder';
 
 export type ThemeMode = 'light' | 'dark';
 export type FontFamily = 'classic' | 'modern' | 'comfort';
@@ -66,17 +69,20 @@ export interface UserSettings {
   deviceType: DeviceType;
 }
 
-export type AdminTab = 'SEO' | 'GLOBAL_HTML' | 'CSS' | 'JS' | 'PHP_LOGIC' | 'UX_CONFIG' | 'MESSAGES' | 'MANAGER_PROFILE' | 'USERS' | 'GLOBAL_STORY' | 'ADMIN_SECURITY' | 'API_SETTINGS' | 'BANDWIDTH_STATS';
+export type AdminTab = 'DASHBOARD' | 'API_SETTINGS' | 'MESSAGES' | 'USERS' | 'MANAGER_PROFILE' | 'GLOBAL_STORY' | 'UX_CONFIG' | 'ADMIN_SECURITY' | 'DEV_TOOLS' | 'SYSTEM_CONFIG';
 
 export interface SiteConfig {
   seo_title: string;
   seo_desc: string;
+  seo_keywords?: string;
   global_html: string;
   custom_css: string;
   custom_js: string;
   php_logic: string;
+  https_force?: boolean;
   ux_blur_intensity: string;
   ux_accent_color: string;
+  ux_border_radius?: string;
   manager_name: string;
   manager_dob: string;
   manager_location: string;
@@ -105,6 +111,11 @@ export interface SiteConfig {
   api_key_image_to_vector?: string;
   face_id_enabled?: boolean;
   admin_face_ref?: string;
+  dev_access_code?: string;
+  smtp_host?: string;
+  smtp_port?: string;
+  smtp_user?: string;
+  smtp_pass?: string;
   global_story?: {
     id: string;
     image?: string;
