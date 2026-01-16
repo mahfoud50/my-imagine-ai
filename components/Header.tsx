@@ -10,6 +10,7 @@ interface HeaderProps {
   isPaid?: boolean;
   language: Language;
   siteConfig?: SiteConfig;
+  isStorySeen?: boolean;
   notifications: AppNotification[];
   onMarkAllRead: () => void;
   onToggleLang: () => void;
@@ -25,7 +26,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  credits, user, isPaid, language, siteConfig, notifications, onMarkAllRead, 
+  credits, user, isPaid, language, siteConfig, isStorySeen, notifications, onMarkAllRead, 
   onToggleLang, onUpgrade, onProfile, onOpenInbox, onOpenStory, onCredits, onSettings, onLogout, onToggleSidebar, onAdmin 
 }) => {
   const t = translations[language];
@@ -65,9 +66,12 @@ const Header: React.FC<HeaderProps> = ({
     e.stopPropagation();
     if (isStoryActive && onOpenStory) {
       onOpenStory();
-    } else {
-      setIsProfileOpen(!isProfileOpen);
     }
+  };
+
+  const handleInfoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsProfileOpen(!isProfileOpen);
   };
 
   const getNotifIcon = (type: string) => {
@@ -107,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({
               className="w-auto object-contain transition-all hover:scale-105"
               style={{ 
                 height: `${(siteConfig.site_logo_scale || 1) * 20}px`, 
-                maxHeight: '36px',
+                maxHeight: '130px',
                 minHeight: '14px'
               }}
               onError={() => setLogoError(true)}
@@ -177,12 +181,11 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-1 md:gap-3 relative" ref={dropdownRef}>
-          {/* Profile Section - Enhanced and Always Visible */}
+          {/* بخش المعلومات - يفتح القائمة المنسدلة عند الضغط عليه */}
           <div 
-            onClick={handleAvatarClick}
+            onClick={handleInfoClick}
             className={`flex items-center gap-2 md:gap-3 px-2 py-1.5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all group ${isProfileOpen ? 'bg-white/15' : ''} border border-transparent hover:border-white/10`}
           >
-            {/* Toggle Arrow (^) - Now clearly visible as requested */}
             <div className={`p-1 rounded-lg text-slate-400 group-hover:text-indigo-400 transition-all transform ${isProfileOpen ? 'rotate-180 text-[#00d2ff]' : ''}`}>
                <CaretIcon className="w-3.5 h-3.5 md:w-4 md:h-4 stroke-[3]" />
             </div>
@@ -195,15 +198,19 @@ const Header: React.FC<HeaderProps> = ({
                  {credits} <Zap className="w-2 h-2 fill-current" />
               </span>
             </div>
+          </div>
 
-            <div className={`relative p-0.5 rounded-full ${isStoryActive ? 'bg-rose-600 shadow-[0_0_12px_rgba(225,29,72,0.6)] animate-pulse' : 'bg-transparent'}`}>
-              <div className="rounded-full bg-[#0f172a] p-0.5">
-                <img 
-                  src={user?.profilePic || `https://i.pravatar.cc/150?u=${user?.name}`} 
-                  className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-indigo-500/30 group-hover:border-[#00d2ff] object-cover transition-all" 
-                  alt="Avatar"
-                />
-              </div>
+          {/* بخش الصورة - يفتح الستوري حصراً */}
+          <div 
+            onClick={handleAvatarClick}
+            className={`relative p-0.5 rounded-full cursor-pointer group transition-all active:scale-95 ${isStoryActive ? (isStorySeen ? 'bg-slate-700/50' : 'bg-rose-600 shadow-[0_0_12px_rgba(225,29,72,0.6)] animate-pulse') : 'bg-transparent'}`}
+          >
+            <div className="rounded-full bg-[#0f172a] p-0.5">
+              <img 
+                src={user?.profilePic || `https://i.pravatar.cc/150?u=${user?.name}`} 
+                className={`w-8 h-8 md:w-10 md:h-10 rounded-full border ${isStoryActive && !isStorySeen ? 'border-transparent' : 'border-indigo-500/30'} group-hover:border-[#00d2ff] object-cover transition-all`} 
+                alt="Avatar"
+              />
             </div>
           </div>
 

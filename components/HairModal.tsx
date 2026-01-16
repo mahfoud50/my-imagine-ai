@@ -38,8 +38,14 @@ const HairModal: React.FC<HairModalProps> = ({ isOpen, onClose, onApply, languag
   const isRtl = language === 'ar';
 
   return (
-    <div className="fixed inset-0 z-[3500] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-2xl animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl border dark:border-white/10 overflow-hidden relative">
+    <div 
+      className="fixed inset-0 z-[3500] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-2xl animate-in fade-in duration-300 cursor-pointer"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl border dark:border-white/10 overflow-hidden relative cursor-default"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button onClick={onClose} className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-2 text-slate-400 hover:text-rose-500 transition-all`}>
           <X className="w-6 h-6" />
         </button>
@@ -85,7 +91,7 @@ const HairModal: React.FC<HairModalProps> = ({ isOpen, onClose, onApply, languag
                   className={`w-full p-4 bg-slate-50 dark:bg-slate-800 border dark:border-white/5 rounded-2xl outline-none focus:border-amber-500 transition-all text-xs font-bold dark:text-white ${isRtl ? 'text-right' : 'text-left'}`}
                 />
                 <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'left-4' : 'right-4'} text-slate-400`}>
-                   <Wand2 className="w-4 h-4" />
+                   < Wand2 className="w-4 h-4" />
                 </div>
              </div>
 

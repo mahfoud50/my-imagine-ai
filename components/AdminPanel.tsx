@@ -11,7 +11,7 @@ import {
   LayoutDashboard, BarChart3, Activity, User as UserIcon,
   Dice5, Database, Cloud, ChevronRight, ChevronLeft, QrCode, Layers, ScanFace,
   CheckCircle2, AlertTriangle, ShieldX, Zap, Server, Search as SearchIcon, Mail, Link, Type, 
-  Trash2 as TrashIcon, Ghost, MoveDiagonal
+  Trash2 as TrashIcon, Ghost, MoveDiagonal, Wand
 } from 'lucide-react';
 import { translations } from '../translations.ts';
 
@@ -52,6 +52,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const toggleKeyVisibility = (key: string) => {
     setVisibleKeys(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const generateRandomGeminiKey = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    let result = 'AIzaSy'; // Gemini API Key Prefix
+    for (let i = 0; i < 33; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setTempConfig(prev => ({ ...prev, api_key_random: result }));
   };
 
   const handleUpdateSystem = () => {
@@ -104,11 +113,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const renderApiKeyInput = (label: string, configKey: keyof SiteConfig, icon: any, color: string) => (
+  const renderApiKeyInput = (label: string, configKey: keyof SiteConfig, icon: any, color: string, showGenerator?: boolean) => (
     <div className="space-y-2 bg-slate-900/60 p-4 rounded-2xl border border-white/5 group hover:border-indigo-500/30 transition-all">
-      <div className="flex items-center gap-2 mb-1">
-        <div className={`p-2 rounded-lg ${color} text-white shadow-lg`}>{icon}</div>
-        <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{label}</label>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <div className={`p-2 rounded-lg ${color} text-white shadow-lg`}>{icon}</div>
+          <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{label}</label>
+        </div>
+        {showGenerator && (
+          <button 
+            onClick={generateRandomGeminiKey}
+            className="p-1.5 text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-all flex items-center gap-1.5 group/gen"
+            title={isRtl ? 'توليد مفتاح عشوائي' : 'Generate Random Key'}
+          >
+            <Dice5 className="w-3.5 h-3.5 group-hover/gen:rotate-180 transition-transform duration-500" />
+            <span className="text-[8px] font-black uppercase tracking-tighter">{isRtl ? 'توليد' : 'GENERATE'}</span>
+          </button>
+        )}
       </div>
       <div className="relative">
         <input 
@@ -219,7 +240,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {renderApiKeyInput(isRtl ? 'المفتاح العالمي (Global)' : 'Global API Key', 'global_api_key', <Globe className="w-4 h-4"/>, 'bg-indigo-600')}
-                    {renderApiKeyInput(isRtl ? 'المفتاح العشوائي (Random Fallback)' : 'Random API Key', 'api_key_random', <Dice5 className="w-4 h-4"/>, 'bg-slate-600')}
+                    {renderApiKeyInput(isRtl ? 'المفتاح العشوائي (Random Fallback)' : 'Random API Key', 'api_key_random', <Dice5 className="w-4 h-4"/>, 'bg-slate-600', true)}
                   </div>
                 </div>
 
@@ -426,7 +447,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                 <input 
                                   type="range" 
                                   min="0.5" 
-                                  max="2.5" 
+                                  max="10.0" 
                                   step="0.1" 
                                   value={tempConfig.site_logo_scale || 1} 
                                   onChange={e => setTempConfig({...tempConfig, site_logo_scale: parseFloat(e.target.value)})} 

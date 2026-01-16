@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Fingerprint, ShieldAlert, RefreshCcw, Timer, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, AtSign, Monitor, Smartphone, Laptop, Apple } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Fingerprint, ShieldAlert, RefreshCcw, Timer, AlertCircle, CheckCircle, AtSign, Monitor, Smartphone, Laptop, Apple, Sparkles } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { Language, DeviceType, SiteConfig } from '../types.ts';
 import { translations } from '../translations.ts';
@@ -29,7 +29,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
   const [enteredOtp, setEnteredOtp] = useState('');
   const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -126,8 +125,12 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
   const isRtl = language === 'ar';
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#0f172a] p-4 overflow-hidden">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black p-4 overflow-hidden">
       
+      {/* Decorative Background Elements - Subtler for Black Theme */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-900/20 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-rose-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+
       <div className="fixed bottom-8 left-0 w-full flex justify-center z-[400] pointer-events-none">
         <button 
           type="button" 
@@ -140,11 +143,11 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
       </div>
 
       {isVerifyingOtp ? (
-        <div className="w-full max-md p-10 bg-white dark:bg-slate-900 rounded-[2.5rem] text-center shadow-2xl border dark:border-white/5 animate-in zoom-in-95 duration-300">
-            <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <ShieldCheck className="w-8 h-8 text-indigo-600" />
+        <div className="w-full max-w-md p-10 bg-slate-950 rounded-[3rem] text-center shadow-2xl border border-white/5 animate-in zoom-in-95 duration-300 relative">
+            <div className="w-16 h-16 bg-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <ShieldCheck className="w-8 h-8 text-indigo-500" />
             </div>
-            <h2 className="text-2xl font-black mb-2 text-slate-900 dark:text-white">{t.enterOtp}</h2>
+            <h2 className="text-2xl font-black mb-2 text-white">{t.enterOtp}</h2>
             <p className="text-[11px] text-slate-500 mb-8">{language === 'ar' ? 'أدخل الرمز المرسل إلى بريدك لتأكيد الهوية' : 'Enter the code sent to your email to verify identity'}</p>
             <form onSubmit={handleVerifyOtp} className="space-y-6">
                 <input 
@@ -152,7 +155,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
                   maxLength={6} 
                   value={enteredOtp} 
                   onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g,''))} 
-                  className="w-full py-5 bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-2xl text-center text-4xl font-black dark:text-white outline-none focus:border-indigo-500 transition-all" 
+                  className="w-full py-5 bg-slate-900 border-2 border-dashed border-white/10 rounded-2xl text-center text-4xl font-black text-white outline-none focus:border-indigo-500 transition-all" 
                   placeholder="000000" 
                 />
                 <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition-all active:scale-95">
@@ -179,100 +182,79 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
             </form>
         </div>
       ) : (
-        <div className="w-full max-w-5xl flex bg-[#1e293b] rounded-[3rem] shadow-2xl overflow-hidden border border-white/5 z-10 animate-in fade-in duration-500">
-            <div className="hidden lg:flex w-5/12 bg-[#0f172a] p-16 flex-col justify-center text-white relative overflow-hidden">
-                <div className="absolute -top-20 -left-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px]"></div>
-                <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-rose-600/10 rounded-full blur-[100px]"></div>
+        <div className="w-full max-w-md bg-slate-950 rounded-[3rem] shadow-2xl border border-white/5 z-10 animate-in fade-in duration-500 overflow-hidden relative">
+            <div className="p-8 md:p-10 flex flex-col items-center">
                 
-                <h2 className="text-3xl font-black relative z-10 tracking-tighter">IMAGINE <span className="text-indigo-400">AI</span></h2>
-                <h1 className="text-5xl font-black mt-8 leading-tight relative z-10">{isRtl ? 'حوّل كلماتك إلى فن مذهل' : 'Transform words into stunning art'}</h1>
-                <p className="mt-6 text-slate-400 font-medium relative z-10">{isRtl ? 'انضم إلى آلاف المبدعين واستخدم أقوى نماذج الذكاء الاصطناعي لتوليد الصور.' : 'Join thousands of creators and use the most powerful AI models to generate images.'}</p>
-            </div>
-            <div className="w-full lg:w-7/12 p-8 md:p-12 flex flex-col justify-center bg-slate-900/50 relative">
-                <form onSubmit={handleAuthSubmit} className="space-y-4 max-w-md mx-auto w-full relative z-10">
-                    <div className="text-center mb-8">
-                      <h2 className="text-3xl font-black text-white">{isLogin ? t.creatorsLogin : t.startSailing}</h2>
-                      <p className="text-slate-500 text-xs mt-2 font-bold uppercase tracking-widest">{isLogin ? (isRtl ? 'أهلاً بك مجدداً في مختبرك' : 'Welcome back to your lab') : (isRtl ? 'أنشئ حسابك المجاني اليوم' : 'Create your free account today')}</p>
-                    </div>
+                {/* Brand Header */}
+                <div className="flex flex-col items-center mb-8">
+                  <div className="w-16 h-16 bg-indigo-600 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-indigo-600/20 mb-4 animate-in slide-in-from-top-4 duration-700">
+                    <Sparkles className="w-8 h-8" />
+                  </div>
+                  <h2 className="text-2xl font-black text-white tracking-tighter">IMAGINE <span className="text-indigo-600">AI</span></h2>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">{isLogin ? t.creatorsLogin : t.startSailing}</p>
+                </div>
 
-                    {successMsg && (
-                      <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2 mb-2">
-                        <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                        <p className="text-emerald-500 text-xs font-bold leading-tight">{successMsg}</p>
-                      </div>
-                    )}
+                {successMsg && (
+                  <div className="w-full p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2 mb-6">
+                    <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                    <p className="text-emerald-500 text-xs font-bold leading-tight">{successMsg}</p>
+                  </div>
+                )}
 
+                <form onSubmit={handleAuthSubmit} className="space-y-4 w-full relative z-10">
+                    
                     {!isLogin && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-bottom-2">
+                      <div className="grid grid-cols-1 gap-4 animate-in slide-in-from-bottom-2">
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">{t.fullName}</label>
-                          <input type="text" required placeholder={t.fullNamePlaceholder} value={name} onChange={(e) => setName(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-700" />
+                          <input type="text" required placeholder={t.fullNamePlaceholder} value={name} onChange={(e) => setName(e.target.value)} className={`w-full p-3.5 bg-black text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-600 ${isRtl ? 'text-right' : 'text-left'}`} />
                         </div>
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">{t.username}</label>
-                          <input type="text" required placeholder={t.usernamePlaceholder} value={username} onChange={(e) => setUsername(e.target.value.replace(/\s+/g, '').toLowerCase())} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-700" />
+                          <input type="text" required placeholder={t.usernamePlaceholder} value={username} onChange={(e) => setUsername(e.target.value.replace(/\s+/g, '').toLowerCase())} className={`w-full p-3.5 bg-black text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-600 ${isRtl ? 'text-right' : 'text-left'}`} />
                         </div>
                       </div>
                     )}
 
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Email Address</label>
-                      <input type="email" required placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-700" />
+                      <input type="email" required placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className={`w-full p-3.5 bg-black text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-600 ${isRtl ? 'text-right' : 'text-left'}`} />
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Secure Password</label>
                       <div className="relative">
-                        <input type={showPassword ? "text" : "password"} required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-700" />
+                        <input type={showPassword ? "text" : "password"} required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full p-3.5 bg-black text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-600 ${isRtl ? 'text-right pr-3.5 pl-12' : 'text-left pl-3.5 pr-12'}`} />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute ${isRtl ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-slate-500 hover:text-indigo-400 transition-colors`}>
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
                     </div>
 
-                    <div className="space-y-4 pt-4">
-                       <div className="flex items-center justify-between px-1">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{isRtl ? 'اختر واجهة الجهاز' : 'Choose Device Interface'}</label>
-                          <div className="h-px bg-indigo-500/20 flex-1 ml-4"></div>
-                       </div>
-                       
-                       <div className="grid grid-cols-3 gap-3">
-                          <button 
-                            type="button" 
-                            onClick={() => setDeviceType('pc')} 
-                            className={`group relative flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 overflow-hidden ${deviceType === 'pc' ? 'bg-indigo-600 border-indigo-500 shadow-[0_0_25px_rgba(79,70,229,0.4)] scale-105' : 'bg-[#0f172a]/50 border-white/5 hover:border-indigo-500/30'}`}
-                          >
-                             {deviceType === 'pc' && <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>}
-                             <Laptop className={`w-7 h-7 mb-2 transition-all ${deviceType === 'pc' ? 'text-white scale-110 drop-shadow-lg' : 'text-slate-500 group-hover:text-indigo-400'}`} />
-                             <span className={`text-[11px] font-black tracking-tight ${deviceType === 'pc' ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>Pc</span>
-                          </button>
-                          
-                          <button 
-                            type="button" 
-                            onClick={() => setDeviceType('android')} 
-                            className={`group relative flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 overflow-hidden ${deviceType === 'android' ? 'bg-emerald-600 border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.4)] scale-105' : 'bg-[#0f172a]/50 border-white/5 hover:border-emerald-500/30'}`}
-                          >
-                             {deviceType === 'android' && <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>}
-                             <Smartphone className={`w-7 h-7 mb-2 transition-all ${deviceType === 'android' ? 'text-white scale-110 drop-shadow-lg' : 'text-slate-500 group-hover:text-emerald-400'}`} />
-                             <span className={`text-[11px] font-black tracking-tight ${deviceType === 'android' ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>Android</span>
-                          </button>
-                          
-                          <button 
-                            type="button" 
-                            onClick={() => setDeviceType('iphone')} 
-                            className={`group relative flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 overflow-hidden ${deviceType === 'iphone' ? 'bg-white border-slate-100 shadow-[0_0_25px_rgba(255,255,255,0.2)] scale-105' : 'bg-[#0f172a]/50 border-white/5 hover:border-slate-400/30'}`}
-                          >
-                             {deviceType === 'iphone' && <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent"></div>}
-                             <Apple className={`w-7 h-7 mb-2 transition-all ${deviceType === 'iphone' ? 'text-slate-900 scale-110 drop-shadow-md' : 'text-slate-500 group-hover:text-white'}`} />
-                             <span className={`text-[11px] font-black tracking-tight ${deviceType === 'iphone' ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-200'}`}>iPhone</span>
-                          </button>
-                       </div>
-                    </div>
+                    {isLogin && (
+                      <div className="space-y-3 pt-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block text-center">{isRtl ? 'اختر الواجهة' : 'Select Interface'}</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            <button type="button" onClick={() => setDeviceType('pc')} className={`flex flex-col items-center justify-center p-2 rounded-2xl border transition-all ${deviceType === 'pc' ? 'bg-indigo-600/10 border-indigo-600 text-indigo-600' : 'bg-transparent border-white/5 text-slate-500'}`}>
+                               <Laptop className="w-5 h-5 mb-1" />
+                               <span className="text-[8px] font-black uppercase">Pc</span>
+                            </button>
+                            <button type="button" onClick={() => setDeviceType('android')} className={`flex flex-col items-center justify-center p-2 rounded-2xl border transition-all ${deviceType === 'android' ? 'bg-emerald-600/10 border-emerald-600 text-emerald-600' : 'bg-transparent border-white/5 text-slate-500'}`}>
+                               <Smartphone className="w-5 h-5 mb-1" />
+                               <span className="text-[8px] font-black uppercase">Android</span>
+                            </button>
+                            <button type="button" onClick={() => setDeviceType('iphone')} className={`flex flex-col items-center justify-center p-2 rounded-2xl border transition-all ${deviceType === 'iphone' ? 'bg-indigo-600/10 border-indigo-600 text-indigo-600' : 'bg-transparent border-white/5 text-slate-500'}`}>
+                               <Apple className="w-5 h-5 mb-1" />
+                               <span className="text-[8px] font-black uppercase">iPhone</span>
+                            </button>
+                        </div>
+                      </div>
+                    )}
 
                     {!isLogin && (
                       <div className="space-y-1 animate-in slide-in-from-bottom-2">
                         <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">{t.confirmPassword}</label>
-                        <input type="password" required placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full p-3.5 bg-[#0f172a] text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-700" />
+                        <input type="password" required placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={`w-full p-3.5 bg-black text-white rounded-xl border border-white/5 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-600 ${isRtl ? 'text-right' : 'text-left'}`} />
                       </div>
                     )}
 
@@ -283,12 +265,12 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, allUsers, se
                       </div>
                     )}
 
-                    <button type="submit" disabled={isLoading} className="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black flex items-center justify-center gap-3 shadow-2xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 mt-6 group">
+                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-2xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 mt-4 group">
                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isLogin ? t.loginBtn : t.signupBtn)}
-                        <ArrowRight className={`w-5 h-5 transition-transform group-hover:translate-x-1 ${isRtl ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
+                        <ArrowRight className={`w-4 h-4 transition-transform group-hover:translate-x-1 ${isRtl ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
                     </button>
                     
-                    <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }} className="w-full text-slate-400 text-xs mt-8 font-bold text-center group">
+                    <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }} className="w-full text-slate-500 text-[11px] mt-6 font-bold text-center group">
                         {isLogin ? t.noAccount : t.haveAccount} 
                         <span className="text-indigo-400 mx-2 group-hover:underline transition-all underline-offset-4">{isLogin ? t.signupLink : t.loginLink}</span>
                     </button>

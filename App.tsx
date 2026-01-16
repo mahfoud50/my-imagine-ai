@@ -15,8 +15,12 @@ import HairModal from './components/HairModal.tsx';
 import QrModal from './components/QrModal.tsx';
 import QrDecoderModal from './components/QrDecoderModal.tsx';
 import CodeModal from './components/CodeModal.tsx';
+import LogoModal from './components/LogoModal.tsx';
+import EditModal from './components/EditModal.tsx';
+import ConfirmModal from './components/ConfirmModal.tsx';
 import { GoogleGenAI, Modality } from "@google/genai";
-import { Fingerprint, Sparkles, History, Loader2, MessageSquare, User as UserIcon, X } from 'lucide-react';
+// Added missing icons to fix "Cannot find name" errors in JSX
+import { Fingerprint, Sparkles, History, Loader2, MessageSquare, User as UserIcon, X, Eraser, Maximize2, Scissors, Palette, Smile, Wind, Shirt, Eye, Layers } from 'lucide-react';
 import { translations } from './translations.ts';
 
 // Helper for decoding base64 audio
@@ -85,6 +89,8 @@ const App: React.FC = () => {
     password: "Mah7foud23" 
   }));
   
+  const [isStorySeen, setIsStorySeen] = useState<boolean>(() => safeParse('imagine_story_seen', false));
+
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => {
     const saved = safeParse('imagine_ai_config', {});
     return {
@@ -96,7 +102,7 @@ const App: React.FC = () => {
       ux_blur_intensity: '20px', ux_accent_color: '#6366f1', ux_border_radius: '2rem',
       manager_name: 'Ahmad kharbicha', manager_dob: 'Jan 1, 1987', manager_location: 'SAHTEREANN',
       manager_pic: 'https://i.pravatar.cc/150?u=manager', 
-      site_logo_scale: 1.0, 
+      site_logo_scale: 6.5, 
       global_api_key: '', api_key_random: '', total_data_usage_bytes: 0,
       smtp_host: 'smtp.gmail.com', smtp_port: '587', smtp_user: '', smtp_pass: '',
       api_key_text_to_image: '', api_key_logo: '', api_key_tts: '', api_key_smart_edit: '',
@@ -123,6 +129,11 @@ const App: React.FC = () => {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isQrDecoderModalOpen, setIsQrDecoderModalOpen] = useState(false);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [confirmTool, setConfirmTool] = useState<{type: GenerationType, name: string, icon: any, color: string} | null>(null);
+
   const [loadingStep, setLoadingStep] = useState(0);
   const [toast, setToast] = useState<AppNotification | null>(null);
   
@@ -166,7 +177,7 @@ const App: React.FC = () => {
     if (siteConfig.custom_js) {
       try {
         const script = document.createElement('script');
-        script.textContent = siteConfig.custom_js;
+        script.textContent = script.textContent;
         document.body.appendChild(script);
         return () => { document.body.removeChild(script); };
       } catch (e) {}
@@ -187,6 +198,7 @@ const App: React.FC = () => {
       localStorage.setItem('site_verified_users', JSON.stringify(allUsers));
       localStorage.setItem('banned_emails', JSON.stringify(bannedEmails));
       localStorage.setItem('admin_identity', JSON.stringify(adminIdentity));
+      localStorage.setItem('imagine_story_seen', JSON.stringify(isStorySeen));
       
       if (activeImage && activeImage.length < 2000000) {
         localStorage.setItem('imagine_active_image', activeImage);
@@ -200,7 +212,7 @@ const App: React.FC = () => {
         localStorage.removeItem('imagine_original_image');
       }
     } catch (e) {}
-  }, [user, siteConfig, userSettings, history, messages, allUsers, bannedEmails, activeImage, originalImage, adminIdentity]);
+  }, [user, siteConfig, userSettings, history, messages, allUsers, bannedEmails, activeImage, originalImage, adminIdentity, isStorySeen]);
 
   const getEffectiveApiKey = useCallback((specificKey?: string) => {
     return specificKey || siteConfig.global_api_key || siteConfig.api_key_random || userSettings.manualApiKey || process.env.API_KEY || '';
@@ -420,6 +432,11 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const handleOpenStory = useCallback(() => {
+    setIsStorySeen(true);
+    setIsStoryOpen(true);
+  }, []);
+
   const authScreenMemo = useMemo(() => (
     <AuthScreen 
       onLogin={handleLogin} 
@@ -443,13 +460,14 @@ const App: React.FC = () => {
         user={user} 
         language={language} 
         siteConfig={siteConfig} 
+        isStorySeen={isStorySeen}
         notifications={notifications} 
         onMarkAllRead={() => setNotifications(prev => prev.map(n => ({...n, isRead: true})))} 
         onToggleLang={() => setLanguage(l => l === 'ar' ? 'en' : 'ar')} 
         onUpgrade={() => { setAccountTab('credits'); setIsAccountOpen(true); }} 
         onProfile={() => { setAccountTab('profile'); setIsAccountOpen(true); }} 
         onOpenInbox={() => { setAccountTab('manager'); setIsAccountOpen(true); }} 
-        onOpenStory={() => setIsStoryOpen(true)} 
+        onOpenStory={handleOpenStory} 
         onLogout={() => setUser(null)} 
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
         onAdmin={() => setIsAdminOpen(true)}
@@ -479,21 +497,21 @@ const App: React.FC = () => {
           isSidebarOpen={isSidebarOpen} 
           isGalleryOpen={isGalleryOpen} 
           onToggleGallery={() => setIsGalleryOpen(!isGalleryOpen)} 
-          onRemoveBackground={() => handleImageAction('Cleaned')} 
-          onUpscale={() => handleImageAction('Upscaled')} 
-          onRemoveWatermark={() => handleImageAction('WatermarkRemoved')} 
-          onRestore={() => handleImageAction('Restored')} 
-          onColorize={() => handleImageAction('Colorized')} 
-          onCartoonize={() => handleImageAction('Cartoonized')} 
-          onMagicEraser={() => handleImageAction('ObjectRemoved')} 
-          onSmartEdit={() => { const p = prompt(translations[language].promptPlaceholder); if(p) handleImageAction('Edited', p); }} 
-          onVirtualTryOn={() => handleImageAction('VirtualTryOn')} 
-          onAddSunglasses={() => handleImageAction('AddSunglasses')} 
+          onRemoveBackground={() => { setConfirmTool({type: 'Cleaned', name: translations[language].removeBg, icon: <Eraser className="w-5 h-5"/>, color: 'bg-rose-500'}); setIsConfirmModalOpen(true); }} 
+          onUpscale={() => { setConfirmTool({type: 'Upscaled', name: translations[language].upscale, icon: <Maximize2 className="w-5 h-5"/>, color: 'bg-emerald-500'}); setIsConfirmModalOpen(true); }} 
+          onRemoveWatermark={() => { setConfirmTool({type: 'WatermarkRemoved', name: translations[language].removeWatermark, icon: <Scissors className="w-5 h-5"/>, color: 'bg-orange-500'}); setIsConfirmModalOpen(true); }} 
+          onRestore={() => { setConfirmTool({type: 'Restored', name: translations[language].restore, icon: <Sparkles className="w-5 h-5"/>, color: 'bg-amber-600'}); setIsConfirmModalOpen(true); }} 
+          onColorize={() => { setConfirmTool({type: 'Colorized', name: translations[language].colorize, icon: <Palette className="w-5 h-5"/>, color: 'bg-indigo-500'}); setIsConfirmModalOpen(true); }} 
+          onCartoonize={() => { setConfirmTool({type: 'Cartoonized', name: translations[language].cartoonize, icon: <Smile className="w-5 h-5"/>, color: 'bg-emerald-600'}); setIsConfirmModalOpen(true); }} 
+          onMagicEraser={() => { setConfirmTool({type: 'ObjectRemoved', name: translations[language].magicEraser, icon: <Wind className="w-5 h-5"/>, color: 'bg-rose-600'}); setIsConfirmModalOpen(true); }} 
+          onSmartEdit={() => setIsEditModalOpen(true)} 
+          onVirtualTryOn={() => { setConfirmTool({type: 'VirtualTryOn', name: translations[language].virtualTryOn, icon: <Shirt className="w-5 h-5"/>, color: 'bg-indigo-500'}); setIsConfirmModalOpen(true); }} 
+          onAddSunglasses={() => { setConfirmTool({type: 'AddSunglasses', name: translations[language].addSunglasses, icon: <Eye className="w-5 h-5"/>, color: 'bg-amber-500'}); setIsConfirmModalOpen(true); }} 
           onChangeHairStyle={() => setIsHairModalOpen(true)} 
-          onCreateLogo={() => { const n = prompt(translations[language].logoPrompt); if(n) handleGenerate(n, true); }} 
+          onCreateLogo={() => setIsLogoModalOpen(true)} 
           onTextToSpeech={() => setIsSpeechModalOpen(true)} 
           onGenerateImage={() => handleGenerate()} 
-          onImageToVector={() => handleImageAction('ImageToVector')} 
+          onImageToVector={() => { setConfirmTool({type: 'ImageToVector', name: translations[language].imageToVector, icon: <Layers className="w-5 h-5"/>, color: 'bg-teal-600'}); setIsConfirmModalOpen(true); }} 
           onTextToCode={() => setIsCodeModalOpen(true)} 
           onQrCode={() => setIsQrModalOpen(true)} 
           onDecodeQr={() => setIsQrDecoderModalOpen(true)}
@@ -565,24 +583,20 @@ const App: React.FC = () => {
       
       <ToastNotification toast={toast} onClose={() => setToast(null)} language={language} />
       
-      {isSpeechModalOpen && (
-        <SpeechModal 
-          isOpen={isSpeechModalOpen} 
-          onClose={() => setIsSpeechModalOpen(false)} 
-          onGenerate={handleGenerateSpeech} 
-          language={language} 
-          isGenerating={isSpeechGenerating} 
-        />
-      )}
+      <SpeechModal 
+        isOpen={isSpeechModalOpen} 
+        onClose={() => setIsSpeechModalOpen(false)} 
+        onGenerate={handleGenerateSpeech} 
+        language={language} 
+        isGenerating={isSpeechGenerating} 
+      />
       
-      {isHairModalOpen && (
-        <HairModal 
-          isOpen={isHairModalOpen} 
-          onClose={() => setIsHairModalOpen(false)} 
-          onApply={(p) => handleImageAction('ChangeHairStyle', p)} 
-          language={language} 
-        />
-      )}
+      <HairModal 
+        isOpen={isHairModalOpen} 
+        onClose={() => setIsHairModalOpen(false)} 
+        onApply={(p) => handleImageAction('ChangeHairStyle', p)} 
+        language={language} 
+      />
       
       <QrModal 
         isOpen={isQrModalOpen} 
@@ -605,6 +619,32 @@ const App: React.FC = () => {
         onGenerate={(p) => handleGenerate(p, false, 'TextToCode')} 
         language={language} 
         isGenerating={isGenerating} 
+      />
+
+      <LogoModal 
+        isOpen={isLogoModalOpen} 
+        onClose={() => setIsLogoModalOpen(false)} 
+        onGenerate={(p) => handleGenerate(p, true)} 
+        language={language} 
+        isGenerating={isGenerating} 
+      />
+
+      <EditModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        onApply={(p) => handleImageAction('Edited', p)} 
+        language={language} 
+      />
+
+      <ConfirmModal 
+        isOpen={isConfirmModalOpen} 
+        onClose={() => setIsConfirmModalOpen(false)} 
+        onConfirm={() => confirmTool && handleImageAction(confirmTool.type)} 
+        language={language} 
+        toolName={confirmTool?.name || ''} 
+        toolIcon={confirmTool?.icon} 
+        toolColor={confirmTool?.color || ''} 
+        currentImage={activeImage} 
       />
     </div>
   );
